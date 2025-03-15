@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 
 const Hero = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,24 +44,28 @@ const Hero = () => {
           <div className="inline-block mb-6">
             <div className="flex items-center gap-2 bg-white/70 backdrop-blur-sm border border-blue-100 rounded-full py-1 px-4 shadow-sm">
               <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-              <span className="text-sm font-medium text-blue-900">New way to connect</span>
+              <span className="text-sm font-medium text-blue-900">Discover Your Perfect Match</span>
             </div>
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 leading-tight">
-            Find Your Perfect <span className="text-gradient">Match</span> with Our Smart Algorithm
+            Find Your Perfect <span className="text-gradient">Connection</span> With Intelligent Matching
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Connect with people who share your interests, goals, and lifestyle. Our intelligent matchmaking system brings compatible people together.
+            Our advanced algorithm connects you with people who truly match your personality, interests, and relationship goals. Join thousands of successful matches today.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/register">
-              <Button size="lg" className="rounded-full px-8 shadow-button h-12 transition-all hover:shadow-md">
-                Get Started
+              <Button size="lg" className="rounded-full px-8 shadow-button h-12 transition-all hover:shadow-md group">
+                <span>Start Your Journey</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2 transition-transform group-hover:translate-x-1">
+                  <path d="M5 12h14"></path>
+                  <path d="m12 5 7 7-7 7"></path>
+                </svg>
               </Button>
             </Link>
             <Link to="/#how-it-works">
               <Button variant="outline" size="lg" className="rounded-full px-8 h-12">
-                How it Works
+                See How It Works
               </Button>
             </Link>
           </div>
@@ -130,8 +135,34 @@ const Hero = () => {
 
           <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-white shadow-soft rounded-full py-2 px-6 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-500"></div>
-            <span className="text-sm font-medium">Based on real personality matching</span>
+            <span className="text-sm font-medium">Powered by AI-based personality matching</span>
           </div>
+        </div>
+
+        <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 opacity-0 animate-on-scroll">
+          {[
+            {
+              icon: "👥",
+              title: "20,000+ Users",
+              description: "Join our growing community of singles finding meaningful connections every day"
+            },
+            {
+              icon: "❤️",
+              title: "92% Match Rate",
+              description: "Our intelligent algorithm creates highly compatible connections"
+            },
+            {
+              icon: "🔒",
+              title: "100% Secure",
+              description: "Your data and conversations are always protected with end-to-end encryption"
+            }
+          ].map((stat, index) => (
+            <div key={index} className="bg-white border border-border rounded-xl p-6 text-center shadow-sm hover:shadow-md transition-all">
+              <div className="text-4xl mb-3">{stat.icon}</div>
+              <h3 className="text-lg font-semibold mb-2">{stat.title}</h3>
+              <p className="text-muted-foreground text-sm">{stat.description}</p>
+            </div>
+          ))}
         </div>
       </div>
     </section>

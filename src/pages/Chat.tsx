@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
+import VideoCall from "@/components/chat/VideoCall";
 
 interface ChatMessage {
   id: string;
@@ -26,6 +28,8 @@ interface ChatContact {
 const Chat = () => {
   const [activeContact, setActiveContact] = useState<string | null>("1");
   const [messageInput, setMessageInput] = useState("");
+  const [isInVideoCall, setIsInVideoCall] = useState(false);
+  const [incomingCall, setIncomingCall] = useState<{contactId: string, contactName: string} | null>(null);
   
   // Sample contacts data
   const contacts: ChatContact[] = [
@@ -130,7 +134,56 @@ const Chat = () => {
       setMessages((prevMessages) => [...prevMessages, responseMessage]);
     }, 1000);
   };
-  
+
+  // Handle video call
+  const initiateVideoCall = () => {
+    if (!activeContact) return;
+
+    const contact = contacts.find(c => c.id === activeContact);
+    if (!contact) return;
+
+    if (!contact.online) {
+      toast.info(`${contact.name} is currently offline. Try again later.`);
+      return;
+    }
+
+    setIsInVideoCall(true);
+    toast.success(`Starting video call with ${contact.name}`);
+  };
+
+  // Simulate receiving call (for demo purposes)
+  const simulateIncomingCall = () => {
+    // Only simulate if the user isn't already in a call
+    if (isInVideoCall || incomingCall) return;
+
+    // Choose a random online contact
+    const onlineContacts = contacts.filter(c => c.online && c.id !== activeContact);
+    if (onlineContacts.length === 0) return;
+
+    const randomContact = onlineContacts[Math.floor(Math.random() * onlineContacts.length)];
+    setIncomingCall({
+      contactId: randomContact.id,
+      contactName: randomContact.name
+    });
+
+    // Auto-decline after 15 seconds if not answered
+    setTimeout(() => {
+      setIncomingCall(null);
+    }, 15000);
+  };
+
+  // Just for demo - simulate incoming call chance when user visits the page
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      // 30% chance of getting a call for demo purposes
+      if (Math.random() < 0.3) {
+        simulateIncomingCall();
+      }
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
@@ -155,6 +208,49 @@ const Chat = () => {
   
   return (
     <Layout className="pt-28 pb-16 px-6">
+      {isInVideoCall && activeContactData && (
+        <VideoCall 
+          contactId={activeContactData.id}
+          contactName={activeContactData.name}
+          onEndCall={() => setIsInVideoCall(false)}
+        />
+      )}
+
+      {incomingCall && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full text-center">
+            <div className="w-20 h-20 rounded-full bg-blue-100 mx-auto flex items-center justify-center mb-4 animate-pulse">
+              <span className="text-3xl">{incomingCall.contactName[0]}</span>
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Incoming Video Call</h3>
+            <p className="mb-6">{incomingCall.contactName} is calling you</p>
+            <div className="flex gap-4 justify-center">
+              <Button 
+                variant="destructive" 
+                className="rounded-full px-6"
+                onClick={() => {
+                  toast.info(`Call from ${incomingCall.contactName} declined`);
+                  setIncomingCall(null);
+                }}
+              >
+                Decline
+              </Button>
+              <Button 
+                variant="default" 
+                className="rounded-full px-6 bg-green-600 hover:bg-green-700"
+                onClick={() => {
+                  setActiveContact(incomingCall.contactId);
+                  setIncomingCall(null);
+                  setIsInVideoCall(true);
+                }}
+              >
+                Accept
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Messages</h1>
         
@@ -223,12 +319,23 @@ const Chat = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" title="Voice Call">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      title="Voice Call"
+                      onClick={() => toast.info("Voice calling feature coming soon!")}
+                    >
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                       </svg>
                     </Button>
-                    <Button variant="ghost" size="icon" title="Video Call">
+                    <Button 
+                      variant={activeContactData.online ? "ghost" : "outline"} 
+                      size="icon" 
+                      title="Video Call"
+                      onClick={initiateVideoCall}
+                      disabled={!activeContactData.online}
+                    >
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polygon points="23 7 16 12 23 17 23 7" />
                         <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
