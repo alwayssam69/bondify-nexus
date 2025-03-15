@@ -40,7 +40,12 @@ const Hero = () => {
       </div>
 
       <div className="max-w-7xl mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16 animate-on-scroll opacity-0">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center max-w-3xl mx-auto mb-12 md:mb-16 animate-on-scroll"
+        >
           <div className="inline-block mb-6">
             <div className="flex items-center gap-2 bg-white/70 backdrop-blur-sm border border-blue-100 rounded-full py-1 px-4 shadow-sm">
               <span className="w-2 h-2 rounded-full bg-blue-500"></span>
@@ -69,9 +74,14 @@ const Hero = () => {
               </Button>
             </Link>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="relative max-w-5xl mx-auto opacity-0 animate-on-scroll">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+          className="relative max-w-5xl mx-auto animate-on-scroll"
+        >
           <div className="aspect-[16/9] rounded-2xl overflow-hidden bg-gradient-to-r from-blue-100 to-blue-50 flex items-center justify-center shadow-soft">
             <div className="w-full h-full bg-white/70 backdrop-blur-sm p-6 flex items-center justify-center">
               <div className="relative w-full max-w-3xl mx-auto glass rounded-xl shadow-lg overflow-hidden">
@@ -137,9 +147,14 @@ const Hero = () => {
             <div className="w-2 h-2 rounded-full bg-green-500"></div>
             <span className="text-sm font-medium">Powered by AI-based personality matching</span>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 opacity-0 animate-on-scroll">
+        <motion.div 
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.4 }}
+          className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 animate-on-scroll"
+        >
           {[
             {
               icon: "👥",
@@ -163,7 +178,7 @@ const Hero = () => {
               <p className="text-muted-foreground text-sm">{stat.description}</p>
             </div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
