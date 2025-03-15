@@ -15,3 +15,12 @@ export interface ChatContact {
   online: boolean;
   lastSeen?: Date;
 }
+
+export interface RecentMatch {
+  id: string;
+  name: string;
+  matchPercentage: number;
+  avatar: string;
+  location: string;
+  isNew: boolean;
+}
