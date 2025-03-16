@@ -34,9 +34,10 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
   const handleConnect = () => {
     if (onConnect) {
       onConnect(profile.id);
+    } else {
+      toast.success(`Connection request sent to ${profile.name}!`);
     }
     setIsConnected(true);
-    toast.success(`Connection request sent to ${profile.name}!`);
   };
   
   const handleViewProfile = () => {
@@ -120,7 +121,6 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
         </div>
       </div>
       
-      {/* Detailed Profile Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>

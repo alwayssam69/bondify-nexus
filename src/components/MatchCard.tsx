@@ -1,7 +1,9 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 export interface MatchCardProps {
   name: string;
@@ -22,7 +24,17 @@ const MatchCard: React.FC<MatchCardProps> = ({
   imageBg,
   delay = 0,
 }) => {
+  const [isConnected, setIsConnected] = useState(false);
   const initial = name.charAt(0);
+  
+  const handleConnect = () => {
+    setIsConnected(true);
+    toast.success(`Connection request sent to ${name}!`);
+  };
+  
+  const handleViewProfile = () => {
+    toast.info(`Viewing ${name}'s profile`);
+  };
   
   return (
     <div 
@@ -60,8 +72,22 @@ const MatchCard: React.FC<MatchCardProps> = ({
         </div>
         
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="w-1/2 rounded-lg">Profile</Button>
-          <Button size="sm" className="w-1/2 rounded-lg">Connect</Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-1/2 rounded-lg"
+            onClick={handleViewProfile}
+          >
+            Profile
+          </Button>
+          <Button 
+            size="sm" 
+            className={`w-1/2 rounded-lg ${isConnected ? 'bg-green-600 hover:bg-green-700' : ''}`}
+            onClick={handleConnect}
+            disabled={isConnected}
+          >
+            {isConnected ? 'Connected' : 'Connect'}
+          </Button>
         </div>
       </div>
     </div>
