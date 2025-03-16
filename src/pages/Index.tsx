@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
 import Hero from "@/components/Hero";
@@ -76,6 +75,40 @@ const Index = () => {
     <Layout>
       <Hero />
       
+      {/* Featured Matches Section - Moved up to be right after Hero */}
+      <section className="py-20 px-6 bg-secondary">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="inline-block mb-4">
+              <div className="flex items-center gap-2 bg-blue-50 rounded-full py-1 px-4">
+                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                <span className="text-sm font-medium text-blue-900">Featured Matches</span>
+              </div>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Discover Compatible People in {userLocation}</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Here are some of our most popular profiles with high match potential in {userLocation}. 
+              Create an account to see your personalized matches.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {featuredMatches.map((match, index) => (
+              <MatchCard 
+                key={index}
+                name={match.name}
+                age={match.age}
+                location={match.location}
+                matchPercentage={match.matchPercentage !== undefined ? match.matchPercentage : 80 + Math.floor(Math.random() * 15)}
+                interests={match.interests.slice(0, 3)}
+                imageBg={match.imageBg}
+                delay={match.delay}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+      
       <section id="how-it-works" className="py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -140,30 +173,6 @@ const Index = () => {
       </section>
       
       <Features />
-      
-      <section className="py-20 px-6 bg-secondary">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-block mb-4">
-              <div className="flex items-center gap-2 bg-blue-50 rounded-full py-1 px-4">
-                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                <span className="text-sm font-medium text-blue-900">Featured Matches</span>
-              </div>
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Discover Compatible People in {userLocation}</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Here are some of our most popular profiles with high match potential in {userLocation}. 
-              Create an account to see your personalized matches.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {featuredMatches.map((match, index) => (
-              <MatchCard key={index} {...match} />
-            ))}
-          </div>
-        </div>
-      </section>
       
       <CallToAction />
     </Layout>
