@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
 import Hero from "@/components/Hero";
@@ -6,9 +7,20 @@ import CallToAction from "@/components/CallToAction";
 import MatchCard from "@/components/MatchCard";
 import { UserProfile, getRandomChatMatches, loadSampleUsers } from "@/lib/matchmaking";
 
+// Define a type for our transformed match data
+interface MatchCardData {
+  name: string;
+  age: number;
+  location: string;
+  matchPercentage: number;
+  interests: string[];
+  imageBg: string;
+  delay?: number;
+}
+
 const Index = () => {
   const [userLocation, setUserLocation] = useState("New York");
-  const [featuredMatches, setFeaturedMatches] = useState<UserProfile[]>([]);
+  const [featuredMatches, setFeaturedMatches] = useState<MatchCardData[]>([]);
   
   // Initialize sample users on component mount
   useEffect(() => {
@@ -99,8 +111,8 @@ const Index = () => {
                 name={match.name}
                 age={match.age}
                 location={match.location}
-                matchPercentage={match.matchPercentage !== undefined ? match.matchPercentage : 80 + Math.floor(Math.random() * 15)}
-                interests={match.interests.slice(0, 3)}
+                matchPercentage={match.matchPercentage}
+                interests={match.interests}
                 imageBg={match.imageBg}
                 delay={match.delay}
               />
