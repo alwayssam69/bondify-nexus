@@ -1,41 +1,72 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
 import CallToAction from "@/components/CallToAction";
 import MatchCard from "@/components/MatchCard";
+import { UserProfile, getRandomChatMatches, loadSampleUsers } from "@/lib/matchmaking";
 
 const Index = () => {
-  const featuredMatches = [
-    {
-      name: "Alex",
-      age: 28,
-      location: "San Francisco",
-      matchPercentage: 92,
-      interests: ["Photography", "Travel", "Hiking"],
-      imageBg: "bg-gradient-to-r from-blue-100 to-blue-200",
-      delay: 0
-    },
-    {
-      name: "Taylor",
-      age: 31,
-      location: "New York",
-      matchPercentage: 87,
-      interests: ["Music", "Art", "Cooking"],
-      imageBg: "bg-gradient-to-r from-purple-100 to-purple-200",
-      delay: 100
-    },
-    {
-      name: "Jamie",
-      age: 26,
-      location: "Chicago",
-      matchPercentage: 89,
-      interests: ["Fitness", "Reading", "Movies"],
-      imageBg: "bg-gradient-to-r from-green-100 to-green-200",
-      delay: 200
-    },
-  ];
+  const [userLocation, setUserLocation] = useState("New York");
+  const [featuredMatches, setFeaturedMatches] = useState<UserProfile[]>([]);
+  
+  // Initialize sample users on component mount
+  useEffect(() => {
+    const sampleUsers = loadSampleUsers();
+    updateFeaturedMatches(sampleUsers);
+    
+    // Set an interval to change location every 10 seconds for demonstration
+    const locationInterval = setInterval(() => {
+      const locations = ["New York", "San Francisco", "Chicago", "Los Angeles", "Miami", "Seattle", "Portland", "Austin"];
+      const randomLocation = locations[Math.floor(Math.random() * locations.length)];
+      setUserLocation(randomLocation);
+    }, 10000);
+    
+    return () => clearInterval(locationInterval);
+  }, []);
+  
+  // Update featured matches whenever location changes
+  useEffect(() => {
+    updateFeaturedMatches();
+  }, [userLocation]);
+  
+  const updateFeaturedMatches = (allUsers?: UserProfile[]) => {
+    // Create a mock current user with the dynamic location
+    const currentUser: UserProfile = {
+      id: "current",
+      name: "Current User",
+      age: 25,
+      gender: "non-binary",
+      interests: ["music", "technology", "travel"],
+      location: userLocation,
+      relationshipGoal: "dating",
+      language: "English",
+      activityScore: 85,
+      profileCompleteness: 90
+    };
+    
+    // Get random matches based on the current user
+    const matches = getRandomChatMatches(currentUser, 3);
+    
+    // Transform the UserProfile objects to include the needed properties for MatchCard
+    const cardMatches = matches.map((match, index) => ({
+      name: match.name,
+      age: match.age,
+      location: match.location,
+      matchPercentage: match.matchScore !== undefined ? match.matchScore : 80 + Math.floor(Math.random() * 15),
+      interests: match.interests.slice(0, 3),
+      imageBg: match.imageUrl || `bg-gradient-to-r from-${getColorFromIndex(index)}-100 to-${getColorFromIndex(index)}-200`,
+      delay: index * 100
+    }));
+    
+    setFeaturedMatches(cardMatches);
+  };
+  
+  const getColorFromIndex = (index: number): string => {
+    const colors = ["blue", "purple", "green", "pink", "yellow", "red"];
+    return colors[index % colors.length];
+  };
   
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -119,9 +150,10 @@ const Index = () => {
                 <span className="text-sm font-medium text-blue-900">Featured Matches</span>
               </div>
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Discover Compatible People</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Discover Compatible People in {userLocation}</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Here are some of our most popular profiles with high match potential. Create an account to see your personalized matches.
+              Here are some of our most popular profiles with high match potential in {userLocation}. 
+              Create an account to see your personalized matches.
             </p>
           </div>
 

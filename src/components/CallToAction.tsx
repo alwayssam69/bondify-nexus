@@ -23,7 +23,7 @@ const CallToAction = () => {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/register">
-                <Button size="lg" variant="default" className="bg-purple-500 text-white hover:bg-purple-600 rounded-full px-8 shadow-button h-12 transition-all hover:shadow-md">
+                <Button size="lg" variant="default" className="bg-blue-500 text-white hover:bg-blue-600 rounded-full px-8 shadow-button h-12 transition-all hover:shadow-md">
                   Create Account
                 </Button>
               </Link>
