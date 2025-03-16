@@ -1,4 +1,3 @@
-
 export type UserProfile = {
   id: string;
   name: string;
@@ -15,6 +14,7 @@ export type UserProfile = {
   profileCompleteness?: number;
   dailySwipes?: number;
   maxDailySwipes?: number;
+  matchScore?: number;
 };
 
 export type MatchScore = {
@@ -30,13 +30,10 @@ export type SwipeHistory = {
   timestamp: Date;
 };
 
-// Bucket structure to store users
 const userBuckets: { [key: string]: UserProfile[] } = {};
 const swipeHistory: SwipeHistory[] = [];
 
-// Assign users to buckets
 export function assignToBucket(user: UserProfile) {
-  // Create multiple bucket keys for better matching
   const ageGroup = getAgeGroup(user.age);
   const bucketKeys = [
     `${ageGroup}-${user.location}-${user.relationshipGoal}`,
@@ -49,19 +46,15 @@ export function assignToBucket(user: UserProfile) {
       userBuckets[key] = [];
     }
     
-    // Check if user already exists in this bucket
     const existingUserIndex = userBuckets[key].findIndex(u => u.id === user.id);
     if (existingUserIndex >= 0) {
-      // Update user if already exists
       userBuckets[key][existingUserIndex] = user;
     } else {
-      // Add user to bucket
       userBuckets[key].push(user);
     }
   });
 }
 
-// Helper function to get age group
 function getAgeGroup(age: number): string {
   if (age < 23) return '18-22';
   if (age < 28) return '23-27';
@@ -72,7 +65,6 @@ function getAgeGroup(age: number): string {
   return '48+';
 }
 
-// Find best matches
 export function findMatches(currentUser: UserProfile, maxResults: number = 20): UserProfile[] {
   const ageGroup = getAgeGroup(currentUser.age);
   const bucketKeys = [
@@ -83,7 +75,6 @@ export function findMatches(currentUser: UserProfile, maxResults: number = 20): 
   
   let potentialMatches: UserProfile[] = [];
   
-  // Collect users from all relevant buckets
   bucketKeys.forEach(key => {
     if (userBuckets[key]) {
       potentialMatches = [
@@ -94,54 +85,42 @@ export function findMatches(currentUser: UserProfile, maxResults: number = 20): 
     }
   });
   
-  // Calculate scores for all potential matches
   const scoredMatches = potentialMatches.map(match => {
     const score = calculateMatchScore(currentUser, match);
     return { ...match, matchScore: score };
   });
   
-  // Sort by score descending
   scoredMatches.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
   
-  // Return top matches up to maxResults
   return scoredMatches.slice(0, maxResults);
 }
 
-// Calculate match score between two users
 export function calculateMatchScore(user1: UserProfile, user2: UserProfile): number {
   let score = 0;
   
-  // Interest Matching (up to 50 points)
   const commonInterests = user2.interests.filter(i => user1.interests.includes(i));
   score += commonInterests.length * 10;
   
-  // Skills Matching (if applicable, up to 30 points)
   if (user1.skills && user2.skills) {
     const commonSkills = user2.skills.filter(s => user1.skills?.includes(s));
     score += commonSkills.length * 6;
   }
   
-  // Location (20 points if same location)
   if (user2.location === user1.location) score += 20;
   
-  // Same relationship goal (15 points)
   if (user2.relationshipGoal === user1.relationshipGoal) score += 15;
   
-  // Language Preference (15 points if same)
   if (user2.language === user1.language) score += 15;
   
-  // Activity Score Boost (up to 20 points)
   score += Math.min(user2.activityScore / 5, 20);
   
-  // Profile Completeness Boost (up to 10 points)
   if (user2.profileCompleteness) {
     score += user2.profileCompleteness / 10;
   }
   
-  return Math.min(score, 100); // Cap at 100%
+  return Math.min(score, 100);
 }
 
-// Record a swipe action
 export function recordSwipe(userId: string, targetId: string, action: SwipeAction): void {
   swipeHistory.push({
     userId,
@@ -151,7 +130,6 @@ export function recordSwipe(userId: string, targetId: string, action: SwipeActio
   });
 }
 
-// Check if users have matched (both swiped right on each other)
 export function checkMatch(user1Id: string, user2Id: string): boolean {
   const user1LikedUser2 = swipeHistory.some(
     swipe => swipe.userId === user1Id && swipe.targetId === user2Id && swipe.action === 'like'
@@ -164,7 +142,6 @@ export function checkMatch(user1Id: string, user2Id: string): boolean {
   return user1LikedUser2 && user2LikedUser1;
 }
 
-// Get users who have matched with the current user
 export function getUserMatches(userId: string): string[] {
   const userLikes = swipeHistory.filter(
     swipe => swipe.userId === userId && swipe.action === 'like'
@@ -174,13 +151,10 @@ export function getUserMatches(userId: string): string[] {
     swipe => swipe.targetId === userId && swipe.action === 'like'
   ).map(swipe => swipe.userId);
   
-  // Return users who mutually liked each other
   return userLikes.filter(id => likedByUsers.includes(id));
 }
 
-// Get recommended matches for random chat
 export function getRandomChatMatches(currentUser: UserProfile, count: number = 3): UserProfile[] {
-  // Find all users with the same relationshipGoal for random chat
   let potentialMatches: UserProfile[] = [];
   
   Object.values(userBuckets).forEach(bucket => {
@@ -194,13 +168,11 @@ export function getRandomChatMatches(currentUser: UserProfile, count: number = 3
     ];
   });
   
-  // Shuffle array for randomness
   potentialMatches.sort(() => 0.5 - Math.random());
   
   return potentialMatches.slice(0, count);
 }
 
-// Get all users (for admin or testing purposes)
 export function getAllUsers(): UserProfile[] {
   const allUsers: UserProfile[] = [];
   const addedIds = new Set<string>();
@@ -217,7 +189,6 @@ export function getAllUsers(): UserProfile[] {
   return allUsers;
 }
 
-// Load sample users for testing
 export function loadSampleUsers() {
   const sampleUsers: UserProfile[] = [
     { 
@@ -235,7 +206,8 @@ export function loadSampleUsers() {
       skills: ["guitar", "basketball"],
       profileCompleteness: 90,
       dailySwipes: 0,
-      maxDailySwipes: 20
+      maxDailySwipes: 20,
+      matchScore: 0
     },
     { 
       id: "2", 
@@ -252,7 +224,8 @@ export function loadSampleUsers() {
       skills: ["photography", "languages"],
       profileCompleteness: 95,
       dailySwipes: 0,
-      maxDailySwipes: 20
+      maxDailySwipes: 20,
+      matchScore: 0
     },
     { 
       id: "3", 
@@ -269,7 +242,8 @@ export function loadSampleUsers() {
       skills: ["painting", "cooking"],
       profileCompleteness: 85,
       dailySwipes: 0,
-      maxDailySwipes: 20
+      maxDailySwipes: 20,
+      matchScore: 0
     },
     { 
       id: "4", 
@@ -286,7 +260,8 @@ export function loadSampleUsers() {
       skills: ["JavaScript", "React", "hiking"],
       profileCompleteness: 90,
       dailySwipes: 0,
-      maxDailySwipes: 20
+      maxDailySwipes: 20,
+      matchScore: 0
     },
     { 
       id: "5", 
@@ -303,7 +278,8 @@ export function loadSampleUsers() {
       skills: ["personal training", "Spanish", "Portuguese"],
       profileCompleteness: 100,
       dailySwipes: 0,
-      maxDailySwipes: 20
+      maxDailySwipes: 20,
+      matchScore: 0
     },
     { 
       id: "6", 
@@ -320,7 +296,8 @@ export function loadSampleUsers() {
       skills: ["choreography", "styling"],
       profileCompleteness: 85,
       dailySwipes: 0,
-      maxDailySwipes: 20
+      maxDailySwipes: 20,
+      matchScore: 0
     },
     { 
       id: "7", 
@@ -337,7 +314,8 @@ export function loadSampleUsers() {
       skills: ["finance", "marketing", "public speaking"],
       profileCompleteness: 95,
       dailySwipes: 0,
-      maxDailySwipes: 20
+      maxDailySwipes: 20,
+      matchScore: 0
     },
     { 
       id: "8", 
@@ -354,7 +332,8 @@ export function loadSampleUsers() {
       skills: ["game development", "streaming", "video editing"],
       profileCompleteness: 80,
       dailySwipes: 0,
-      maxDailySwipes: 20
+      maxDailySwipes: 20,
+      matchScore: 0
     },
     { 
       id: "9", 
@@ -371,7 +350,8 @@ export function loadSampleUsers() {
       skills: ["research", "yoga instruction", "gardening"],
       profileCompleteness: 90,
       dailySwipes: 0,
-      maxDailySwipes: 20
+      maxDailySwipes: 20,
+      matchScore: 0
     },
     { 
       id: "10", 
@@ -388,7 +368,8 @@ export function loadSampleUsers() {
       skills: ["cooking", "Italian", "French"],
       profileCompleteness: 95,
       dailySwipes: 0,
-      maxDailySwipes: 20
+      maxDailySwipes: 20,
+      matchScore: 0
     }
   ];
   

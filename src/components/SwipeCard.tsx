@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ profile, onSwipe, isActive }) => 
   };
 
   // Calculate match percentage (based on the profile's matchScore property if available)
-  const matchPercentage = profile.matchScore ? Math.floor(profile.matchScore) : 85;
+  const matchPercentage = profile.matchScore !== undefined ? Math.floor(profile.matchScore) : 85;
 
   return (
     <motion.div

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -30,7 +29,7 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
   const [isConnected, setIsConnected] = useState(false);
   
   const initial = profile.name.charAt(0);
-  const matchPercentage = profile.matchScore ? Math.floor(profile.matchScore) : 85;
+  const matchPercentage = profile.matchScore !== undefined ? Math.floor(profile.matchScore) : 85;
   
   const handleConnect = () => {
     if (onConnect) {
