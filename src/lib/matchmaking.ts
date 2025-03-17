@@ -1,4 +1,3 @@
-
 export type UserProfile = {
   id: string;
   name: string;
@@ -16,6 +15,7 @@ export type UserProfile = {
   dailySwipes?: number;
   maxDailySwipes?: number;
   matchScore?: number;
+  distance?: number;
   // Professional networking fields
   userType?: string;
   industry?: string;
@@ -27,6 +27,11 @@ export type UserProfile = {
   remoteNetworking?: boolean;
   locationPreference?: string;
   verified?: boolean;
+  // Location data (latitude/longitude)
+  latitude?: number;
+  longitude?: number;
+  // Saved status
+  saved?: boolean;
 };
 
 export type MatchScore = {
@@ -34,7 +39,7 @@ export type MatchScore = {
   score: number;
 };
 
-export type SwipeAction = 'like' | 'reject';
+export type SwipeAction = 'like' | 'reject' | 'save';
 export type SwipeHistory = {
   userId: string;
   targetId: string;
@@ -44,6 +49,7 @@ export type SwipeHistory = {
 
 const userBuckets: { [key: string]: UserProfile[] } = {};
 const swipeHistory: SwipeHistory[] = [];
+const savedProfiles: { [userId: string]: string[] } = {};
 
 export function assignToBucket(user: UserProfile) {
   const ageGroup = getAgeGroup(user.age);
@@ -75,6 +81,31 @@ export function assignToBucket(user: UserProfile) {
       userBuckets[key].push(user);
     }
   });
+}
+
+/**
+ * Calculate distance between two points using the Haversine formula
+ * @param lat1 Latitude of point 1
+ * @param lon1 Longitude of point 1
+ * @param lat2 Latitude of point 2
+ * @param lon2 Longitude of point 2
+ * @returns Distance in kilometers
+ */
+export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2); 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  const distance = R * c; // Distance in km
+  return distance;
+}
+
+function deg2rad(deg: number): number {
+  return deg * (Math.PI/180);
 }
 
 function getAgeGroup(age: number): string {
@@ -142,6 +173,23 @@ export function calculateMatchScore(user1: UserProfile, user2: UserProfile): num
   
   // Location matching
   if (user2.location === user1.location) score += 15;
+  
+  // Proximity bonus if distance is available
+  if (user1.latitude && user1.longitude && user2.latitude && user2.longitude) {
+    const distance = calculateDistance(
+      user1.latitude, 
+      user1.longitude, 
+      user2.latitude, 
+      user2.longitude
+    );
+    
+    // Add bonus points for proximity (up to 10 points)
+    if (distance < 5) score += 10;     // Very close
+    else if (distance < 10) score += 8;  // Close
+    else if (distance < 20) score += 6;  // Somewhat close
+    else if (distance < 50) score += 4;  // Moderate distance
+    else if (distance < 100) score += 2; // Further away
+  }
   
   // Relationship goal matching
   if (user2.relationshipGoal === user1.relationshipGoal) score += 10;
@@ -222,6 +270,21 @@ export function recordSwipe(userId: string, targetId: string, action: SwipeActio
     action,
     timestamp: new Date()
   });
+  
+  // If action is 'save', add to saved profiles
+  if (action === 'save') {
+    if (!savedProfiles[userId]) {
+      savedProfiles[userId] = [];
+    }
+    
+    if (!savedProfiles[userId].includes(targetId)) {
+      savedProfiles[userId].push(targetId);
+    }
+  }
+}
+
+export function getSavedProfiles(userId: string): string[] {
+  return savedProfiles[userId] || [];
 }
 
 export function checkMatch(user1Id: string, user2Id: string): boolean {
