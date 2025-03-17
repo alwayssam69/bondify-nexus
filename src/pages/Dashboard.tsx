@@ -2,9 +2,19 @@
 import React from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
+  const handleUpdateProfile = () => {
+    navigate("/profile");
+  };
+
+  const handleFindMatches = () => {
+    navigate("/matches");
+  };
+
   return (
     <Layout className="pt-28 pb-16 px-6">
       <div className="max-w-7xl mx-auto">
@@ -14,13 +24,13 @@ const Dashboard = () => {
             <p className="text-muted-foreground">Welcome back! Here's your match overview.</p>
           </div>
           <div className="flex gap-4">
-            <Button variant="outline" className="rounded-lg">
+            <Button variant="outline" className="rounded-lg" onClick={handleUpdateProfile}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
                 <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               Update Profile
             </Button>
-            <Button className="rounded-lg">
+            <Button className="rounded-lg" onClick={handleFindMatches}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
                 <path d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>

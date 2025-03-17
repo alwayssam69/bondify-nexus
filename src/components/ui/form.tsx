@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as LabelPrimitive from "@radix-ui/react-label"
 import { Slot } from "@radix-ui/react-slot"
@@ -164,6 +165,38 @@ const FormMessage = React.forwardRef<
 })
 FormMessage.displayName = "FormMessage"
 
+// New enhanced form components for better grouping and organization
+const FormGroup = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => {
+  return (
+    <div 
+      ref={ref} 
+      className={cn("grid gap-6 md:grid-cols-2", className)} 
+      {...props} 
+    />
+  )
+})
+FormGroup.displayName = "FormGroup"
+
+const FormSection = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & { title?: string }
+>(({ className, title, children, ...props }, ref) => {
+  return (
+    <div 
+      ref={ref} 
+      className={cn("space-y-4 rounded-lg border p-6", className)} 
+      {...props}
+    >
+      {title && <h3 className="text-lg font-medium">{title}</h3>}
+      {children}
+    </div>
+  )
+})
+FormSection.displayName = "FormSection"
+
 export {
   useFormField,
   Form,
@@ -173,4 +206,6 @@ export {
   FormDescription,
   FormMessage,
   FormField,
+  FormGroup,
+  FormSection,
 }
