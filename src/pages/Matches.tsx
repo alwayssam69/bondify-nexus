@@ -13,11 +13,13 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Flame, MessageSquareText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import MatchFilter, { FilterOptions } from "@/components/MatchFilter";
 
 const Matches = () => {
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [matches, setMatches] = useState<UserProfile[]>([]);
   const [activeTab, setActiveTab] = useState("discover");
+  const [filterApplied, setFilterApplied] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserProfile>({
     id: "current-user",
     name: "You",
@@ -25,7 +27,7 @@ const Matches = () => {
     gender: "unspecified",
     interests: ["technology", "music", "movies", "travel"],
     location: "New York",
-    relationshipGoal: "dating",
+    relationshipGoal: "networking",
     language: "English",
     activityScore: 90,
     imageUrl: "bg-gradient-to-br from-teal-400 to-emerald-600",
@@ -104,6 +106,56 @@ const Matches = () => {
     setActiveTab("discover");
   };
 
+  // Handle filter application
+  const handleApplyFilters = (filters: FilterOptions) => {
+    // Update current user with filter preferences
+    setCurrentUser(prev => ({
+      ...prev,
+      userType: filters.userType || prev.userType,
+      industry: filters.industry.length > 0 ? filters.industry[0] : prev.industry,
+      skills: filters.skills.length > 0 ? filters.skills : prev.skills,
+      experienceLevel: filters.experienceLevel || prev.experienceLevel,
+      relationshipGoal: filters.relationshipGoal || prev.relationshipGoal,
+      location: filters.location || prev.location,
+    }));
+    
+    // Find filtered matches
+    let filteredMatches = findMatches(currentUser);
+    
+    // Apply additional filters
+    if (filters.userType) {
+      filteredMatches = filteredMatches.filter(m => m.userType === filters.userType);
+    }
+    
+    if (filters.industry.length > 0) {
+      filteredMatches = filteredMatches.filter(m => 
+        m.industry && filters.industry.includes(m.industry)
+      );
+    }
+    
+    if (filters.skills.length > 0) {
+      filteredMatches = filteredMatches.filter(m => 
+        m.skills && m.skills.some(skill => filters.skills.includes(skill))
+      );
+    }
+    
+    if (filters.experienceLevel) {
+      filteredMatches = filteredMatches.filter(m => 
+        m.experienceLevel === filters.experienceLevel
+      );
+    }
+    
+    if (filters.location) {
+      filteredMatches = filteredMatches.filter(m => 
+        filters.location === "global" || m.location === filters.location
+      );
+    }
+    
+    setMatches(filteredMatches);
+    setFilterApplied(true);
+    toast.success("Filters applied successfully!");
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8 text-center">Find Your Perfect Match</h1>
@@ -136,14 +188,55 @@ const Matches = () => {
           </TabsList>
           
           <TabsContent value="discover">
-            <SwipeContainer 
-              profiles={matches}
-              onNewMatch={handleNewMatch}
-              onRefresh={handleRefreshMatches}
-            />
-            <div className="text-center text-sm text-muted-foreground mt-4">
-              Swipe right to connect, swipe left to pass
-            </div>
+            {/* Filter component */}
+            {!filterApplied && <MatchFilter onApplyFilters={handleApplyFilters} />}
+            
+            {filterApplied && matches.length === 0 ? (
+              <Card className="text-center p-6 mb-6">
+                <CardContent className="pt-6">
+                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">No matches found with these filters</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Try adjusting your filters to find more matches
+                  </p>
+                  <Button onClick={() => setFilterApplied(false)}>Adjust Filters</Button>
+                </CardContent>
+              </Card>
+            ) : (
+              filterApplied && (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-sm text-muted-foreground">
+                      Found {matches.length} matches with your filters
+                    </p>
+                    <Button variant="outline" size="sm" onClick={() => setFilterApplied(false)}>
+                      Adjust Filters
+                    </Button>
+                  </div>
+                  <SwipeContainer 
+                    profiles={matches}
+                    onNewMatch={handleNewMatch}
+                    onRefresh={handleRefreshMatches}
+                  />
+                  <div className="text-center text-sm text-muted-foreground mt-4">
+                    Swipe right to connect, swipe left to pass
+                  </div>
+                </>
+              )
+            )}
+            
+            {filterApplied && matches.length > 0 && (
+              <>
+                <SwipeContainer 
+                  profiles={matches}
+                  onNewMatch={handleNewMatch}
+                  onRefresh={handleRefreshMatches}
+                />
+                <div className="text-center text-sm text-muted-foreground mt-4">
+                  Swipe right to connect, swipe left to pass
+                </div>
+              </>
+            )}
           </TabsContent>
           
           <TabsContent value="connections">
