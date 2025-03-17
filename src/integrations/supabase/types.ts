@@ -15,6 +15,7 @@ export type Database = {
           company: string | null
           created_at: string | null
           education: string | null
+          email: string | null
           experience: string | null
           full_name: string | null
           id: string
@@ -28,6 +29,7 @@ export type Database = {
           company?: string | null
           created_at?: string | null
           education?: string | null
+          email?: string | null
           experience?: string | null
           full_name?: string | null
           id: string
@@ -41,6 +43,7 @@ export type Database = {
           company?: string | null
           created_at?: string | null
           education?: string | null
+          email?: string | null
           experience?: string | null
           full_name?: string | null
           id?: string

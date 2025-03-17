@@ -11,6 +11,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { 
   Select,
@@ -19,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue, 
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -35,16 +37,23 @@ const formSchema = z.object({
   }),
   gender: z.string().min(1, "Please select your gender"),
   location: z.string().min(1, "Please enter your location"),
+  locationPreference: z.string().optional(),
+  remoteNetworking: z.boolean().optional(),
   relationshipGoal: z.string().min(1, "Please select your relationship goal"),
   interests: z.string().min(1, "Please enter at least one interest"),
-  dailyRoutine: z.string().min(1, "Please select your daily routine"),
-  communicationStyle: z.string().min(1, "Please select your communication style"),
+  userType: z.string().min(1, "Please select who you are"),
+  industry: z.string().min(1, "Please select your industry"),
+  experienceLevel: z.string().min(1, "Please select your experience level"),
+  networkingGoals: z.string().min(1, "Please select at least one networking goal"),
+  skills: z.string().min(1, "Please enter at least one skill"),
+  availability: z.string().min(1, "Please select your availability"),
+  communicationPreference: z.string().min(1, "Please select your communication style"),
 });
 
 const Register = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const totalSteps = 3;
+  const totalSteps = 4;
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -55,10 +64,17 @@ const Register = () => {
       age: "",
       gender: "",
       location: "",
+      locationPreference: "local",
+      remoteNetworking: true,
       relationshipGoal: "",
       interests: "",
-      dailyRoutine: "",
-      communicationStyle: "",
+      userType: "",
+      industry: "",
+      experienceLevel: "",
+      networkingGoals: "",
+      skills: "",
+      availability: "",
+      communicationPreference: "",
     },
   });
 
@@ -91,8 +107,24 @@ const Register = () => {
       if (ageValid && genderValid && locationValid && goalValid) {
         setStep(step + 1);
       }
-    } else if (step === totalSteps) {
-      form.handleSubmit(onSubmit)();
+    } else if (step === 3) {
+      const userTypeValid = await form.trigger("userType");
+      const industryValid = await form.trigger("industry");
+      const expLevelValid = await form.trigger("experienceLevel");
+      const networkingGoalsValid = await form.trigger("networkingGoals");
+      
+      if (userTypeValid && industryValid && expLevelValid && networkingGoalsValid) {
+        setStep(step + 1);
+      }
+    } else if (step === 4) {
+      const skillsValid = await form.trigger("skills");
+      const availabilityValid = await form.trigger("availability");
+      const communicationValid = await form.trigger("communicationPreference");
+      const interestsValid = await form.trigger("interests");
+      
+      if (skillsValid && availabilityValid && communicationValid && interestsValid) {
+        form.handleSubmit(onSubmit)();
+      }
     }
   };
 
@@ -108,7 +140,7 @@ const Register = () => {
         <div className="card-glass rounded-xl p-8">
           <h1 className="text-2xl font-bold mb-2">Create Your Account</h1>
           <p className="text-muted-foreground mb-6">
-            Join our community and find your perfect match
+            Join our community and find your perfect professional network
           </p>
           
           <div className="mb-8">
@@ -126,7 +158,8 @@ const Register = () => {
               Step {step} of {totalSteps}: {
                 step === 1 ? "Basic Information" : 
                 step === 2 ? "Personal Details" : 
-                "Preferences & Interests"
+                step === 3 ? "Professional Profile" :
+                "Skills & Preferences"
               }
             </p>
           </div>
@@ -237,10 +270,54 @@ const Register = () => {
                   
                   <FormField
                     control={form.control}
+                    name="locationPreference"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Location Preference</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value || "local"}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose location preference" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="local">Local (Same City)</SelectItem>
+                            <SelectItem value="regional">Regional (Same Country)</SelectItem>
+                            <SelectItem value="global">Global (Worldwide)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="remoteNetworking"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Open to Remote Networking</FormLabel>
+                          <FormDescription>
+                            I'm open to virtual meetings and remote collaboration
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
                     name="relationshipGoal"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Relationship Goal</FormLabel>
+                        <FormLabel>Primary Goal</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
@@ -248,10 +325,13 @@ const Register = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="casual">Casual Dating</SelectItem>
-                            <SelectItem value="serious">Serious Relationship</SelectItem>
-                            <SelectItem value="networking">Networking</SelectItem>
-                            <SelectItem value="friendship">Friendship</SelectItem>
+                            <SelectItem value="networking">Professional Networking</SelectItem>
+                            <SelectItem value="mentoring">Mentorship</SelectItem>
+                            <SelectItem value="collaboration">Project Collaboration</SelectItem>
+                            <SelectItem value="hiring">Hiring/Recruitment</SelectItem>
+                            <SelectItem value="job-seeking">Job Seeking</SelectItem>
+                            <SelectItem value="investing">Investment Opportunities</SelectItem>
+                            <SelectItem value="friendship">Industry Friendships</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -265,34 +345,25 @@ const Register = () => {
                 <>
                   <FormField
                     control={form.control}
-                    name="interests"
+                    name="userType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Interests & Hobbies</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. Photography, Travel, Hiking" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="dailyRoutine"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Daily Routine</FormLabel>
+                        <FormLabel>Who You Are</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Are you a morning or night person?" />
+                              <SelectValue placeholder="Select your professional identity" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="morning">Morning Person</SelectItem>
-                            <SelectItem value="night">Night Person</SelectItem>
-                            <SelectItem value="balanced">Balanced</SelectItem>
+                            <SelectItem value="founder">Startup Founder</SelectItem>
+                            <SelectItem value="entrepreneur">Aspiring Entrepreneur</SelectItem>
+                            <SelectItem value="professional">Working Professional</SelectItem>
+                            <SelectItem value="student">Student/Recent Graduate</SelectItem>
+                            <SelectItem value="job-seeker">Job Seeker</SelectItem>
+                            <SelectItem value="mentor">Mentor/Expert</SelectItem>
+                            <SelectItem value="collaborator">Collaborator</SelectItem>
+                            <SelectItem value="investor">Investor</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -302,10 +373,158 @@ const Register = () => {
                   
                   <FormField
                     control={form.control}
-                    name="communicationStyle"
+                    name="industry"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Communication Style</FormLabel>
+                        <FormLabel>Industry & Domain</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select your industry" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="technology">Technology & IT</SelectItem>
+                            <SelectItem value="finance">Finance & Investment</SelectItem>
+                            <SelectItem value="marketing">Marketing & Sales</SelectItem>
+                            <SelectItem value="design">Design & Creativity</SelectItem>
+                            <SelectItem value="business">Business & Consulting</SelectItem>
+                            <SelectItem value="healthcare">Healthcare & Science</SelectItem>
+                            <SelectItem value="legal">Legal & Compliance</SelectItem>
+                            <SelectItem value="education">Education & Research</SelectItem>
+                            <SelectItem value="sustainability">Sustainability & Environment</SelectItem>
+                            <SelectItem value="arts">Arts & Entertainment</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="experienceLevel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Experience Level</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select your experience level" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="beginner">Beginner (0-2 years)</SelectItem>
+                            <SelectItem value="intermediate">Intermediate (3-5 years)</SelectItem>
+                            <SelectItem value="advanced">Advanced (6-10 years)</SelectItem>
+                            <SelectItem value="expert">Expert (10+ years)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="networkingGoals"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Networking Goals</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="What are your networking objectives?" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="finding mentors">Looking for mentors</SelectItem>
+                            <SelectItem value="finding professionals">Finding like-minded professionals</SelectItem>
+                            <SelectItem value="finding co-founders">Seeking startup co-founders</SelectItem>
+                            <SelectItem value="learning from experts">Learning from industry experts</SelectItem>
+                            <SelectItem value="finding opportunities">Finding job & internship opportunities</SelectItem>
+                            <SelectItem value="collaborating on projects">Collaborating on projects</SelectItem>
+                            <SelectItem value="seeking investment">Seeking investment for my startup</SelectItem>
+                            <SelectItem value="finding startups to invest">Finding startups to invest in</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Choose your primary goal. You can add more in your profile later.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+              
+              {step === 4 && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="skills"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Skills & Expertise</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. JavaScript, Marketing, Leadership" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Separate with commas. These help with better matching.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="interests"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Interests & Hobbies</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Photography, Travel, Hiking" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Personal interests help with casual connections.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="availability"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Availability</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="When are you available to connect?" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="weekdays">Weekdays</SelectItem>
+                            <SelectItem value="evenings">Evenings</SelectItem>
+                            <SelectItem value="weekends">Weekends</SelectItem>
+                            <SelectItem value="flexible">Flexible</SelectItem>
+                            <SelectItem value="by appointment">By Appointment Only</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="communicationPreference"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Communication Preference</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
@@ -313,10 +532,10 @@ const Register = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="text">Text</SelectItem>
-                            <SelectItem value="call">Call</SelectItem>
-                            <SelectItem value="video">Video</SelectItem>
-                            <SelectItem value="mixed">Mixed</SelectItem>
+                            <SelectItem value="casual chat">Casual Chat</SelectItem>
+                            <SelectItem value="in-depth discussions">In-Depth Discussions</SelectItem>
+                            <SelectItem value="video calls">Video Calls</SelectItem>
+                            <SelectItem value="mixed">Mixed (Flexible)</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
