@@ -1,9 +1,11 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Heart, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { UserProfile } from "@/lib/matchmaking";
+import { Badge } from "@/components/ui/badge";
 
 interface SwipeCardProps {
   profile: UserProfile;
@@ -35,9 +37,13 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ profile, onSwipe, isActive }) => 
     >
       <Card className="overflow-hidden shadow-lg">
         <div className={`${profile.imageUrl || 'bg-gradient-to-br from-blue-400 to-indigo-600'} h-64 relative`}>
-          <div className="absolute top-3 right-3 bg-blue-50 text-blue-800 text-xs font-medium px-2.5 py-1 rounded-full">
+          <Badge 
+            variant="gradient" 
+            animation="pulse" 
+            className="absolute top-3 right-3"
+          >
             {matchPercentage}% Match
-          </div>
+          </Badge>
           <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent text-white">
             <h3 className="text-xl font-semibold">{profile.name}, {profile.age}</h3>
             <p className="text-sm opacity-90">{profile.location}</p>
@@ -52,12 +58,13 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ profile, onSwipe, isActive }) => 
             <h4 className="text-xs font-medium text-gray-500 mb-1">INTERESTS</h4>
             <div className="flex flex-wrap gap-1">
               {profile.interests.map((interest, idx) => (
-                <span 
-                  key={idx} 
-                  className="text-xs px-2 py-1 bg-secondary rounded-full text-muted-foreground"
+                <Badge 
+                  key={idx}
+                  variant={['info', 'purple', 'teal', 'pink', 'indigo'][idx % 5]}
+                  className="text-xs"
                 >
                   {interest}
-                </span>
+                </Badge>
               ))}
             </div>
           </div>
@@ -67,12 +74,13 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ profile, onSwipe, isActive }) => 
               <h4 className="text-xs font-medium text-gray-500 mb-1">SKILLS</h4>
               <div className="flex flex-wrap gap-1">
                 {profile.skills.map((skill, idx) => (
-                  <span 
-                    key={idx} 
-                    className="text-xs px-2 py-1 bg-blue-50 text-blue-800 rounded-full"
+                  <Badge 
+                    key={idx}
+                    variant={['success', 'warning', 'info', 'purple', 'teal'][idx % 5]}
+                    className="text-xs"
                   >
                     {skill}
-                  </span>
+                  </Badge>
                 ))}
               </div>
             </div>
@@ -82,14 +90,14 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ profile, onSwipe, isActive }) => 
             <Button 
               onClick={handleReject}
               variant="outline" 
-              className="w-20 h-12 rounded-full border-2 border-gray-300"
+              className="w-20 h-12 rounded-full border-2 border-gray-300 transition-transform hover:scale-105"
             >
               <X className="text-gray-500" size={24} />
             </Button>
             
             <Button 
               onClick={handleLike}
-              className="w-20 h-12 rounded-full bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700"
+              className="w-20 h-12 rounded-full bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 transition-transform hover:scale-105"
             >
               <Heart size={24} />
             </Button>

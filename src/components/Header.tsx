@@ -58,7 +58,9 @@ const Header = () => {
           contactName: "Taylor M."
         });
       }, 3000);
-      toast.info("Incoming call in 3 seconds...");
+      toast.info("Incoming call in 3 seconds...", {
+        className: "animate-slide-up",
+      });
     } else {
       toast.error("You need to be logged in to receive calls");
     }

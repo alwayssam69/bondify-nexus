@@ -30,7 +30,7 @@ const VideoCallDropdown = ({ onInitiateCall, onSimulateIncomingCall }: VideoCall
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => onInitiateCall({id: "1", name: "Alex J."})}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white">
               <span>A</span>
             </div>
             <span>Call Alex J.</span>
@@ -38,7 +38,7 @@ const VideoCallDropdown = ({ onInitiateCall, onSimulateIncomingCall }: VideoCall
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onInitiateCall({id: "2", name: "Taylor M."})}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-600 flex items-center justify-center text-white">
               <span>T</span>
             </div>
             <span>Call Taylor M.</span>
@@ -46,7 +46,7 @@ const VideoCallDropdown = ({ onInitiateCall, onSimulateIncomingCall }: VideoCall
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onSimulateIncomingCall}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-teal-600 flex items-center justify-center text-white">
               <span>S</span>
             </div>
             <span>Simulate Incoming Call</span>

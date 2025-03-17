@@ -14,8 +14,8 @@ interface IncomingCallProps {
 
 const IncomingCall = ({ contact, onAccept, onDecline }: IncomingCallProps) => {
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
-      <div className="bg-white rounded-xl p-6 max-w-md w-full text-center">
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center animate-fade-in">
+      <div className="bg-white rounded-xl p-6 max-w-md w-full text-center animate-scale-in">
         <div className="w-20 h-20 rounded-full bg-blue-100 mx-auto flex items-center justify-center mb-4 animate-pulse">
           <span className="text-3xl">{contact.contactName[0]}</span>
         </div>

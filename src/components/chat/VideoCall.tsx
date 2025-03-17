@@ -109,13 +109,13 @@ const VideoCall: React.FC<VideoCallProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+    <div className="fixed inset-0 bg-black z-50 flex flex-col animate-fade-in">
       {/* Remote video (full screen) */}
-      <div className="flex-1 bg-gray-900 relative overflow-hidden">
+      <div className="flex-1 bg-gradient-to-br from-gray-900 to-gray-800 relative overflow-hidden">
         {callStatus === 'connecting' ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center text-white">
-              <div className="w-16 h-16 rounded-full bg-gray-800 mx-auto flex items-center justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mx-auto flex items-center justify-center mb-4 animate-pulse">
                 <span className="text-2xl">{contactName[0]}</span>
               </div>
               <h3 className="text-xl font-medium mb-2">{isIncoming ? "Incoming call from" : "Calling"} {contactName}</h3>
@@ -138,7 +138,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
             {isCameraOff && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center text-white">
-                  <div className="w-16 h-16 rounded-full bg-gray-800 mx-auto flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mx-auto flex items-center justify-center mb-4">
                     <span className="text-2xl">{contactName[0]}</span>
                   </div>
                   <p>Camera is turned off</p>
@@ -163,7 +163,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
             className="w-full h-full object-cover"
           />
           {isCameraOff && (
-            <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-700 flex items-center justify-center">
               <span className="text-white">Camera Off</span>
             </div>
           )}
@@ -220,7 +220,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
         <Button 
           variant="destructive" 
           size="icon" 
-          className="rounded-full h-14 w-14"
+          className="rounded-full h-14 w-14 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700"
           onClick={handleEndCall}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
