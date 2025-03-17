@@ -27,6 +27,22 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ profile, onSwipe, isActive }) => 
   // Calculate match percentage (based on the profile's matchScore property if available)
   const matchPercentage = profile.matchScore !== undefined ? Math.floor(profile.matchScore) : 85;
 
+  // Function to get a valid badge variant based on index
+  const getBadgeVariant = (index: number): "info" | "purple" | "teal" | "pink" | "indigo" => {
+    const variants: Array<"info" | "purple" | "teal" | "pink" | "indigo"> = [
+      "info", "purple", "teal", "pink", "indigo"
+    ];
+    return variants[index % variants.length];
+  };
+
+  // Function to get a valid badge variant for skills
+  const getSkillBadgeVariant = (index: number): "success" | "warning" | "info" | "purple" | "teal" => {
+    const variants: Array<"success" | "warning" | "info" | "purple" | "teal"> = [
+      "success", "warning", "info", "purple", "teal"
+    ];
+    return variants[index % variants.length];
+  };
+
   return (
     <motion.div
       className={`w-full max-w-md mx-auto absolute ${isActive ? 'z-10' : 'z-0'}`}
@@ -60,7 +76,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ profile, onSwipe, isActive }) => 
               {profile.interests.map((interest, idx) => (
                 <Badge 
                   key={idx}
-                  variant={['info', 'purple', 'teal', 'pink', 'indigo'][idx % 5]}
+                  variant={getBadgeVariant(idx)}
                   className="text-xs"
                 >
                   {interest}
@@ -76,7 +92,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ profile, onSwipe, isActive }) => 
                 {profile.skills.map((skill, idx) => (
                   <Badge 
                     key={idx}
-                    variant={['success', 'warning', 'info', 'purple', 'teal'][idx % 5]}
+                    variant={getSkillBadgeVariant(idx)}
                     className="text-xs"
                   >
                     {skill}
