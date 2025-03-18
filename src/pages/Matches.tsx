@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   loadSampleUsers, 
@@ -12,7 +11,7 @@ import InstantChat from '@/components/InstantChat';
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Flame, MessageSquareText, BookmarkPlus, MapPin } from "lucide-react";
+import { Users, MessageSquareText, BookmarkPlus, MapPin, Trophy, Calendar, Bell } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import MatchFilter, { FilterOptions } from "@/components/MatchFilter";
 
@@ -30,7 +29,7 @@ const Matches = () => {
     gender: "unspecified",
     interests: ["technology", "music", "movies", "travel"],
     location: "New York",
-    country: "United States", // Add country property
+    country: "United States",
     relationshipGoal: "networking",
     language: "English",
     activityScore: 90,
@@ -42,10 +41,14 @@ const Matches = () => {
     maxDailySwipes: 20,
   });
   
-  // Connections state
   const [connections, setConnections] = useState<UserProfile[]>([]);
+  const [userStreak, setUserStreak] = useState(3);
+  const [weeklyGoal, setWeeklyGoal] = useState({
+    target: 5,
+    achieved: 2
+  });
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   
-  // Get user's location
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -62,14 +65,11 @@ const Matches = () => {
     }
   }, []);
   
-  // Initialize with sample data
   useEffect(() => {
     const sampleUsers = loadSampleUsers();
     
-    // Add distances to users if we have location
     if (userLocation) {
       const usersWithDistance = sampleUsers.map(user => {
-        // Mock coordinates for sample users based on their location
         const userCoords = getUserMockCoordinates(user.location);
         
         if (userCoords) {
@@ -88,7 +88,6 @@ const Matches = () => {
       
       setAllUsers(usersWithDistance);
       
-      // Find matches for current user with distances
       const matchesFound = findMatches(currentUser)
         .map(match => {
           const userWithDistance = usersWithDistance.find(u => u.id === match.id);
@@ -99,16 +98,13 @@ const Matches = () => {
     } else {
       setAllUsers(sampleUsers);
       
-      // Find matches for current user
       const matchesFound = findMatches(currentUser);
       setMatches(matchesFound);
     }
     
-    // Set up some initial connections
     setConnections([sampleUsers[2], sampleUsers[4]]);
   }, [userLocation]);
   
-  // Mock function to get coordinates for sample users
   const getUserMockCoordinates = (location: string) => {
     const locationMap: Record<string, {latitude: number, longitude: number}> = {
       "New York": { latitude: 40.7128, longitude: -74.0060 },
@@ -129,35 +125,27 @@ const Matches = () => {
     return locationMap[location] || null;
   };
   
-  // Handle intro message
   const handleSendIntro = (profileId: string, message: string) => {
     const profile = matches.find(p => p.id === profileId);
     if (profile) {
       console.log(`Sending intro to ${profile.name}: ${message}`);
-      // In a real app, this would send the message to the backend
     }
   };
   
-  // Handle new match
   const handleNewMatch = (profile: UserProfile) => {
-    // Add to connections
     setConnections(prev => {
       if (prev.some(p => p.id === profile.id)) return prev;
       return [...prev, profile];
     });
     
-    // Switch to connections tab after a delay
     setTimeout(() => {
       setActiveTab("connections");
     }, 1500);
   };
   
-  // Handle refresh matches
   const handleRefreshMatches = () => {
-    // Simulate refreshing matches
     let refreshedMatches = findMatches(currentUser);
     
-    // Add distances to new matches if we have location
     if (userLocation) {
       refreshedMatches = refreshedMatches.map(match => {
         const userCoords = getUserMockCoordinates(match.location);
@@ -181,25 +169,21 @@ const Matches = () => {
     toast.success("Found new matches!");
   };
   
-  // Handle connect action
   const handleConnect = (profileId: string) => {
     const profile = matches.find(p => p.id === profileId) || 
                     savedProfiles.find(p => p.id === profileId);
     if (profile) {
-      // Add to connections
       setConnections(prev => {
         if (prev.some(p => p.id === profileId)) return prev;
         return [...prev, profile];
       });
       
-      // Remove from saved if it was there
       setSavedProfiles(prev => prev.filter(p => p.id !== profileId));
       
       toast.success(`Connected with ${profile.name}!`);
     }
   };
   
-  // Handle view profile
   const handleViewProfile = (profileId: string) => {
     const profile = matches.find(p => p.id === profileId) || 
                     connections.find(p => p.id === profileId) ||
@@ -207,22 +191,18 @@ const Matches = () => {
     
     if (profile) {
       toast.info(`Viewing ${profile.name}'s profile`);
-      // In a real app, this would navigate to the profile page
     }
   };
   
-  // Handle start matching
   const handleStartMatching = () => {
     setActiveTab("discover");
   };
   
-  // Handle save for later
   const handleSaveForLater = (profileId: string) => {
     const profile = matches.find(p => p.id === profileId);
     if (profile && !savedProfiles.some(p => p.id === profileId)) {
       setSavedProfiles(prev => [...prev, profile]);
       
-      // Remove from visible matches
       const profileIndex = matches.findIndex(p => p.id === profileId);
       if (profileIndex !== -1) {
         setMatches(prev => {
@@ -234,9 +214,7 @@ const Matches = () => {
     }
   };
 
-  // Handle filter application
   const handleApplyFilters = (filters: FilterOptions) => {
-    // Update current user with filter preferences
     setCurrentUser(prev => ({
       ...prev,
       userType: filters.userType || prev.userType,
@@ -244,14 +222,11 @@ const Matches = () => {
       skills: filters.skills.length > 0 ? filters.skills : prev.skills,
       experienceLevel: filters.experienceLevel || prev.experienceLevel,
       relationshipGoal: filters.relationshipGoal || prev.relationshipGoal,
-      // Use locationPreference instead of location
       location: filters.locationPreference === "local" ? prev.location : prev.location,
     }));
     
-    // Find filtered matches
     let filteredMatches = findMatches(currentUser);
     
-    // Apply additional filters
     if (filters.userType) {
       filteredMatches = filteredMatches.filter(m => m.userType === filters.userType);
     }
@@ -276,18 +251,14 @@ const Matches = () => {
     
     if (filters.locationPreference) {
       filteredMatches = filteredMatches.filter(m => {
-        // Always include for global preference
         if (filters.locationPreference === "global") return true;
         
-        // For country preference, check country match if available
         if (filters.locationPreference === "country") {
-          // If country property is missing on either, fall back to location match
           const profileCountry = m.country || m.location;
           const userCountry = currentUser.country || currentUser.location;
           return profileCountry === userCountry;
         }
         
-        // For local preference, check location match
         if (filters.locationPreference === "local") {
           return m.location === currentUser.location;
         }
@@ -296,7 +267,6 @@ const Matches = () => {
       });
     }
     
-    // Add distances to filtered matches if we have location
     if (userLocation) {
       filteredMatches = filteredMatches.map(match => {
         const userCoords = getUserMockCoordinates(match.location);
@@ -321,9 +291,83 @@ const Matches = () => {
     toast.success("Filters applied successfully!");
   };
 
+  const leaderboardData = [
+    { id: "leader1", name: "Alex Johnson", points: 356, connectionsThisWeek: 12 },
+    { id: "leader2", name: "Taylor Swift", points: 298, connectionsThisWeek: 10 },
+    { id: "leader3", name: "Jordan Peterson", points: 245, connectionsThisWeek: 8 },
+    { id: "leader4", name: "Chris Evans", points: 212, connectionsThisWeek: 7 },
+    { id: "leader5", name: "Serena Williams", points: 187, connectionsThisWeek: 6 },
+  ];
+
   return (
     <div className="container mx-auto py-8 px-4 min-h-screen bg-gradient-to-b from-background to-background/70">
-      <h1 className="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-rose-500 to-purple-600 text-transparent bg-clip-text">Find Your Perfect Match</h1>
+      <h1 className="text-3xl font-bold mb-8 text-center text-[#000000]">Find Your Perfect Match</h1>
+      
+      <div className="flex flex-wrap gap-4 justify-center mb-8">
+        <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 shadow-sm p-3 flex items-center gap-3 w-auto">
+          <div className="bg-amber-500/10 p-2 rounded-full">
+            <Trophy className="h-5 w-5 text-amber-500" />
+          </div>
+          <div>
+            <p className="text-xs text-amber-700/70">Current Streak</p>
+            <p className="font-semibold text-amber-900">{userStreak} Days</p>
+          </div>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm p-3 flex items-center gap-3 w-auto">
+          <div className="bg-blue-500/10 p-2 rounded-full">
+            <Calendar className="h-5 w-5 text-blue-500" />
+          </div>
+          <div>
+            <p className="text-xs text-blue-700/70">Weekly Goal</p>
+            <p className="font-semibold text-blue-900">{weeklyGoal.achieved}/{weeklyGoal.target} Connections</p>
+          </div>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 shadow-sm p-3 flex items-center gap-3 w-auto cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowLeaderboard(!showLeaderboard)}>
+          <div className="bg-purple-500/10 p-2 rounded-full">
+            <Users className="h-5 w-5 text-purple-500" />
+          </div>
+          <div>
+            <p className="text-xs text-purple-700/70">Networking Rank</p>
+            <p className="font-semibold text-purple-900">#42 in Your Industry</p>
+          </div>
+        </Card>
+      </div>
+      
+      {showLeaderboard && (
+        <Card className="mb-8 max-w-2xl mx-auto bg-white/80 backdrop-blur border border-border/30 shadow-sm">
+          <CardContent className="pt-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-amber-500" />
+              Top Networkers This Week
+            </h3>
+            <div className="space-y-3">
+              {leaderboardData.map((user, index) => (
+                <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-border/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-blue-100 font-semibold text-blue-800">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="font-medium">{user.name}</p>
+                      <p className="text-xs text-muted-foreground">{user.connectionsThisWeek} connections this week</p>
+                    </div>
+                  </div>
+                  <div className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+                    {user.points} pts
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 text-center">
+              <Button variant="outline" size="sm" onClick={() => setShowLeaderboard(false)}>
+                Close Leaderboard
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
       <div className="mb-8 max-w-lg mx-auto">
         <Tabs 
@@ -362,7 +406,6 @@ const Matches = () => {
           </TabsList>
           
           <TabsContent value="discover">
-            {/* Filter component */}
             {!filterApplied && <MatchFilter onApplyFilters={handleApplyFilters} />}
             
             {filterApplied && matches.length === 0 ? (
@@ -479,7 +522,7 @@ const Matches = () => {
       
       <div className="max-w-3xl mx-auto mt-12">
         <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
-          <Flame className="h-5 w-5 text-amber-500" />
+          <Bell className="h-5 w-5 text-amber-500" />
           <span className="bg-gradient-to-r from-amber-500 to-orange-600 text-transparent bg-clip-text">Recently Active</span>
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
