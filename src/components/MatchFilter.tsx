@@ -1,7 +1,7 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronDown, Filter } from "lucide-react";
+import { Check, ChevronDown, Filter, MapPin } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 export type FilterOptions = {
   userType: string;
@@ -29,12 +31,84 @@ export type FilterOptions = {
   skills: string[];
   experienceLevel: string;
   relationshipGoal: string;
-  location: string;
+  locationPreference: "local" | "country" | "global";
 };
 
 interface MatchFilterProps {
   onApplyFilters: (filters: FilterOptions) => void;
 }
+
+// Define industry-specific skills mapping
+const industrySkillsMap: Record<string, Array<{ value: string, label: string }>> = {
+  technology: [
+    { value: "javascript", label: "JavaScript" },
+    { value: "react", label: "React" },
+    { value: "python", label: "Python" },
+    { value: "java", label: "Java" },
+    { value: "nodejs", label: "Node.js" },
+    { value: "aws", label: "AWS" },
+    { value: "devops", label: "DevOps" },
+    { value: "mobile", label: "Mobile Development" },
+    { value: "cloud", label: "Cloud Computing" },
+    { value: "ai", label: "AI/Machine Learning" },
+  ],
+  finance: [
+    { value: "investment", label: "Investment Strategy" },
+    { value: "taxation", label: "Taxation" },
+    { value: "financial-analysis", label: "Financial Analysis" },
+    { value: "wealth-management", label: "Wealth Management" },
+    { value: "banking", label: "Banking" },
+    { value: "risk-management", label: "Risk Management" },
+    { value: "fintech", label: "FinTech" },
+  ],
+  marketing: [
+    { value: "digital-marketing", label: "Digital Marketing" },
+    { value: "social-media", label: "Social Media Marketing" },
+    { value: "content-creation", label: "Content Creation" },
+    { value: "seo", label: "SEO" },
+    { value: "advertising", label: "Advertising" },
+    { value: "brand-strategy", label: "Brand Strategy" },
+    { value: "market-research", label: "Market Research" },
+  ],
+  design: [
+    { value: "ui-ux", label: "UI/UX Design" },
+    { value: "graphic-design", label: "Graphic Design" },
+    { value: "product-design", label: "Product Design" },
+    { value: "web-design", label: "Web Design" },
+    { value: "illustration", label: "Illustration" },
+    { value: "animation", label: "Animation" },
+  ],
+  business: [
+    { value: "strategy", label: "Business Strategy" },
+    { value: "consulting", label: "Consulting" },
+    { value: "operations", label: "Operations" },
+    { value: "project-management", label: "Project Management" },
+    { value: "entrepreneurship", label: "Entrepreneurship" },
+    { value: "leadership", label: "Leadership" },
+  ],
+  healthcare: [
+    { value: "medicine", label: "Medicine" },
+    { value: "nursing", label: "Nursing" },
+    { value: "research", label: "Medical Research" },
+    { value: "public-health", label: "Public Health" },
+    { value: "healthcare-tech", label: "Healthcare Technology" },
+    { value: "mental-health", label: "Mental Health" },
+  ],
+  legal: [
+    { value: "corporate-law", label: "Corporate Law" },
+    { value: "ip-law", label: "Intellectual Property" },
+    { value: "litigation", label: "Litigation" },
+    { value: "contracts", label: "Contracts" },
+    { value: "compliance", label: "Compliance" },
+  ],
+  education: [
+    { value: "teaching", label: "Teaching" },
+    { value: "curriculum-dev", label: "Curriculum Development" },
+    { value: "edtech", label: "Educational Technology" },
+    { value: "higher-ed", label: "Higher Education" },
+    { value: "research", label: "Research" },
+  ],
+};
 
 const MatchFilter: React.FC<MatchFilterProps> = ({ onApplyFilters }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -44,8 +118,48 @@ const MatchFilter: React.FC<MatchFilterProps> = ({ onApplyFilters }) => {
     skills: [],
     experienceLevel: "",
     relationshipGoal: "networking",
-    location: "",
+    locationPreference: "local",
   });
+
+  const [availableSkills, setAvailableSkills] = useState<Array<{ value: string, label: string }>>([]);
+
+  // Update available skills whenever industry selection changes
+  useEffect(() => {
+    let allSkills: Array<{ value: string, label: string }> = [];
+    
+    // Collect skills from all selected industries
+    filters.industry.forEach(ind => {
+      const industrySkills = industrySkillsMap[ind] || [];
+      allSkills = [...allSkills, ...industrySkills];
+    });
+    
+    // If no industry is selected, show a default set of general skills
+    if (allSkills.length === 0) {
+      allSkills = [
+        { value: "communication", label: "Communication" },
+        { value: "leadership", label: "Leadership" },
+        { value: "problem-solving", label: "Problem Solving" },
+        { value: "teamwork", label: "Teamwork" },
+        { value: "project-management", label: "Project Management" },
+      ];
+    }
+    
+    // Remove duplicates
+    const uniqueSkills = allSkills.filter((skill, index, self) => 
+      index === self.findIndex(s => s.value === skill.value)
+    );
+    
+    setAvailableSkills(uniqueSkills);
+    
+    // Filter out any selected skills that are no longer available
+    const validSkills = filters.skills.filter(skill => 
+      uniqueSkills.some(s => s.value === skill)
+    );
+    
+    if (validSkills.length !== filters.skills.length) {
+      setFilters(prev => ({ ...prev, skills: validSkills }));
+    }
+  }, [filters.industry]);
 
   // Lists of options
   const userTypes = [
@@ -69,33 +183,10 @@ const MatchFilter: React.FC<MatchFilterProps> = ({ onApplyFilters }) => {
     { value: "education", label: "Education & Research" },
   ];
 
-  const skills = [
-    { value: "java", label: "Java" },
-    { value: "python", label: "Python" },
-    { value: "javascript", label: "JavaScript" },
-    { value: "react", label: "React" },
-    { value: "nodejs", label: "Node.js" },
-    { value: "marketing", label: "Digital Marketing" },
-    { value: "sales", label: "Sales" },
-    { value: "uiux", label: "UI/UX Design" },
-    { value: "fundraising", label: "Fundraising" },
-    { value: "projectManagement", label: "Project Management" },
-  ];
-
   const experienceLevels = [
     { value: "beginner", label: "Beginner" },
     { value: "intermediate", label: "Intermediate" },
     { value: "expert", label: "Expert" },
-  ];
-
-  const locations = [
-    { value: "global", label: "Global (Remote)" },
-    { value: "New York", label: "New York" },
-    { value: "San Francisco", label: "San Francisco" },
-    { value: "London", label: "London" },
-    { value: "Mumbai", label: "Mumbai" },
-    { value: "Tokyo", label: "Tokyo" },
-    { value: "Sydney", label: "Sydney" },
   ];
 
   const handleApplyFilters = () => {
@@ -177,6 +268,51 @@ const MatchFilter: React.FC<MatchFilterProps> = ({ onApplyFilters }) => {
                 </Select>
               </div>
 
+              {/* Location Preference - New Three-Tier Selection */}
+              <div className="space-y-2 col-span-1 md:col-span-2">
+                <label className="text-sm font-medium">Location Preference:</label>
+                <RadioGroup 
+                  className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-4"
+                  value={filters.locationPreference}
+                  onValueChange={(value: "local" | "country" | "global") => 
+                    setFilters(prev => ({ ...prev, locationPreference: value }))
+                  }
+                >
+                  <div className="flex items-center space-x-2 rounded-md border p-3 cursor-pointer hover:bg-accent">
+                    <RadioGroupItem value="local" id="local" />
+                    <Label htmlFor="local" className="flex items-center space-x-2 cursor-pointer">
+                      <MapPin className="h-4 w-4 text-blue-500" />
+                      <div>
+                        <div className="font-medium">Local</div>
+                        <div className="text-xs text-muted-foreground">Within 50km radius</div>
+                      </div>
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 rounded-md border p-3 cursor-pointer hover:bg-accent">
+                    <RadioGroupItem value="country" id="country" />
+                    <Label htmlFor="country" className="flex items-center space-x-2 cursor-pointer">
+                      <MapPin className="h-4 w-4 text-green-500" />
+                      <div>
+                        <div className="font-medium">Country-wide</div>
+                        <div className="text-xs text-muted-foreground">Same country networking</div>
+                      </div>
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 rounded-md border p-3 cursor-pointer hover:bg-accent">
+                    <RadioGroupItem value="global" id="global" />
+                    <Label htmlFor="global" className="flex items-center space-x-2 cursor-pointer">
+                      <MapPin className="h-4 w-4 text-purple-500" />
+                      <div>
+                        <div className="font-medium">Global</div>
+                        <div className="text-xs text-muted-foreground">Worldwide connections</div>
+                      </div>
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
               {/* Industry Dropdown */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Industries:</label>
@@ -224,7 +360,7 @@ const MatchFilter: React.FC<MatchFilterProps> = ({ onApplyFilters }) => {
                 )}
               </div>
 
-              {/* Skills Dropdown */}
+              {/* Dynamic Skills Dropdown - Updated to show skills based on selected industries */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Required Skills:</label>
                 <DropdownMenu>
@@ -235,10 +371,14 @@ const MatchFilter: React.FC<MatchFilterProps> = ({ onApplyFilters }) => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56">
-                    <DropdownMenuLabel>Skills</DropdownMenuLabel>
+                    <DropdownMenuLabel>
+                      {filters.industry.length > 0 
+                        ? `Skills for ${filters.industry.length > 1 ? 'selected industries' : 'selected industry'}` 
+                        : 'General Skills'}
+                    </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
-                      {skills.map(skill => (
+                      {availableSkills.map(skill => (
                         <DropdownMenuCheckboxItem
                           key={skill.value}
                           checked={filters.skills.includes(skill.value)}
@@ -255,7 +395,8 @@ const MatchFilter: React.FC<MatchFilterProps> = ({ onApplyFilters }) => {
                 {filters.skills.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {filters.skills.map(skill => {
-                      const skillLabel = skills.find(s => s.value === skill)?.label || skill;
+                      const skillObj = availableSkills.find(s => s.value === skill);
+                      const skillLabel = skillObj ? skillObj.label : skill;
                       return (
                         <Badge 
                           key={skill} 
@@ -269,29 +410,6 @@ const MatchFilter: React.FC<MatchFilterProps> = ({ onApplyFilters }) => {
                     })}
                   </div>
                 )}
-              </div>
-
-              {/* Location */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Location Preference:</label>
-                <Select 
-                  value={filters.location} 
-                  onValueChange={(value) => setFilters(prev => ({ ...prev, location: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Locations</SelectLabel>
-                      {locations.map(location => (
-                        <SelectItem key={location.value} value={location.value}>
-                          {location.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
 
