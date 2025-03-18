@@ -20,7 +20,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["SF Pro Display", "system-ui", "sans-serif"],
+        sans: ["SF Pro Display", "Inter", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -60,7 +60,9 @@ export default {
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)"
+        sm: "calc(var(--radius) - 4px)",
+        xl: "1rem",
+        "2xl": "1.5rem",
       },
       keyframes: {
         "accordion-down": {
@@ -107,6 +109,10 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.5" },
         },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -120,15 +126,23 @@ export default {
         "blur-in": "blur-in 0.5s ease-out",
         "float": "float 6s ease-in-out infinite",
         "pulse": "pulse 3s ease-in-out infinite",
+        "shimmer": "shimmer 2s linear infinite",
       },
       boxShadow: {
         'glass': '0 4px 30px rgba(0, 0, 0, 0.05)',
         'soft': '0 10px 50px rgba(0, 0, 0, 0.1)',
         'button': '0 1px 2px rgba(0, 0, 0, 0.05)',
         'card': '0 2px 10px rgba(0, 0, 0, 0.08)',
+        'premium': '0 10px 40px -10px rgba(0, 0, 0, 0.15)',
+        'highlight': '0 0 0 2px rgba(59, 130, 246, 0.3)',
       },
       backdropBlur: {
         'glass': '20px',
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+        'shimmer': 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 25%, rgba(255,255,255,0.2) 75%, rgba(255,255,255,0) 100%)',
       },
     }
   },

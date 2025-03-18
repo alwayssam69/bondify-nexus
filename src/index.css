@@ -14,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 40% 10%;
 
-    --primary: 210 100% 50%;
+    --primary: 224 76% 48%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 20% 96%;
@@ -31,9 +31,39 @@
 
     --border: 220 15% 90%;
     --input: 220 15% 90%;
-    --ring: 210 100% 50%;
+    --ring: 224 76% 48%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 224 40% 10%;
+    --foreground: 210 20% 98%;
+
+    --card: 224 40% 12%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 224 40% 12%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 224 76% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 224 35% 20%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 224 35% 20%;
+    --muted-foreground: 210 20% 75%;
+
+    --accent: 224 35% 20%;
+    --accent-foreground: 210 20% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 224 35% 20%;
+    --input: 224 35% 20%;
+    --ring: 224 76% 55%;
   }
 
   * {
@@ -86,4 +116,42 @@
   .animate-delay-500 {
     animation-delay: 500ms;
   }
+
+  .premium-card {
+    @apply relative overflow-hidden bg-white rounded-2xl border border-gray-200/50 shadow-premium transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+
+  .premium-card::before {
+    content: "";
+    @apply absolute inset-0 bg-shimmer bg-[length:200%_100%] animate-shimmer opacity-0 transition-opacity duration-300;
+  }
+
+  .premium-card:hover::before {
+    @apply opacity-100;
+  }
+
+  .gradient-border {
+    @apply relative rounded-xl p-[1px] overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-blue-500 before:via-purple-500 before:to-pink-500 before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100;
+  }
+
+  .gradient-border > * {
+    @apply relative z-10 bg-background rounded-xl;
+  }
+
+  .button-glow {
+    @apply relative overflow-hidden;
+  }
+
+  .button-glow::after {
+    content: "";
+    @apply absolute inset-0 rounded-md bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer opacity-0 transition-opacity duration-300;
+  }
+
+  .button-glow:hover::after {
+    @apply opacity-100;
+  }
 }
+
+/* Add custom Google font for SF Pro */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+

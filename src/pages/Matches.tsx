@@ -30,6 +30,7 @@ const Matches = () => {
     gender: "unspecified",
     interests: ["technology", "music", "movies", "travel"],
     location: "New York",
+    country: "United States", // Add country property
     relationshipGoal: "networking",
     language: "English",
     activityScore: 90,
@@ -122,6 +123,7 @@ const Matches = () => {
       "Mumbai": { latitude: 19.0760, longitude: 72.8777 },
       "Bangalore": { latitude: 12.9716, longitude: 77.5946 },
       "Sydney": { latitude: -33.8688, longitude: 151.2093 },
+      "Berlin": { latitude: 52.5200, longitude: 13.4050 },
     };
     
     return locationMap[location] || null;
@@ -273,11 +275,25 @@ const Matches = () => {
     }
     
     if (filters.locationPreference) {
-      filteredMatches = filteredMatches.filter(m => 
-        filters.locationPreference === "global" || 
-        (filters.locationPreference === "country" && m.country === currentUser.country) ||
-        (filters.locationPreference === "local" && m.location === currentUser.location)
-      );
+      filteredMatches = filteredMatches.filter(m => {
+        // Always include for global preference
+        if (filters.locationPreference === "global") return true;
+        
+        // For country preference, check country match if available
+        if (filters.locationPreference === "country") {
+          // If country property is missing on either, fall back to location match
+          const profileCountry = m.country || m.location;
+          const userCountry = currentUser.country || currentUser.location;
+          return profileCountry === userCountry;
+        }
+        
+        // For local preference, check location match
+        if (filters.locationPreference === "local") {
+          return m.location === currentUser.location;
+        }
+        
+        return true;
+      });
     }
     
     // Add distances to filtered matches if we have location
@@ -306,7 +322,7 @@ const Matches = () => {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container mx-auto py-8 px-4 min-h-screen bg-gradient-to-b from-background to-background/70">
       <h1 className="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-rose-500 to-purple-600 text-transparent bg-clip-text">Find Your Perfect Match</h1>
       
       <div className="mb-8 max-w-lg mx-auto">
@@ -316,31 +332,31 @@ const Matches = () => {
           onValueChange={setActiveTab}
           className="w-full"
         >
-          <TabsList className="grid w-full grid-cols-4 mb-8">
-            <TabsTrigger value="discover" className="flex items-center">
-              <Flame className="mr-2 h-4 w-4" />
+          <TabsList className="grid w-full grid-cols-4 mb-8 bg-background/60 backdrop-blur p-1 rounded-lg border border-border/40">
+            <TabsTrigger value="discover" className="flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Flame className="h-4 w-4" />
               Discover
             </TabsTrigger>
-            <TabsTrigger value="saved" className="flex items-center">
-              <BookmarkPlus className="mr-2 h-4 w-4" />
+            <TabsTrigger value="saved" className="flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <BookmarkPlus className="h-4 w-4" />
               Saved
               {savedProfiles.length > 0 && (
-                <span className="ml-2 bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="ml-1 bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {savedProfiles.length}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="connections" className="flex items-center">
-              <Users className="mr-2 h-4 w-4" />
+            <TabsTrigger value="connections" className="flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Users className="h-4 w-4" />
               Connections
               {connections.length > 0 && (
-                <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="ml-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {connections.length}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="chat" className="flex items-center">
-              <MessageSquareText className="mr-2 h-4 w-4" />
+            <TabsTrigger value="chat" className="flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <MessageSquareText className="h-4 w-4" />
               Chat
             </TabsTrigger>
           </TabsList>
@@ -350,14 +366,14 @@ const Matches = () => {
             {!filterApplied && <MatchFilter onApplyFilters={handleApplyFilters} />}
             
             {filterApplied && matches.length === 0 ? (
-              <Card className="text-center p-6 mb-6">
+              <Card className="text-center p-6 mb-6 bg-background/60 backdrop-blur border border-border/40 shadow-sm">
                 <CardContent className="pt-6">
                   <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-xl font-semibold mb-2">No matches found with these filters</h3>
                   <p className="text-muted-foreground mb-6">
                     Try adjusting your filters to find more matches
                   </p>
-                  <Button onClick={() => setFilterApplied(false)}>Adjust Filters</Button>
+                  <Button onClick={() => setFilterApplied(false)} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">Adjust Filters</Button>
                 </CardContent>
               </Card>
             ) : (
@@ -413,14 +429,14 @@ const Matches = () => {
                 ))}
               </div>
             ) : (
-              <Card className="text-center p-6">
+              <Card className="text-center p-6 bg-background/60 backdrop-blur border border-border/40 shadow-sm">
                 <CardContent className="pt-6">
                   <BookmarkPlus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-xl font-semibold mb-2">No saved profiles yet</h3>
                   <p className="text-muted-foreground mb-6">
                     Save interesting profiles while browsing to review them later.
                   </p>
-                  <Button onClick={handleStartMatching}>Start Discovering</Button>
+                  <Button onClick={handleStartMatching} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">Start Discovering</Button>
                 </CardContent>
               </Card>
             )}
@@ -442,14 +458,14 @@ const Matches = () => {
                 ))}
               </div>
             ) : (
-              <Card className="text-center p-6">
+              <Card className="text-center p-6 bg-background/60 backdrop-blur border border-border/40 shadow-sm">
                 <CardContent className="pt-6">
                   <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-xl font-semibold mb-2">No connections yet</h3>
                   <p className="text-muted-foreground mb-6">
                     Start discovering people and make connections to see them here.
                   </p>
-                  <Button onClick={handleStartMatching}>Start Matching</Button>
+                  <Button onClick={handleStartMatching} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">Start Matching</Button>
                 </CardContent>
               </Card>
             )}
@@ -461,8 +477,11 @@ const Matches = () => {
         </Tabs>
       </div>
       
-      <div className="max-w-3xl mx-auto">
-        <h2 className="text-2xl font-semibold mb-6">Recently Active</h2>
+      <div className="max-w-3xl mx-auto mt-12">
+        <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
+          <Flame className="h-5 w-5 text-amber-500" />
+          <span className="bg-gradient-to-r from-amber-500 to-orange-600 text-transparent bg-clip-text">Recently Active</span>
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {matches.slice(0, 6).map((match, index) => (
             <MatchCardConnectable
