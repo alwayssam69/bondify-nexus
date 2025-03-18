@@ -20,6 +20,12 @@ export type UserProfile = {
   profileCompleteness?: number;
   dailySwipes?: number;
   maxDailySwipes?: number;
+  // Add missing properties to fix TypeScript errors
+  latitude?: number;
+  longitude?: number;
+  networkingGoals?: string[];
+  communicationPreference?: string;
+  verified?: boolean;
 };
 
 export type MatchScore = {
