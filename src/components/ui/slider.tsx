@@ -11,7 +11,7 @@ const Slider = React.forwardRef<
   <SliderPrimitive.Root
     ref={ref}
     className={cn(
-      "relative flex w-full touch-none select-none items-center",
+      "relative flex w-full touch-none select-none items-center group",
       className
     )}
     {...props}
@@ -21,7 +21,7 @@ const Slider = React.forwardRef<
     </SliderPrimitive.Track>
     <SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border-2 border-primary bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50">
       <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-medium py-1 px-2 rounded-md opacity-0 transform scale-90 transition-all group-hover:opacity-100 group-hover:scale-100 pointer-events-none">
-        {props.value}
+        {Array.isArray(props.value) ? props.value[0] : props.value}
       </div>
     </SliderPrimitive.Thumb>
   </SliderPrimitive.Root>

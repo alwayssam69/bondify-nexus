@@ -26,6 +26,11 @@ export type UserProfile = {
   networkingGoals?: string[];
   communicationPreference?: string;
   verified?: boolean;
+  // University networking fields
+  university?: string;
+  courseYear?: string;
+  projectInterests?: string[];
+  profilePhotos?: string[];
 };
 
 export type MatchScore = {
@@ -361,6 +366,9 @@ export const loadSampleUsers = (): UserProfile[] => {
       experienceLevel: "expert",
       activityScore: 95,
       profileCompleteness: 90,
+      university: "Stanford University",
+      courseYear: "Masters",
+      projectInterests: ["machine-learning", "blockchain", "web-development"],
     },
     {
       id: "user2",
@@ -551,6 +559,9 @@ export const loadSampleUsers = (): UserProfile[] => {
       experienceLevel: "expert",
       activityScore: 91,
       profileCompleteness: 89,
+      university: "IIT Bombay",
+      courseYear: "4th Year",
+      projectInterests: ["machine-learning", "web-development", "mobile-app"],
     },
     {
       id: "user12",
@@ -570,6 +581,72 @@ export const loadSampleUsers = (): UserProfile[] => {
       experienceLevel: "intermediate",
       activityScore: 88,
       profileCompleteness: 86,
+    },
+    {
+      id: "user13",
+      name: "Rahul Verma",
+      age: 21,
+      gender: "male",
+      interests: ["technology", "coding", "football", "music"],
+      location: "Delhi",
+      country: "India",
+      bio: "Computer Science student passionate about AI and machine learning. Looking for project partners and mentors.",
+      relationshipGoal: "networking",
+      skills: ["python", "machine-learning", "java", "algorithms"],
+      language: "English",
+      imageUrl: "bg-gradient-to-br from-blue-400 to-teal-600",
+      industry: "technology",
+      userType: "student",
+      experienceLevel: "beginner",
+      activityScore: 75,
+      profileCompleteness: 80,
+      university: "IIT Delhi",
+      courseYear: "3rd Year",
+      projectInterests: ["machine-learning", "web-development", "robotics"],
+    },
+    {
+      id: "user14",
+      name: "Ananya Patel",
+      age: 20,
+      gender: "female",
+      interests: ["design", "art", "photography", "innovation"],
+      location: "Mumbai",
+      country: "India",
+      bio: "Design student looking for collaboration opportunities on creative projects.",
+      relationshipGoal: "networking",
+      skills: ["ui-ux", "illustration", "figma", "adobe-suite"],
+      language: "English",
+      imageUrl: "bg-gradient-to-br from-rose-400 to-pink-600",
+      industry: "design",
+      userType: "student",
+      experienceLevel: "intermediate",
+      activityScore: 82,
+      profileCompleteness: 85,
+      university: "NIT Trichy",
+      courseYear: "2nd Year",
+      projectInterests: ["ui-ux", "web-development", "mobile-app"],
+    },
+    {
+      id: "user15",
+      name: "Vikram Singh",
+      age: 22,
+      gender: "male",
+      interests: ["startups", "entrepreneurship", "basketball", "reading"],
+      location: "Bangalore",
+      country: "India",
+      bio: "Engineering student with a passion for startups. Looking for co-founders and mentors.",
+      relationshipGoal: "networking",
+      skills: ["business-model", "marketing", "node-js", "react"],
+      language: "English",
+      imageUrl: "bg-gradient-to-br from-amber-400 to-orange-600",
+      industry: "business",
+      userType: "student",
+      experienceLevel: "beginner",
+      activityScore: 78,
+      profileCompleteness: 75,
+      university: "BITS Pilani",
+      courseYear: "4th Year",
+      projectInterests: ["web-development", "blockchain", "startup"],
     },
   ];
 

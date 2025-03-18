@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 import SwipeCard from "@/components/SwipeCard";
-import { UserProfile, recordSwipe } from "@/lib/matchmaking";
+import { UserProfile, recordSwipe } from '@/lib/matchmaking';
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { MapPin, RefreshCw, Globe, Sparkles, Sliders, Check } from "lucide-react";
+import { MapPin, RefreshCw, Globe, Sparkles, Sliders, Check, Building, GraduationCap, Users } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import {
   Select,
@@ -41,12 +42,56 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({
   const [customLocation, setCustomLocation] = useState("");
   const [userLocation, setUserLocation] = useState<GeolocationCoordinates | null>(null);
   const [showLocationSettings, setShowLocationSettings] = useState(false);
+  const [locationPermissionState, setLocationPermissionState] = useState<'prompt'|'granted'|'denied'>('prompt');
+  const [universityMode, setUniversityMode] = useState(false);
+  const [selectedUniversity, setSelectedUniversity] = useState("");
+  const [interUniversityNetworking, setInterUniversityNetworking] = useState(false);
+  const [projectPartnerMode, setProjectPartnerMode] = useState(false);
+  const [courseYear, setCourseYear] = useState("");
+  const [projectInterests, setProjectInterests] = useState<string[]>([]);
+  const [showUniversitySettings, setShowUniversitySettings] = useState(false);
   
   useEffect(() => {
-    if (locationEnabled && navigator.geolocation) {
+    // Check for previously stored permission state
+    const storedPermissionState = localStorage.getItem('locationPermissionState');
+    if (storedPermissionState) {
+      setLocationPermissionState(storedPermissionState as 'prompt'|'granted'|'denied');
+    }
+    
+    // If permission was previously granted, try to get location
+    if (storedPermissionState === 'granted' && locationEnabled) {
+      requestAndSetLocation();
+    } else if (storedPermissionState === 'prompt') {
+      // Show location permission dialog
+      requestLocationPermission();
+    }
+  }, []);
+  
+  const requestLocationPermission = () => {
+    toast.info(
+      "Location access helps find matches near you",
+      {
+        action: {
+          label: "Allow",
+          onClick: () => requestAndSetLocation(),
+        },
+        description: "You can manually set your location if you prefer",
+        duration: 10000,
+      }
+    );
+  };
+  
+  const requestAndSetLocation = () => {
+    if (navigator.geolocation) {
+      toast.loading("Detecting your location...", { id: "location-loading" });
+      
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setUserLocation(position.coords);
+          setLocationPermissionState('granted');
+          localStorage.setItem('locationPermissionState', 'granted');
+          
+          toast.dismiss("location-loading");
           toast.success("Location detected successfully", {
             description: "You'll see matches in your area.",
             duration: 3000,
@@ -54,17 +99,24 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({
         },
         (error) => {
           console.error("Error getting location:", error);
+          setLocationPermissionState('denied');
+          localStorage.setItem('locationPermissionState', 'denied');
+          
+          toast.dismiss("location-loading");
           toast.error("Unable to get your location", {
-            description: "Some matching features will be limited.",
+            description: "Please set your location manually.",
             duration: 4000,
           });
         }
       );
     }
-  }, [locationEnabled]);
+  };
   
   useEffect(() => {
     if (!locationEnabled) return;
+    
+    // Only auto-refresh if permission is granted
+    if (locationPermissionState !== 'granted') return;
     
     const locationInterval = setInterval(() => {
       if (navigator.geolocation) {
@@ -84,9 +136,34 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({
     }, 15 * 60 * 1000); // 15 minutes
     
     return () => clearInterval(locationInterval);
-  }, [locationEnabled]);
+  }, [locationEnabled, locationPermissionState]);
   
   const filteredProfiles = profiles.filter(profile => {
+    // University filtering
+    if (universityMode) {
+      if (selectedUniversity && profile.university) {
+        if (!interUniversityNetworking) {
+          // Only show profiles from the same university
+          if (profile.university !== selectedUniversity) return false;
+        }
+      }
+    }
+    
+    // Project partner filtering
+    if (projectPartnerMode) {
+      if (courseYear && profile.courseYear && profile.courseYear !== courseYear) {
+        return false;
+      }
+      
+      if (projectInterests.length > 0 && profile.projectInterests) {
+        const hasMatchingInterest = projectInterests.some(interest => 
+          profile.projectInterests?.includes(interest)
+        );
+        if (!hasMatchingInterest) return false;
+      }
+    }
+    
+    // Location filtering
     if (!locationEnabled) return true;
     
     if (userLocation && profile.distance !== undefined) {
@@ -184,6 +261,55 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({
     { value: "Paris", label: "Paris" },
     { value: "Dubai", label: "Dubai" },
   ];
+  
+  const indianUniversities = [
+    { value: "", label: "Select University/College" },
+    { value: "IIT Delhi", label: "IIT Delhi" },
+    { value: "IIT Bombay", label: "IIT Bombay" },
+    { value: "IIT Madras", label: "IIT Madras" },
+    { value: "IIT Kanpur", label: "IIT Kanpur" },
+    { value: "IIT Kharagpur", label: "IIT Kharagpur" },
+    { value: "BITS Pilani", label: "BITS Pilani" },
+    { value: "Delhi University", label: "Delhi University" },
+    { value: "Jadavpur University", label: "Jadavpur University" },
+    { value: "Manipal Institute of Technology", label: "Manipal Institute of Technology" },
+    { value: "NIT Trichy", label: "NIT Trichy" },
+    { value: "NIT Warangal", label: "NIT Warangal" },
+    { value: "VIT Vellore", label: "VIT Vellore" },
+    { value: "IIIT Hyderabad", label: "IIIT Hyderabad" },
+    { value: "SRM University", label: "SRM University" },
+    { value: "Jamia Millia Islamia", label: "Jamia Millia Islamia" },
+    { value: "Amity University", label: "Amity University" },
+    { value: "Christ University", label: "Christ University" },
+    { value: "Symbiosis International University", label: "Symbiosis International University" },
+    { value: "Loyola College", label: "Loyola College" },
+  ];
+  
+  const courseYears = [
+    { value: "", label: "Select Year" },
+    { value: "1st Year", label: "1st Year" },
+    { value: "2nd Year", label: "2nd Year" },
+    { value: "3rd Year", label: "3rd Year" },
+    { value: "4th Year", label: "4th Year" },
+    { value: "5th Year", label: "5th Year" },
+    { value: "Masters", label: "Masters" },
+    { value: "PhD", label: "PhD" },
+  ];
+  
+  const projectInterestOptions = [
+    { value: "web-development", label: "Web Development" },
+    { value: "mobile-app", label: "Mobile App Development" },
+    { value: "machine-learning", label: "Machine Learning" },
+    { value: "data-science", label: "Data Science" },
+    { value: "blockchain", label: "Blockchain" },
+    { value: "iot", label: "Internet of Things" },
+    { value: "cybersecurity", label: "Cybersecurity" },
+    { value: "ar-vr", label: "AR/VR" },
+    { value: "game-dev", label: "Game Development" },
+    { value: "robotics", label: "Robotics" },
+    { value: "ui-ux", label: "UI/UX Design" },
+    { value: "research", label: "Research" },
+  ];
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -243,6 +369,13 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({
           <div className="text-xs flex items-center gap-1 text-muted-foreground bg-primary/5 py-1.5 px-3 rounded-md mb-3 w-fit">
             <MapPin size={12} className="text-primary" />
             <span>Location active · Finding nearby matches</span>
+          </div>
+        )}
+        
+        {locationPermissionState === 'denied' && (
+          <div className="text-xs flex items-center gap-1 text-amber-600 bg-amber-50 py-1.5 px-3 rounded-md mb-3 w-fit">
+            <MapPin size={12} className="text-amber-600" />
+            <span>Location access denied · Using manual location</span>
           </div>
         )}
         
@@ -356,6 +489,168 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({
             </div>
           </motion.div>
         )}
+        
+        {/* University-based networking */}
+        <div className="mt-6 pt-5 border-t border-border/30">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="university-toggle" 
+                checked={universityMode}
+                onCheckedChange={setUniversityMode}
+                className="data-[state=checked]:bg-primary/90 data-[state=checked]:border-primary/50"
+              />
+              <Label htmlFor="university-toggle" className="font-medium flex items-center gap-1.5">
+                <GraduationCap className="h-4 w-4 text-primary" />
+                University networking
+              </Label>
+            </div>
+            
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setShowUniversitySettings(!showUniversitySettings)}
+              className="text-xs flex items-center gap-1 h-8 px-2 hover:bg-muted/50"
+              disabled={!universityMode}
+            >
+              <Sliders className="h-3.5 w-3.5" />
+              {showUniversitySettings ? "Hide options" : "Show options"}
+            </Button>
+          </div>
+          
+          {universityMode && (
+            <motion.div 
+              className="space-y-4"
+              variants={settingsPanelVariants}
+              initial={showUniversitySettings ? "visible" : "hidden"}
+              animate={showUniversitySettings ? "visible" : "hidden"}
+            >
+              <div>
+                <Label htmlFor="university-select" className="text-sm mb-1.5 block">
+                  Your university/college
+                </Label>
+                <Select 
+                  value={selectedUniversity} 
+                  onValueChange={setSelectedUniversity}
+                >
+                  <SelectTrigger id="university-select" className="w-full border-border/60 bg-background/80 hover:border-primary/50 transition-colors">
+                    <SelectValue placeholder="Select university/college" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px] bg-background/95 backdrop-blur border-border/50">
+                    {indianUniversities.map(uni => (
+                      <SelectItem key={uni.value} value={uni.value} className="cursor-pointer">
+                        {uni.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="inter-university-toggle" 
+                  checked={interUniversityNetworking}
+                  onCheckedChange={setInterUniversityNetworking}
+                  disabled={!selectedUniversity}
+                  className="data-[state=checked]:bg-primary/90 data-[state=checked]:border-primary/50"
+                />
+                <Label 
+                  htmlFor="inter-university-toggle" 
+                  className={`font-medium text-sm ${!selectedUniversity ? 'text-muted-foreground' : ''}`}
+                >
+                  Enable inter-university networking
+                </Label>
+              </div>
+              
+              {!selectedUniversity && (
+                <p className="text-xs text-amber-600 mt-1 flex items-center gap-1 bg-amber-50 p-2 rounded">
+                  Please select your university to continue
+                </p>
+              )}
+            </motion.div>
+          )}
+        </div>
+        
+        {/* Project partner matching */}
+        <div className="mt-6 pt-5 border-t border-border/30">
+          <div className="flex items-center space-x-2">
+            <Switch 
+              id="project-toggle" 
+              checked={projectPartnerMode}
+              onCheckedChange={setProjectPartnerMode}
+              className="data-[state=checked]:bg-primary/90 data-[state=checked]:border-primary/50"
+            />
+            <Label htmlFor="project-toggle" className="font-medium flex items-center gap-1.5">
+              <Users className="h-4 w-4 text-primary" />
+              Find study/project partners
+            </Label>
+          </div>
+          
+          {projectPartnerMode && (
+            <motion.div 
+              className="space-y-4 mt-4"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ 
+                opacity: 1, 
+                height: "auto",
+                transition: { duration: 0.3 }
+              }}
+            >
+              <div>
+                <Label htmlFor="course-year" className="text-sm mb-1.5 block">
+                  Your course year
+                </Label>
+                <Select 
+                  value={courseYear} 
+                  onValueChange={setCourseYear}
+                >
+                  <SelectTrigger id="course-year" className="w-full border-border/60 bg-background/80 hover:border-primary/50 transition-colors">
+                    <SelectValue placeholder="Select your year" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background/95 backdrop-blur border-border/50">
+                    {courseYears.map(year => (
+                      <SelectItem key={year.value} value={year.value} className="cursor-pointer">
+                        {year.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label className="text-sm mb-1.5 block">
+                  Project interests
+                </Label>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  {projectInterestOptions.map(interest => (
+                    <div 
+                      key={interest.value} 
+                      className={`p-2 rounded-md text-sm cursor-pointer border transition-all
+                        ${projectInterests.includes(interest.value) 
+                          ? 'bg-primary/10 border-primary/30 font-medium' 
+                          : 'bg-background border-border/40 hover:border-primary/20'
+                        }`}
+                      onClick={() => {
+                        if (projectInterests.includes(interest.value)) {
+                          setProjectInterests(prev => prev.filter(i => i !== interest.value));
+                        } else {
+                          setProjectInterests(prev => [...prev, interest.value]);
+                        }
+                      }}
+                    >
+                      {interest.label}
+                    </div>
+                  ))}
+                </div>
+                {projectInterests.length === 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Select at least one project interest
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </div>
       </div>
       
       {showRefreshButton ? (

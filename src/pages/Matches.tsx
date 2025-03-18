@@ -11,7 +11,7 @@ import InstantChat from '@/components/InstantChat';
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, MessageSquareText, BookmarkPlus, MapPin, Trophy, Calendar, Bell, Search } from "lucide-react";
+import { Users, MessageSquareText, BookmarkPlus, MapPin, Trophy, Calendar, Bell, Search, GraduationCap, Building } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import MatchFilter, { FilterOptions } from "@/components/MatchFilter";
 
@@ -48,6 +48,7 @@ const Matches = () => {
     achieved: 2
   });
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showUniversityLeaderboard, setShowUniversityLeaderboard] = useState(false);
   
   useEffect(() => {
     if (navigator.geolocation) {
@@ -299,9 +300,19 @@ const Matches = () => {
     { id: "leader5", name: "Serena Williams", points: 187, connectionsThisWeek: 6 },
   ];
 
+  const universityLeaderboardData = [
+    { id: "uni1", name: "Rahul Verma", university: "IIT Delhi", points: 428, connections: 15, projectsJoined: 3 },
+    { id: "uni2", name: "Ananya Patel", university: "NIT Trichy", points: 375, connections: 12, projectsJoined: 2 },
+    { id: "uni3", name: "Vikram Singh", university: "BITS Pilani", points: 342, connections: 11, projectsJoined: 4 },
+    { id: "uni4", name: "Priya Sharma", university: "IIT Bombay", points: 310, connections: 9, projectsJoined: 2 },
+    { id: "uni5", name: "Ravi Kumar", university: "Delhi University", points: 285, connections: 8, projectsJoined: 1 },
+    { id: "uni6", name: "Neha Gupta", university: "VIT Vellore", points: 248, connections: 7, projectsJoined: 2 },
+    { id: "uni7", name: "Arjun Reddy", university: "IIT Madras", points: 215, connections: 6, projectsJoined: 1 },
+  ];
+
   return (
     <div className="container mx-auto py-8 px-4 min-h-screen bg-gradient-to-b from-background to-background/70">
-      <h1 className="text-3xl font-bold mb-8 text-center text-[#000000]">Find Your Perfect Match</h1>
+      <h1 className="text-3xl font-bold mb-8 text-center text-black">Find Your Perfect Match</h1>
       
       <div className="flex flex-wrap gap-4 justify-center mb-8">
         <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 shadow-sm p-3 flex items-center gap-3 w-auto">
@@ -331,6 +342,16 @@ const Matches = () => {
           <div>
             <p className="text-xs text-purple-700/70">Networking Rank</p>
             <p className="font-semibold text-purple-900">#42 in Your Industry</p>
+          </div>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 shadow-sm p-3 flex items-center gap-3 w-auto cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowUniversityLeaderboard(!showUniversityLeaderboard)}>
+          <div className="bg-emerald-500/10 p-2 rounded-full">
+            <GraduationCap className="h-5 w-5 text-emerald-500" />
+          </div>
+          <div>
+            <p className="text-xs text-emerald-700/70">University Rank</p>
+            <p className="font-semibold text-emerald-900">Top Students</p>
           </div>
         </Card>
       </div>
@@ -363,6 +384,48 @@ const Matches = () => {
             <div className="mt-4 text-center">
               <Button variant="outline" size="sm" onClick={() => setShowLeaderboard(false)}>
                 Close Leaderboard
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {showUniversityLeaderboard && (
+        <Card className="mb-8 max-w-2xl mx-auto bg-white/80 backdrop-blur border border-border/30 shadow-sm">
+          <CardContent className="pt-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <GraduationCap className="h-5 w-5 text-emerald-500" />
+              University Student Leaderboard
+            </h3>
+            <div className="space-y-3">
+              {universityLeaderboardData.map((user, index) => (
+                <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-border/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-100 to-green-100 font-semibold text-emerald-800">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="font-medium">{user.name}</p>
+                      <p className="text-xs text-muted-foreground">{user.university}</p>
+                      <div className="flex gap-2 mt-1">
+                        <span className="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">
+                          {user.connections} connections
+                        </span>
+                        <span className="text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">
+                          {user.projectsJoined} projects
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full text-xs font-medium">
+                    {user.points} pts
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 text-center">
+              <Button variant="outline" size="sm" onClick={() => setShowUniversityLeaderboard(false)}>
+                Close University Leaderboard
               </Button>
             </div>
           </CardContent>
