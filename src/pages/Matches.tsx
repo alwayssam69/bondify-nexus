@@ -242,7 +242,8 @@ const Matches = () => {
       skills: filters.skills.length > 0 ? filters.skills : prev.skills,
       experienceLevel: filters.experienceLevel || prev.experienceLevel,
       relationshipGoal: filters.relationshipGoal || prev.relationshipGoal,
-      location: filters.location || prev.location,
+      // Use locationPreference instead of location
+      location: filters.locationPreference === "local" ? prev.location : prev.location,
     }));
     
     // Find filtered matches
@@ -271,9 +272,11 @@ const Matches = () => {
       );
     }
     
-    if (filters.location) {
+    if (filters.locationPreference) {
       filteredMatches = filteredMatches.filter(m => 
-        filters.location === "global" || m.location === filters.location
+        filters.locationPreference === "global" || 
+        (filters.locationPreference === "country" && m.country === currentUser.country) ||
+        (filters.locationPreference === "local" && m.location === currentUser.location)
       );
     }
     
