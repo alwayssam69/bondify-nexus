@@ -11,7 +11,7 @@ import InstantChat from '@/components/InstantChat';
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, MessageSquareText, BookmarkPlus, MapPin, Trophy, Calendar, Bell } from "lucide-react";
+import { Users, MessageSquareText, BookmarkPlus, MapPin, Trophy, Calendar, Bell, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import MatchFilter, { FilterOptions } from "@/components/MatchFilter";
 
@@ -378,7 +378,7 @@ const Matches = () => {
         >
           <TabsList className="grid w-full grid-cols-4 mb-8 bg-background/60 backdrop-blur p-1 rounded-lg border border-border/40">
             <TabsTrigger value="discover" className="flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Flame className="h-4 w-4" />
+              <Search className="h-4 w-4" />
               Discover
             </TabsTrigger>
             <TabsTrigger value="saved" className="flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
