@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { toast } from "sonner";
 import VideoCall from "@/components/chat/VideoCall";
@@ -10,111 +11,173 @@ import MessageInput from "@/components/chat/MessageInput";
 import IncomingCall from "@/components/chat/IncomingCall";
 import EmptyChat from "@/components/chat/EmptyChat";
 import { ChatMessage, ChatContact } from "@/types/chat";
+import { useAuth } from "@/contexts/AuthContext";
+import { fetchChatContacts, fetchChatMessages, sendMessage } from "@/services/DataService";
+import { supabase } from "@/integrations/supabase/client";
 
 const Chat = () => {
-  const [activeContact, setActiveContact] = useState<string | null>("1");
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [activeContact, setActiveContact] = useState<string | null>(null);
   const [isInVideoCall, setIsInVideoCall] = useState(false);
   const [incomingCall, setIncomingCall] = useState<{contactId: string, contactName: string} | null>(null);
+  const [contacts, setContacts] = useState<ChatContact[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(true);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   
-  // Sample contacts data
-  const contacts: ChatContact[] = [
-    {
-      id: "1",
-      name: "Alex Johnson",
-      lastMessage: "Hey, how are you doing today?",
-      avatar: "bg-blue-100",
-      unread: 2,
-      online: true
-    },
-    {
-      id: "2",
-      name: "Taylor Moore",
-      lastMessage: "I saw you like hiking too! Which trails do you recommend?",
-      avatar: "bg-purple-100",
-      unread: 0,
-      online: false,
-      lastSeen: new Date(Date.now() - 3600000) // 1 hour ago
-    },
-    {
-      id: "3",
-      name: "Jamie Chen",
-      lastMessage: "Thanks for accepting my connection!",
-      avatar: "bg-green-100",
-      unread: 1,
-      online: true
-    },
-    {
-      id: "4",
-      name: "Morgan Smith",
-      lastMessage: "Would you like to meet up for coffee sometime?",
-      avatar: "bg-yellow-100",
-      unread: 0,
-      online: false,
-      lastSeen: new Date(Date.now() - 86400000) // 1 day ago
+  useEffect(() => {
+    if (!user) {
+      navigate("/login");
+      return;
     }
-  ];
+    
+    // Load chat contacts
+    const loadContacts = async () => {
+      setIsLoadingContacts(true);
+      try {
+        const contactsData = await fetchChatContacts(user.id);
+        setContacts(contactsData);
+        
+        // Auto-select first contact if none selected yet
+        if (contactsData.length > 0 && !activeContact) {
+          setActiveContact(contactsData[0].id);
+        }
+      } catch (error) {
+        console.error("Error loading chat contacts:", error);
+        toast.error("Failed to load contacts");
+      } finally {
+        setIsLoadingContacts(false);
+      }
+    };
+    
+    loadContacts();
+    
+    // Set up realtime subscription for new messages
+    const messagesChannel = supabase
+      .channel('db-messages-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `recipient_id=eq.${user.id}`
+        },
+        (payload) => {
+          // Check if this is a new message for the active conversation
+          if (payload.new && activeContact === payload.new.sender_id) {
+            const newMessage: ChatMessage = {
+              id: payload.new.id,
+              sender: 'match',
+              text: payload.new.content,
+              timestamp: new Date(payload.new.created_at)
+            };
+            setMessages(prev => [...prev, newMessage]);
+          } else if (payload.new) {
+            // Update contact unread count
+            setContacts(prev => 
+              prev.map(contact => 
+                contact.id === payload.new.sender_id 
+                  ? { ...contact, unread: contact.unread + 1, lastMessage: payload.new.content }
+                  : contact
+              )
+            );
+            
+            // Show a toast notification for new message
+            const sender = contacts.find(c => c.id === payload.new.sender_id);
+            if (sender) {
+              toast.info(`New message from ${sender.name}`, {
+                action: {
+                  label: "View",
+                  onClick: () => setActiveContact(sender.id)
+                }
+              });
+            }
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(messagesChannel);
+    };
+  }, [user, navigate, activeContact]);
   
-  // Sample messages for the first contact
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "1",
-      sender: "match",
-      text: "Hey there! I noticed we have a lot in common.",
-      timestamp: new Date(Date.now() - 86400000)
-    },
-    {
-      id: "2",
-      sender: "user",
-      text: "Hi! Yes, I noticed that too. I love your profile!",
-      timestamp: new Date(Date.now() - 82800000)
-    },
-    {
-      id: "3",
-      sender: "match",
-      text: "Thanks! I see you're into photography. What kind of photos do you like to take?",
-      timestamp: new Date(Date.now() - 7200000)
-    },
-    {
-      id: "4",
-      sender: "user",
-      text: "I mostly do landscape and street photography. I love capturing moments that tell a story.",
-      timestamp: new Date(Date.now() - 3600000)
-    },
-    {
-      id: "5",
-      sender: "match",
-      text: "That sounds amazing! I'd love to see some of your work sometime.",
-      timestamp: new Date(Date.now() - 1800000)
-    },
-    {
-      id: "6",
-      sender: "match",
-      text: "Hey, how are you doing today?",
-      timestamp: new Date(Date.now() - 300000)
-    }
-  ]);
+  // Load messages when active contact changes
+  useEffect(() => {
+    if (!user || !activeContact) return;
+    
+    const loadMessages = async () => {
+      setIsLoadingMessages(true);
+      try {
+        const messagesData = await fetchChatMessages(user.id, activeContact);
+        setMessages(messagesData);
+        
+        // Mark messages as read
+        if (messagesData.length > 0) {
+          // Update UI immediately
+          setContacts(prev => 
+            prev.map(contact => 
+              contact.id === activeContact 
+                ? { ...contact, unread: 0 }
+                : contact
+            )
+          );
+          
+          // Update in database (would be done in a real implementation)
+          // This would require an additional API endpoint
+        }
+      } catch (error) {
+        console.error("Error loading messages:", error);
+        toast.error("Failed to load messages");
+      } finally {
+        setIsLoadingMessages(false);
+      }
+    };
+    
+    loadMessages();
+  }, [user, activeContact]);
   
-  const sendMessage = (messageText: string) => {
+  const handleSendMessage = async (messageText: string) => {
+    if (!user || !activeContact) return;
+    
+    // Optimistically add message to UI
+    const tempId = `temp-${Date.now()}`;
     const newMessage: ChatMessage = {
-      id: Date.now().toString(),
+      id: tempId,
       sender: "user",
       text: messageText,
       timestamp: new Date()
     };
     
-    setMessages([...messages, newMessage]);
+    setMessages(prev => [...prev, newMessage]);
     
-    // Simulate a response after 1 second
-    setTimeout(() => {
-      const responseMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        sender: "match",
-        text: "That's interesting! Tell me more.",
-        timestamp: new Date()
-      };
+    // Send to database
+    try {
+      const savedMessage = await sendMessage(user.id, activeContact, messageText);
+      if (savedMessage) {
+        // Replace temp message with saved one
+        setMessages(prev => 
+          prev.map(msg => msg.id === tempId ? savedMessage : msg)
+        );
+        
+        // Update contact's last message
+        setContacts(prev => 
+          prev.map(contact => 
+            contact.id === activeContact 
+              ? { ...contact, lastMessage: messageText }
+              : contact
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast.error("Failed to send message");
       
-      setMessages((prevMessages) => [...prevMessages, responseMessage]);
-    }, 1000);
+      // Remove temp message on error
+      setMessages(prev => prev.filter(msg => msg.id !== tempId));
+    }
   };
 
   // Handle video call
@@ -168,6 +231,22 @@ const Chat = () => {
   
   const activeContactData = contacts.find(contact => contact.id === activeContact);
   
+  if (!user) {
+    return (
+      <Layout className="pt-28 pb-16 px-6">
+        <div className="max-w-7xl mx-auto text-center py-20">
+          <h2 className="text-2xl font-bold mb-4">Please sign in to view your messages</h2>
+          <button 
+            className="px-4 py-2 bg-primary text-white rounded-md"
+            onClick={() => navigate("/login")}
+          >
+            Sign In
+          </button>
+        </div>
+      </Layout>
+    );
+  }
+  
   return (
     <Layout className="pt-28 pb-16 px-6">
       {isInVideoCall && activeContactData && (
@@ -199,6 +278,7 @@ const Chat = () => {
             contacts={contacts}
             activeContact={activeContact}
             setActiveContact={setActiveContact}
+            isLoading={isLoadingContacts}
           />
           
           {/* Chat area */}
@@ -212,10 +292,13 @@ const Chat = () => {
                 />
                 
                 {/* Messages */}
-                <MessageList messages={messages} />
+                <MessageList 
+                  messages={messages}
+                  isLoading={isLoadingMessages} 
+                />
                 
                 {/* Message input */}
-                <MessageInput onSendMessage={sendMessage} />
+                <MessageInput onSendMessage={handleSendMessage} />
               </>
             ) : (
               <EmptyChat />
