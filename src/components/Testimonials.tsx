@@ -1,3 +1,4 @@
+
 import React from "react";
 import { motion } from "framer-motion";
 import { Star, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
@@ -31,17 +32,21 @@ const Testimonials = () => {
   ];
 
   return (
-    <section className="py-20 px-6 bg-gradient-to-b from-blue-50 to-white">
+    <section className="py-20 px-6 bg-gradient-to-b from-indigo-950 to-indigo-900 dark:from-indigo-950 dark:to-gray-900">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <div className="inline-block mb-4">
-            <div className="flex items-center gap-2 bg-blue-50 rounded-full py-1 px-4">
-              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-              <span className="text-sm font-medium text-blue-900">Success Stories</span>
+          <h2 className="text-5xl md:text-6xl font-bold mb-4 text-white tracking-tight">
+            <span className="bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
+              Success Stories
+            </span>
+          </h2>
+          <div className="mt-6 inline-block mb-4">
+            <div className="flex items-center gap-2 bg-indigo-800/60 dark:bg-indigo-800/40 rounded-full py-2 px-5">
+              <span className="w-3 h-3 rounded-full bg-purple-400 animate-pulse"></span>
+              <span className="text-base font-medium text-purple-200">Real People, Real Connections</span>
             </div>
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">What Our Users Say</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-gray-200 dark:text-gray-300 max-w-2xl mx-auto text-lg mt-6">
             Join thousands of professionals who have already expanded their networks and discovered new opportunities.
           </p>
         </div>
@@ -54,26 +59,26 @@ const Testimonials = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
               viewport={{ once: true }}
-              className="bg-white rounded-xl p-8 shadow-md border border-gray-100 hover:shadow-lg transition-all"
+              className="bg-indigo-800/30 backdrop-blur-sm rounded-xl p-8 shadow-lg border border-indigo-700/50 hover:shadow-indigo-700/10 hover:border-indigo-500/50 transition-all"
             >
               {/* Stars */}
               <div className="flex mb-4">
                 {Array.from({ length: testimonial.rating }).map((_, i) => (
-                  <Star key={i} className="h-5 w-5 text-yellow-400 fill-yellow-400" />
+                  <Star key={i} className="h-5 w-5 text-yellow-300 fill-yellow-300" />
                 ))}
               </div>
               
               {/* Quote */}
-              <p className="text-gray-700 mb-6 italic">"{testimonial.quote}"</p>
+              <p className="text-gray-200 mb-6 italic">"{testimonial.quote}"</p>
               
               {/* User info */}
               <div className="flex items-center">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-semibold mr-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold mr-4">
                   {testimonial.image}
                 </div>
                 <div>
-                  <h4 className="font-semibold">{testimonial.name}</h4>
-                  <p className="text-sm text-muted-foreground">{testimonial.role} • {testimonial.location}</p>
+                  <h4 className="font-semibold text-white">{testimonial.name}</h4>
+                  <p className="text-sm text-indigo-200">{testimonial.role} • {testimonial.location}</p>
                 </div>
               </div>
             </motion.div>

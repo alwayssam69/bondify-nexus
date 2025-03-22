@@ -128,6 +128,35 @@
   .card-text {
     @apply text-foreground dark:text-white text-sm;
   }
+  
+  /* New components for improved contrast */
+  .section-heading {
+    @apply text-4xl md:text-5xl font-bold mb-4 tracking-tight text-gray-900 dark:text-white;
+  }
+  
+  .section-heading-gradient {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400;
+  }
+  
+  .section-subheading {
+    @apply text-lg md:text-xl font-medium text-gray-800 dark:text-gray-200;
+  }
+  
+  .feature-card {
+    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg transition-all;
+  }
+  
+  .testimonial-card {
+    @apply bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl p-8 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all;
+  }
+  
+  .high-contrast-text {
+    @apply text-gray-900 dark:text-gray-100;
+  }
+  
+  .medium-contrast-text {
+    @apply text-gray-700 dark:text-gray-300;
+  }
 }
 
 @layer utilities {
@@ -153,5 +182,30 @@
   
   .bg-hero-dark {
     @apply bg-gradient-to-b from-gray-900 to-gray-800;
+  }
+  
+  /* New utilities */
+  .bg-testimonial-light {
+    @apply bg-gradient-to-b from-indigo-100 to-white;
+  }
+  
+  .bg-testimonial-dark {
+    @apply bg-gradient-to-b from-indigo-950 to-gray-900;
+  }
+  
+  .bg-features-light {
+    @apply bg-gradient-to-b from-gray-100 to-white;
+  }
+  
+  .bg-features-dark {
+    @apply bg-gradient-to-b from-gray-900 to-gray-800;
+  }
+  
+  .text-gradient-blue-purple {
+    @apply bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent;
+  }
+  
+  .text-gradient-purple-indigo {
+    @apply bg-gradient-to-r from-purple-500 to-indigo-500 bg-clip-text text-transparent;
   }
 }
