@@ -1,37 +1,20 @@
 
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { ArrowRight, MessageSquare, Video, Users } from "lucide-react";
+import { User } from "@supabase/supabase-js";
 import { motion } from "framer-motion";
 
-const Hero = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("animate-fade-in");
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
+interface HeroProps {
+  user: User | null;
+  onGetStarted: () => void;
+  onSignIn: () => void;
+  onDashboard: () => void;
+}
 
-    const elements = containerRef.current?.querySelectorAll(".animate-on-scroll");
-    elements?.forEach((el) => observer.observe(el));
-
-    return () => {
-      elements?.forEach((el) => observer.unobserve(el));
-    };
-  }, []);
-
+const Hero = ({ user, onGetStarted, onSignIn, onDashboard }: HeroProps) => {
   return (
-    <section
-      ref={containerRef}
-      className="relative pt-32 pb-20 md:pt-40 md:pb-32 px-6 overflow-hidden"
-    >
+    <section className="relative pt-32 pb-20 md:pt-40 md:pb-32 px-6 overflow-hidden">
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-white" />
         <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-br from-blue-100/40 to-transparent" />
@@ -40,114 +23,136 @@ const Hero = () => {
       </div>
 
       <div className="max-w-7xl mx-auto">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center max-w-3xl mx-auto mb-12 md:mb-16 animate-on-scroll"
-        >
-          <div className="inline-block mb-6">
-            <div className="flex items-center gap-2 bg-white/70 backdrop-blur-sm border border-blue-100 rounded-full py-1 px-4 shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-              <span className="text-sm font-medium text-blue-900">Discover Your Perfect Match</span>
+        <div className="flex flex-col lg:flex-row items-center gap-12">
+          {/* Left Column - Text Content */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="lg:w-1/2 text-center lg:text-left"
+          >
+            <div className="inline-block mb-6">
+              <div className="flex items-center gap-2 bg-white/70 backdrop-blur-sm border border-blue-100 rounded-full py-1 px-4 shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                <span className="text-sm font-medium text-blue-900">Professional Networking Platform</span>
+              </div>
             </div>
-          </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 leading-tight">
-            Find Your Perfect <span className="text-gradient">Connection</span> With Intelligent Matching
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Our advanced algorithm connects you with people who truly match your personality, interests, and relationship goals. Join thousands of successful matches today.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/register">
-              <Button size="lg" className="rounded-full px-8 shadow-button h-12 transition-all hover:shadow-md group">
-                <span>Start Your Journey</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2 transition-transform group-hover:translate-x-1">
-                  <path d="M5 12h14"></path>
-                  <path d="m12 5 7 7-7 7"></path>
-                </svg>
-              </Button>
-            </Link>
-            <Link to="/#how-it-works">
-              <Button variant="outline" size="lg" className="rounded-full px-8 h-12">
-                See How It Works
-              </Button>
-            </Link>
-          </div>
-        </motion.div>
-
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-          className="relative max-w-5xl mx-auto animate-on-scroll"
-        >
-          <div className="aspect-[16/9] rounded-2xl overflow-hidden bg-gradient-to-r from-blue-100 to-blue-50 flex items-center justify-center shadow-soft">
-            <div className="w-full h-full bg-white/70 backdrop-blur-sm p-6 flex items-center justify-center">
-              <div className="relative w-full max-w-3xl mx-auto glass rounded-xl shadow-lg overflow-hidden">
-                <div className="p-5 bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-white/30"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-white/30"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-white/30"></div>
-                  </div>
-                  <span className="text-sm font-medium">Match App</span>
-                  <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-white/30"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-white/30"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-white/30"></div>
-                  </div>
-                </div>
-                <div className="bg-white p-6 flex flex-col gap-4">
-                  <div className="flex justify-between mb-2">
-                    <div className="text-xl font-semibold">Today's Matches</div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>Filter</span>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M3 4.5H21M3 12H21M3 19.5H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 leading-tight">
+              Meet the Right People, <span className="text-gradient bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Instantly</span>
+            </h1>
+            <h2 className="text-2xl md:text-3xl font-semibold mb-6 text-muted-foreground">
+              Professional Networking, Reimagined.
+            </h2>
+            <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto lg:mx-0">
+              Connect with professionals who share your interests and career goals.
+              Our intelligent matching system helps you find the perfect connections.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+              {user ? (
+                <Button 
+                  size="lg" 
+                  className="rounded-full px-8 shadow-button h-12 transition-all hover:shadow-md group"
+                  onClick={onDashboard}
+                >
+                  <span>Go to Dashboard</span>
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              ) : (
+                <>
+                  <Button 
+                    size="lg" 
+                    className="rounded-full px-8 shadow-button h-12 transition-all hover:shadow-md group bg-gradient-to-r from-blue-600 to-indigo-600"
+                    onClick={onGetStarted}
+                  >
+                    <span>Get Started</span>
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="rounded-full px-8 h-12"
+                    onClick={onSignIn}
+                  >
+                    Sign In
+                  </Button>
+                </>
+              )}
+            </div>
+          </motion.div>
+          
+          {/* Right Column - Image */}
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="lg:w-1/2"
+          >
+            <div className="relative aspect-[4/3] w-full">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-100/40 to-purple-100/40 rounded-xl"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative w-full max-w-md mx-auto">
+                  <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-white/30"></div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-white/30"></div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-white/30"></div>
+                      </div>
+                      <span className="text-xs font-medium">Professional Match</span>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[
-                      { name: "Alex J.", age: 28, match: 92, location: "San Francisco", img: "bg-blue-100" },
-                      { name: "Taylor M.", age: 31, match: 87, location: "New York", img: "bg-purple-100" },
-                      { name: "Jamie C.", age: 26, match: 89, location: "Chicago", img: "bg-green-100" },
-                    ].map((profile, i) => (
-                      <div key={i} className="rounded-lg overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                        <div className={`${profile.img} h-40 flex items-center justify-center`}>
-                          <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur flex items-center justify-center text-2xl font-light">
-                            {profile.name[0]}
+                    <div className="p-5">
+                      <div className="flex items-center space-x-4 mb-6">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center text-white font-semibold">
+                          AM
+                        </div>
+                        <div>
+                          <h3 className="font-medium">Arun Mehta</h3>
+                          <p className="text-xs text-muted-foreground">Product Manager • Bangalore</p>
+                        </div>
+                        <div className="ml-auto text-xs font-medium bg-blue-50 text-blue-800 px-2 py-1 rounded-full">
+                          94% Match
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between mb-4">
+                        <div>
+                          <h4 className="text-xs font-medium text-muted-foreground mb-1">Skills</h4>
+                          <div className="flex flex-wrap gap-1">
+                            <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-800 rounded-full">Product Strategy</span>
+                            <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-800 rounded-full">UX</span>
                           </div>
                         </div>
-                        <div className="p-4">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <h3 className="font-semibold">{profile.name}, {profile.age}</h3>
-                              <p className="text-xs text-muted-foreground">{profile.location}</p>
-                            </div>
-                            <div className="bg-blue-50 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-                              {profile.match}% Match
-                            </div>
-                          </div>
-                          <div className="flex gap-2 mt-3">
-                            <Button variant="outline" size="sm" className="w-1/2 text-xs rounded-md">View</Button>
-                            <Button size="sm" className="w-1/2 text-xs rounded-md">Connect</Button>
+                        <div>
+                          <h4 className="text-xs font-medium text-muted-foreground mb-1">Interests</h4>
+                          <div className="flex flex-wrap gap-1">
+                            <span className="text-xs px-2 py-0.5 bg-purple-50 text-purple-800 rounded-full">AI</span>
+                            <span className="text-xs px-2 py-0.5 bg-purple-50 text-purple-800 rounded-full">Startups</span>
                           </div>
                         </div>
                       </div>
-                    ))}
+                      
+                      <div className="flex gap-2 mt-4">
+                        <Button variant="outline" size="sm" className="w-1/3 text-xs rounded-md flex items-center gap-1">
+                          <MessageSquare className="h-3 w-3" />
+                          Chat
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-1/3 text-xs rounded-md flex items-center gap-1">
+                          <Video className="h-3 w-3" />
+                          Call
+                        </Button>
+                        <Button size="sm" className="w-1/3 text-xs rounded-md bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          Connect
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-white shadow-soft rounded-full py-2 px-6 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-500"></div>
-            <span className="text-sm font-medium">Powered by AI-based personality matching</span>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
 
         <motion.div 
           initial={{ opacity: 0, y: 40 }}
@@ -159,12 +164,12 @@ const Hero = () => {
             {
               icon: "👥",
               title: "20,000+ Users",
-              description: "Join our growing community of singles finding meaningful connections every day"
+              description: "Join our growing community of professionals finding meaningful connections every day"
             },
             {
               icon: "❤️",
               title: "92% Match Rate",
-              description: "Our intelligent algorithm creates highly compatible connections"
+              description: "Our intelligent algorithm creates highly compatible professional connections"
             },
             {
               icon: "🔒",

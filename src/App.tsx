@@ -12,6 +12,11 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+import Help from "./pages/Help";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
@@ -48,6 +53,24 @@ const App = () => (
                 <Profile />
               </ProtectedRoute>
             } />
+            
+            {/* New Routes for Landing Page Links */}
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/help" element={<Help />} />
+            
+            {/* Additional route redirects to prevent 404s */}
+            <Route path="/careers" element={<About />} />
+            <Route path="/blog" element={<About />} />
+            <Route path="/press" element={<About />} />
+            <Route path="/safety" element={<Help />} />
+            <Route path="/community" element={<Help />} />
+            <Route path="/cookie" element={<Privacy />} />
+            <Route path="/accessibility" element={<Terms />} />
+            <Route path="/sitemap" element={<Help />} />
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
