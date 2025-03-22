@@ -97,6 +97,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           image_url: '',
           profile_completeness: 0,
           last_active: new Date().toISOString(),
+          latitude: null,  // Add missing latitude property
+          longitude: null, // Add missing longitude property
           // Set defaults for missing properties
           match_preferences: {},
           networking_goals: [] as string[],

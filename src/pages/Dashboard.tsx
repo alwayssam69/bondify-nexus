@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from "react";
-import MainLayout from "@/components/layouts/MainLayout";
+import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,10 +7,11 @@ import { Separator } from "@/components/ui/separator";
 import MatchCardConnectable from "@/components/MatchCardConnectable";
 import { UserProfile } from "@/lib/matchmaking";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { getMatchRecommendations, getProximityMatches, updateUserCoordinates } from "@/services/MatchmakingAPI";
 import { Loader2, MapPin, Filter, Users, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { useGeolocation } from "@/hooks/useGeolocation";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -20,25 +20,29 @@ const Dashboard = () => {
   const [nearbyMatches, setNearbyMatches] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("recommended");
-  const [radius, setRadius] = useState(50); // Default radius in km
+  const [radius, setRadius] = useState(50);
+  const geolocation = useGeolocation({ watch: false });
 
   useEffect(() => {
     if (user?.id) {
       loadMatchData();
-      detectUserLocation();
+      
+      if (geolocation.latitude && geolocation.longitude && !geolocation.error) {
+        updateUserLocationCoordinates(geolocation.latitude, geolocation.longitude);
+      }
     }
-  }, [user]);
+  }, [user, geolocation.latitude, geolocation.longitude]);
 
   const loadMatchData = async () => {
     setIsLoading(true);
     try {
-      // Load recommended matches based on profile similarity
       const recommendedData = await getMatchRecommendations(user?.id || "", 10);
       setRecommendedMatches(recommendedData);
 
-      // Also load nearby matches if we have the user's location
-      const proximityData = await getProximityMatches(user?.id || "", radius, 10);
-      setNearbyMatches(proximityData);
+      if (geolocation.latitude && geolocation.longitude) {
+        const proximityData = await getProximityMatches(user?.id || "", radius, 10);
+        setNearbyMatches(proximityData);
+      }
     } catch (error) {
       console.error("Error loading match data:", error);
       toast.error("Failed to load matches");
@@ -47,41 +51,23 @@ const Dashboard = () => {
     }
   };
 
-  const detectUserLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          
-          // Update user coordinates in database
-          if (user?.id) {
-            const success = await updateUserCoordinates(user.id, latitude, longitude);
-            if (success) {
-              toast.success("Location updated successfully!");
-              // Reload proximity matches with the new location
-              const proximityData = await getProximityMatches(user.id, radius, 10);
-              setNearbyMatches(proximityData);
-            }
-          }
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          toast.error("Could not detect your location. Location-based matching is limited.");
-        }
-      );
-    } else {
-      toast.error("Geolocation is not supported by your browser");
+  const updateUserLocationCoordinates = async (latitude: number, longitude: number) => {
+    if (user?.id) {
+      const success = await updateUserCoordinates(user.id, latitude, longitude);
+      if (success) {
+        toast.success("Location updated successfully!");
+        const proximityData = await getProximityMatches(user.id, radius, 10);
+        setNearbyMatches(proximityData);
+      }
     }
   };
 
   const handleViewProfile = (id: string) => {
-    // Navigate to profile view or open modal
     console.log("View profile:", id);
   };
 
   const handleConnectRequest = async (id: string) => {
     toast.success("Connection request sent!");
-    // Implement actual connection request logic here
   };
 
   const handleRefreshMatches = () => {
@@ -90,7 +76,7 @@ const Dashboard = () => {
   };
 
   return (
-    <MainLayout>
+    <Layout>
       <div className="container py-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
@@ -200,7 +186,16 @@ const Dashboard = () => {
                 <p className="text-muted-foreground mb-4">
                   Try increasing your search radius or check back later
                 </p>
-                <Button variant="outline" onClick={detectUserLocation}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    if (geolocation.latitude && geolocation.longitude) {
+                      updateUserLocationCoordinates(geolocation.latitude, geolocation.longitude);
+                    } else {
+                      toast.error("Unable to detect location. Please check your browser settings.");
+                    }
+                  }}
+                >
                   <MapPin className="mr-2 h-4 w-4" />
                   Update Location
                 </Button>
@@ -209,7 +204,7 @@ const Dashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </MainLayout>
+    </Layout>
   );
 };
 
