@@ -1,9 +1,10 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { UserProfile } from "@/lib/matchmaking";
 import { toast } from "sonner";
-import { Eye, Link, MessageCircle } from "lucide-react";
+import { Eye, Link, MessageCircle, MapPin, Briefcase } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -47,6 +48,14 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
       setIsDialogOpen(true);
     }
   };
+
+  // Function to get the right color based on match percentage
+  const getMatchScoreColor = () => {
+    if (matchPercentage >= 90) return "bg-green-50 text-green-800";
+    if (matchPercentage >= 75) return "bg-blue-50 text-blue-800";
+    if (matchPercentage >= 60) return "bg-yellow-50 text-yellow-800";
+    return "bg-gray-50 text-gray-800";
+  };
   
   return (
     <>
@@ -66,25 +75,43 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
           <div className="flex justify-between items-start mb-3">
             <div>
               <h3 className="font-semibold text-lg">{profile.name}, {profile.age}</h3>
-              <p className="text-sm text-muted-foreground">{profile.location}</p>
+              <div className="flex items-center text-sm text-muted-foreground mt-1">
+                <Briefcase className="h-3.5 w-3.5 mr-1" />
+                <span>{profile.industry || "Professional"}</span>
+              </div>
+              <div className="flex items-center text-sm text-muted-foreground mt-1">
+                <MapPin className="h-3.5 w-3.5 mr-1" />
+                <span>{profile.location}</span>
+                {profile.distance !== undefined && (
+                  <span className="ml-1">• {Math.round(profile.distance)} km</span>
+                )}
+              </div>
             </div>
-            <div className="bg-blue-50 text-blue-800 text-xs font-medium px-2.5 py-1 rounded-full">
+            <div className={`${getMatchScoreColor()} text-xs font-medium px-2.5 py-1 rounded-full`}>
               {matchPercentage}% Match
             </div>
           </div>
           
           <div className="flex flex-wrap gap-1 mb-4">
-            {profile.interests.slice(0, 3).map((interest, index) => (
+            {profile.skills?.slice(0, 2).map((skill, index) => (
               <span 
-                key={index} 
-                className="text-xs px-2 py-1 bg-secondary rounded-full text-muted-foreground"
+                key={`skill-${index}`} 
+                className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full"
+              >
+                {skill}
+              </span>
+            ))}
+            {profile.interests?.slice(0, profile.skills?.length ? 1 : 3).map((interest, index) => (
+              <span 
+                key={`interest-${index}`} 
+                className="text-xs px-2 py-1 bg-secondary rounded-full text-secondary-foreground"
               >
                 {interest}
               </span>
             ))}
-            {profile.interests.length > 3 && (
+            {(profile.skills?.length || 0) + (profile.interests?.length || 0) > 3 && (
               <span className="text-xs px-2 py-1 rounded-full text-muted-foreground">
-                +{profile.interests.length - 3} more
+                +{(profile.skills?.length || 0) + (profile.interests?.length || 0) - 3} more
               </span>
             )}
           </div>
@@ -148,7 +175,7 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
                 {profile.interests.map((interest, index) => (
                   <span 
                     key={index} 
-                    className="text-xs px-2 py-1 bg-secondary rounded-full text-muted-foreground"
+                    className="text-xs px-2 py-1 bg-secondary rounded-full text-secondary-foreground"
                   >
                     {interest}
                   </span>
@@ -163,7 +190,7 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
                   {profile.skills.map((skill, index) => (
                     <span 
                       key={index} 
-                      className="text-xs px-2 py-1 bg-blue-50 text-blue-800 rounded-full"
+                      className="text-xs px-2 py-1 bg-primary/10 rounded-full text-primary"
                     >
                       {skill}
                     </span>
@@ -172,35 +199,18 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
               </div>
             )}
             
-            <div className="flex justify-between mt-2">
-              <div>
-                <h4 className="text-sm font-medium">Match Score</h4>
-                <div className="bg-blue-50 text-blue-800 text-xs font-medium px-2.5 py-1 rounded-full inline-block mt-1">
-                  {matchPercentage}% Match
-                </div>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium">Looking for</h4>
-                <div className="bg-secondary text-muted-foreground text-xs font-medium px-2.5 py-1 rounded-full inline-block mt-1">
-                  {profile.relationshipGoal.charAt(0).toUpperCase() + profile.relationshipGoal.slice(1)}
-                </div>
-              </div>
+            <div className="pt-4">
+              <Button 
+                className="w-full" 
+                onClick={() => {
+                  handleConnect();
+                  setIsDialogOpen(false);
+                }}
+                disabled={isConnected}
+              >
+                {isConnected ? "Already Connected" : "Connect"}
+              </Button>
             </div>
-          </div>
-          
-          <div className="flex justify-end gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsDialogOpen(false)}
-            >
-              Close
-            </Button>
-            <Button 
-              onClick={handleConnect}
-              disabled={isConnected}
-            >
-              {isConnected ? 'Connected' : 'Connect Now'}
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
