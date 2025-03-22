@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, MessageSquare, Video, Users } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { motion } from "framer-motion";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface HeroProps {
   user: User | null;
@@ -13,13 +14,28 @@ interface HeroProps {
 }
 
 const Hero = ({ user, onGetStarted, onSignIn, onDashboard }: HeroProps) => {
+  const { theme } = useTheme();
+  
   return (
-    <section className="relative pt-32 pb-20 md:pt-40 md:pb-32 px-6 overflow-hidden">
+    <section className={`relative pt-32 pb-20 md:pt-40 md:pb-32 px-6 overflow-hidden ${
+      theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'
+    }`}>
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-white" />
-        <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-br from-blue-100/40 to-transparent" />
-        <div className="absolute top-1/4 left-0 w-72 h-72 bg-blue-200/20 rounded-full filter blur-3xl" />
-        <div className="absolute top-1/3 right-0 w-96 h-96 bg-purple-200/20 rounded-full filter blur-3xl" />
+        {theme === 'dark' ? (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-gray-800" />
+            <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-br from-blue-900/20 to-transparent" />
+            <div className="absolute top-1/4 left-0 w-72 h-72 bg-blue-800/10 rounded-full filter blur-3xl" />
+            <div className="absolute top-1/3 right-0 w-96 h-96 bg-purple-800/10 rounded-full filter blur-3xl" />
+          </>
+        ) : (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-b from-blue-100 to-white" />
+            <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-br from-blue-200/40 to-transparent" />
+            <div className="absolute top-1/4 left-0 w-72 h-72 bg-blue-200/30 rounded-full filter blur-3xl" />
+            <div className="absolute top-1/3 right-0 w-96 h-96 bg-purple-200/30 rounded-full filter blur-3xl" />
+          </>
+        )}
       </div>
 
       <div className="max-w-7xl mx-auto">
@@ -32,18 +48,24 @@ const Hero = ({ user, onGetStarted, onSignIn, onDashboard }: HeroProps) => {
             className="lg:w-1/2 text-center lg:text-left"
           >
             <div className="inline-block mb-6">
-              <div className="flex items-center gap-2 bg-white/70 backdrop-blur-sm border border-blue-100 rounded-full py-1 px-4 shadow-sm">
+              <div className={`flex items-center gap-2 ${
+                theme === 'dark' 
+                  ? 'bg-gray-800/70 backdrop-blur-sm border border-gray-700' 
+                  : 'bg-white/70 backdrop-blur-sm border border-blue-100'
+                } rounded-full py-1 px-4 shadow-sm`}>
                 <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                <span className="text-sm font-medium text-blue-900">Professional Networking Platform</span>
+                <span className={`text-sm font-medium ${
+                  theme === 'dark' ? 'text-blue-300' : 'text-blue-900'
+                }`}>Professional Networking Platform</span>
               </div>
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 leading-tight">
-              Meet the Right People, <span className="text-gradient bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Instantly</span>
+            <h1 className={`hero-heading mb-6`}>
+              Meet the Right People, <span className="text-gradient bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Instantly</span>
             </h1>
-            <h2 className="text-2xl md:text-3xl font-semibold mb-6 text-muted-foreground">
+            <h2 className="hero-subheading">
               Professional Networking, Reimagined.
             </h2>
-            <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto lg:mx-0">
+            <p className="hero-description max-w-2xl mx-auto lg:mx-0">
               Connect with professionals who share your interests and career goals.
               Our intelligent matching system helps you find the perfect connections.
             </p>
@@ -71,7 +93,9 @@ const Hero = ({ user, onGetStarted, onSignIn, onDashboard }: HeroProps) => {
                   <Button
                     variant="outline"
                     size="lg"
-                    className="rounded-full px-8 h-12"
+                    className={`rounded-full px-8 h-12 ${
+                      theme === 'dark' ? 'bg-gray-800 text-white border-gray-700' : ''
+                    }`}
                     onClick={onSignIn}
                   >
                     Sign In
@@ -177,10 +201,14 @@ const Hero = ({ user, onGetStarted, onSignIn, onDashboard }: HeroProps) => {
               description: "Your data and conversations are always protected with end-to-end encryption"
             }
           ].map((stat, index) => (
-            <div key={index} className="bg-white border border-border rounded-xl p-6 text-center shadow-sm hover:shadow-md transition-all">
+            <div key={index} className={`${
+              theme === 'dark' 
+                ? 'bg-gray-800 border-gray-700' 
+                : 'bg-white border-gray-200'
+              } border rounded-xl p-6 text-center shadow-sm hover:shadow-md transition-all`}>
               <div className="text-4xl mb-3">{stat.icon}</div>
-              <h3 className="text-lg font-semibold mb-2">{stat.title}</h3>
-              <p className="text-muted-foreground text-sm">{stat.description}</p>
+              <h3 className="card-heading mb-2">{stat.title}</h3>
+              <p className="card-text">{stat.description}</p>
             </div>
           ))}
         </motion.div>

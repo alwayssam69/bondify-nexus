@@ -25,6 +25,9 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     root.classList.remove("dark", "light");
     root.classList.add(theme);
     localStorage.setItem("theme", theme);
+    
+    // Add data-theme attribute for additional CSS targeting
+    root.setAttribute("data-theme", theme);
   }, [theme]);
 
   return (
