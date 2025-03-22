@@ -10,24 +10,34 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
-interface ProfileDropdownProps {
-  onLogout: () => void;
-}
-
-const ProfileDropdown = ({ onLogout }: ProfileDropdownProps) => {
+const ProfileDropdown = () => {
   const navigate = useNavigate();
+  const { user, profile, signOut } = useAuth();
+  
+  // Get first letter of name or email for avatar
+  const getInitial = () => {
+    if (profile?.full_name) {
+      return profile.full_name.charAt(0);
+    } else if (user?.email) {
+      return user.email.charAt(0).toUpperCase();
+    }
+    return "U";
+  };
   
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 bg-blue-100">
-          <span className="text-blue-600">J</span>
+          <span className="text-blue-600">{getInitial()}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
+        <DropdownMenuItem className="text-sm text-muted-foreground">
+          {profile?.full_name || user?.email}
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => navigate("/profile")}>
           Profile
@@ -42,7 +52,7 @@ const ProfileDropdown = ({ onLogout }: ProfileDropdownProps) => {
           Messages
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={onLogout}>
+        <DropdownMenuItem onClick={signOut}>
           Logout
         </DropdownMenuItem>
       </DropdownMenuContent>

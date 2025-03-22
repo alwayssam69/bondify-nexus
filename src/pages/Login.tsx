@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -27,6 +28,18 @@ const Login = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/dashboard");
+      }
+    };
+    
+    checkSession();
+  }, [navigate]);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -35,17 +48,31 @@ const Login = () => {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
-    // In a real app, you'd authenticate with your backend
-    console.log(values);
     
-    // Simulate API delay
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
+      
+      if (error) {
+        toast.error(error.message);
+        setIsLoading(false);
+        return;
+      }
+      
+      if (data.user) {
+        toast.success("Login successful!");
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("An unexpected error occurred");
+    } finally {
       setIsLoading(false);
-      toast.success("Login successful!");
-      navigate("/dashboard");
-    }, 1500);
+    }
   };
 
   return (
@@ -83,7 +110,33 @@ const Login = () => {
                       <Input placeholder="Enter your password" type="password" {...field} />
                     </FormControl>
                     <FormMessage />
-                    <Button variant="link" className="p-0 h-auto text-xs" onClick={() => toast.info("Reset link sent to your email!")}>
+                    <Button 
+                      variant="link" 
+                      className="p-0 h-auto text-xs" 
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        const email = form.getValues().email;
+                        if (!email) {
+                          toast.error("Please enter your email first");
+                          return;
+                        }
+                        
+                        try {
+                          const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                            redirectTo: `${window.location.origin}/reset-password`,
+                          });
+                          
+                          if (error) {
+                            toast.error(error.message);
+                          } else {
+                            toast.success("Password reset link sent to your email");
+                          }
+                        } catch (error) {
+                          console.error("Reset password error:", error);
+                          toast.error("An error occurred while sending reset link");
+                        }
+                      }}
+                    >
                       Forgot password?
                     </Button>
                   </FormItem>

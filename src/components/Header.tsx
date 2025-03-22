@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import VideoCall from "./chat/VideoCall";
 import IncomingCall from "./chat/IncomingCall";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Import extracted components
 import HeaderLogo from "./header/HeaderLogo";
@@ -26,9 +27,10 @@ const Header = () => {
   const [incomingCall, setIncomingCall] = useState<{contactId: string, contactName: string} | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
-  // Determine if user is logged in based on route
-  const isLoggedIn = ["/dashboard", "/matches", "/chat", "/profile"].includes(location.pathname);
+  // Determine if user is logged in based on auth state
+  const isLoggedIn = !!user;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -38,11 +40,6 @@ const Header = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-  
-  const handleLogout = () => {
-    toast.success("Logged out successfully");
-    navigate("/");
-  };
 
   const initiateVideoCall = (contact: {id: string, name: string}) => {
     toast.info(`Initiating video call with ${contact.name}`);
@@ -109,7 +106,7 @@ const Header = () => {
                 <NotificationsDropdown />
                 
                 {/* Profile Dropdown */}
-                <ProfileDropdown onLogout={handleLogout} />
+                <ProfileDropdown />
               </>
             ) : (
               <AuthButtons />

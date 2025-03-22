@@ -1,576 +1,416 @@
 
-import React, { useState } from "react";
-import Layout from "@/components/layout/Layout";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { 
+import {
   Form,
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue 
+  SelectValue,
 } from "@/components/ui/select";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { toast } from "sonner";
+import Layout from "@/components/layout/Layout";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  bio: z.string(),
-  age: z.string().refine((val) => !isNaN(parseInt(val)) && parseInt(val) >= 18, {
-    message: "You must be at least 18 years old",
-  }),
-  gender: z.string(),
-  location: z.string(),
-  relationshipGoal: z.string(),
-  interests: z.string(),
-  dailyRoutine: z.string(),
-  communicationStyle: z.string(),
+  fullName: z.string().min(2, "Name must be at least 2 characters"),
+  location: z.string().min(1, "Location is required"),
+  bio: z.string().optional(),
+  industry: z.string().min(1, "Industry is required"),
+  userType: z.string().min(1, "User type is required"),
+  experienceLevel: z.string().min(1, "Experience level is required"),
+  university: z.string().optional(),
+  courseYear: z.string().optional(),
+  skills: z.string().optional(),
+  interests: z.string().optional(),
+  projectInterests: z.string().optional(),
 });
 
 const Profile = () => {
-  const [isEditing, setIsEditing] = useState(false);
-  
-  // Mock profile data
-  const profileData = {
-    name: "Jamie Taylor",
-    bio: "Photography enthusiast and outdoor lover. I enjoy hiking, capturing landscapes, and discovering new coffee shops.",
-    age: "28",
-    gender: "non-binary",
-    location: "San Francisco",
-    relationshipGoal: "serious",
-    interests: "Photography, Hiking, Coffee, Travel",
-    dailyRoutine: "morning",
-    communicationStyle: "mixed",
-    profileCompletion: 85,
-    memberSince: "Jan 2023",
-    matches: 24,
-    messages: 47,
-    profileViews: 128,
-    interestsList: ["Photography", "Hiking", "Coffee", "Travel", "Reading", "Movies", "Music"],
-    preferenceSettings: {
-      ageRange: [23, 35],
-      distance: 25,
-      relationshipGoals: ["serious", "casual"],
-      notification: true,
-      profileVisibility: "all",
-    }
-  };
+  const navigate = useNavigate();
+  const { user, profile, refreshProfile } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: profileData.name,
-      bio: profileData.bio,
-      age: profileData.age,
-      gender: profileData.gender,
-      location: profileData.location,
-      relationshipGoal: profileData.relationshipGoal,
-      interests: profileData.interests,
-      dailyRoutine: profileData.dailyRoutine,
-      communicationStyle: profileData.communicationStyle,
+      fullName: "",
+      location: "",
+      bio: "",
+      industry: "",
+      userType: "",
+      experienceLevel: "",
+      university: "",
+      courseYear: "",
+      skills: "",
+      interests: "",
+      projectInterests: "",
     },
   });
   
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    // In a real app, you'd send these updates to your backend
-    console.log(values);
-    toast.success("Profile updated successfully!");
-    setIsEditing(false);
+  // Load user profile data
+  useEffect(() => {
+    if (profile) {
+      form.reset({
+        fullName: profile.full_name || "",
+        location: profile.location || "",
+        bio: profile.bio || "",
+        industry: profile.industry || "",
+        userType: profile.user_type || "",
+        experienceLevel: profile.experience_level || "",
+        university: profile.university || "",
+        courseYear: profile.course_year || "",
+        skills: profile.skills ? profile.skills.join(", ") : "",
+        interests: profile.interests ? profile.interests.join(", ") : "",
+        projectInterests: profile.project_interests ? profile.project_interests.join(", ") : "",
+      });
+    }
+  }, [profile, form]);
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!user) {
+      toast.error("You must be logged in to update your profile");
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      // Convert comma-separated strings to arrays
+      const skillsArray = values.skills ? values.skills.split(',').map(s => s.trim()) : [];
+      const interestsArray = values.interests ? values.interests.split(',').map(s => s.trim()) : [];
+      const projectInterestsArray = values.projectInterests ? values.projectInterests.split(',').map(s => s.trim()) : [];
+      
+      // Calculate profile completeness score (0-100)
+      let completenessScore = 0;
+      if (values.fullName) completenessScore += 10;
+      if (values.location) completenessScore += 10;
+      if (values.bio) completenessScore += 10;
+      if (values.industry) completenessScore += 10;
+      if (values.userType) completenessScore += 10;
+      if (values.experienceLevel) completenessScore += 10;
+      if (skillsArray.length > 0) completenessScore += 10;
+      if (interestsArray.length > 0) completenessScore += 10;
+      if (values.university) completenessScore += 10;
+      if (values.courseYear) completenessScore += 10;
+      
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          full_name: values.fullName,
+          location: values.location,
+          bio: values.bio,
+          industry: values.industry,
+          user_type: values.userType,
+          experience_level: values.experienceLevel,
+          university: values.university,
+          course_year: values.courseYear,
+          skills: skillsArray,
+          interests: interestsArray,
+          project_interests: projectInterestsArray,
+          updated_at: new Date(),
+          profile_completeness: completenessScore,
+          activity_score: 75, // Default activity score
+        })
+        .eq('id', user.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Refresh user profile
+      await refreshProfile();
+      
+      toast.success("Profile updated successfully!");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("An error occurred while updating your profile");
+    } finally {
+      setIsLoading(false);
+    }
   };
-  
+
   return (
-    <Layout className="pt-28 pb-16 px-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-10">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Your Profile</h1>
-            <p className="text-muted-foreground">Manage your information and privacy settings</p>
-          </div>
-          {!isEditing && (
-            <Button onClick={() => setIsEditing(true)}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </svg>
-              Edit Profile
-            </Button>
-          )}
+    <Layout className="py-24 px-6">
+      <div className="max-w-3xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Your Profile</h1>
+          <p className="text-muted-foreground">
+            Update your information to get better matches
+          </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Profile Sidebar */}
-          <div className="space-y-8">
-            <div className="card-glass rounded-xl p-6 text-center">
-              <div className="w-28 h-28 rounded-full bg-gradient-to-r from-blue-400 to-blue-500 flex items-center justify-center text-white text-3xl font-light mx-auto mb-4">
-                {profileData.name[0]}
-              </div>
-              
-              <h2 className="text-xl font-semibold">{profileData.name}</h2>
-              <p className="text-muted-foreground text-sm mb-4">{profileData.location}</p>
-              
-              <div className="flex justify-center gap-2 mb-6">
-                <Badge variant="outline" className="bg-blue-50">
-                  {profileData.age}
-                </Badge>
-                <Badge variant="outline" className="bg-blue-50 capitalize">
-                  {profileData.gender}
-                </Badge>
-                <Badge variant="outline" className="bg-blue-50 capitalize">
-                  {profileData.relationshipGoal}
-                </Badge>
-              </div>
-              
-              <div className="bg-secondary rounded-full h-2 mb-2">
-                <div 
-                  className="bg-blue-500 h-2 rounded-full" 
-                  style={{ width: `${profileData.profileCompletion}%` }}
-                ></div>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Profile {profileData.profileCompletion}% complete
-              </p>
-              
-              <Separator className="my-4" />
-              
-              <div className="text-sm text-left">
-                <div className="flex justify-between py-2">
-                  <span className="text-muted-foreground">Member since</span>
-                  <span>{profileData.memberSince}</span>
-                </div>
-                <div className="flex justify-between py-2">
-                  <span className="text-muted-foreground">Total matches</span>
-                  <span>{profileData.matches}</span>
-                </div>
-                <div className="flex justify-between py-2">
-                  <span className="text-muted-foreground">Messages</span>
-                  <span>{profileData.messages}</span>
-                </div>
-                <div className="flex justify-between py-2">
-                  <span className="text-muted-foreground">Profile views</span>
-                  <span>{profileData.profileViews}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="card-glass rounded-xl p-6">
-              <h3 className="font-semibold mb-4">Interests</h3>
-              <div className="flex flex-wrap gap-2">
-                {profileData.interestsList.map((interest, index) => (
-                  <Badge key={index} variant="secondary">
-                    {interest}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </div>
-          
-          {/* Main Content */}
-          <div className="md:col-span-2">
-            <Tabs defaultValue="profile">
-              <TabsList className="mb-6">
-                <TabsTrigger value="profile">Profile Info</TabsTrigger>
-                <TabsTrigger value="preferences">Match Preferences</TabsTrigger>
-                <TabsTrigger value="privacy">Privacy & Settings</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="profile" className="space-y-6">
-                <div className="card-glass rounded-xl p-6">
-                  {isEditing ? (
-                    <Form {...form}>
-                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                        <FormField
-                          control={form.control}
-                          name="name"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Full Name</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="bio"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Bio</FormLabel>
-                              <FormControl>
-                                <Textarea 
-                                  placeholder="Tell others about yourself..." 
-                                  className="resize-none h-24"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <div className="grid grid-cols-2 gap-6">
-                          <FormField
-                            control={form.control}
-                            name="age"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Age</FormLabel>
-                                <FormControl>
-                                  <Input type="number" min="18" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={form.control}
-                            name="gender"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Gender</FormLabel>
-                                <Select 
-                                  onValueChange={field.onChange} 
-                                  defaultValue={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select gender" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="male">Male</SelectItem>
-                                    <SelectItem value="female">Female</SelectItem>
-                                    <SelectItem value="non-binary">Non-binary</SelectItem>
-                                    <SelectItem value="other">Other</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                        
-                        <FormField
-                          control={form.control}
-                          name="location"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Location</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="relationshipGoal"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Relationship Goal</FormLabel>
-                              <Select 
-                                onValueChange={field.onChange} 
-                                defaultValue={field.value}
-                              >
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="What are you looking for?" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="casual">Casual Dating</SelectItem>
-                                  <SelectItem value="serious">Serious Relationship</SelectItem>
-                                  <SelectItem value="networking">Networking</SelectItem>
-                                  <SelectItem value="friendship">Friendship</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="interests"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Interests & Hobbies</FormLabel>
-                              <FormControl>
-                                <Input placeholder="e.g. Photography, Travel, Hiking" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                              <p className="text-sm text-muted-foreground">Separate with commas</p>
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <div className="grid grid-cols-2 gap-6">
-                          <FormField
-                            control={form.control}
-                            name="dailyRoutine"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Daily Routine</FormLabel>
-                                <Select 
-                                  onValueChange={field.onChange} 
-                                  defaultValue={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select routine" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="morning">Morning Person</SelectItem>
-                                    <SelectItem value="night">Night Person</SelectItem>
-                                    <SelectItem value="balanced">Balanced</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={form.control}
-                            name="communicationStyle"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Communication Style</FormLabel>
-                                <Select 
-                                  onValueChange={field.onChange} 
-                                  defaultValue={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select style" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="text">Text</SelectItem>
-                                    <SelectItem value="call">Call</SelectItem>
-                                    <SelectItem value="video">Video</SelectItem>
-                                    <SelectItem value="mixed">Mixed</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                        
-                        <div className="flex justify-end gap-4 pt-4">
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            onClick={() => setIsEditing(false)}
-                          >
-                            Cancel
-                          </Button>
-                          <Button type="submit">Save Changes</Button>
-                        </div>
-                      </form>
-                    </Form>
-                  ) : (
-                    <div className="space-y-6">
-                      <div>
-                        <h3 className="text-lg font-semibold mb-2">About Me</h3>
-                        <p className="text-muted-foreground">{profileData.bio}</p>
-                      </div>
-                      
-                      <Separator />
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <h4 className="font-medium mb-1">Location</h4>
-                          <p className="text-muted-foreground">{profileData.location}</p>
-                        </div>
-                        
-                        <div>
-                          <h4 className="font-medium mb-1">Looking For</h4>
-                          <p className="text-muted-foreground capitalize">{profileData.relationshipGoal}</p>
-                        </div>
-                        
-                        <div>
-                          <h4 className="font-medium mb-1">Daily Routine</h4>
-                          <p className="text-muted-foreground capitalize">
-                            {profileData.dailyRoutine === "morning" ? "Morning Person" : 
-                             profileData.dailyRoutine === "night" ? "Night Person" : "Balanced"}
-                          </p>
-                        </div>
-                        
-                        <div>
-                          <h4 className="font-medium mb-1">Communication Style</h4>
-                          <p className="text-muted-foreground capitalize">{profileData.communicationStyle}</p>
-                        </div>
-                      </div>
-                    </div>
+        <div className="card-glass rounded-xl p-8">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="fullName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </div>
-              </TabsContent>
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <FormControl>
+                        <Input placeholder="City, Country" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               
-              <TabsContent value="preferences" className="space-y-6">
-                <div className="card-glass rounded-xl p-6">
-                  <h3 className="text-lg font-semibold mb-6">Match Preferences</h3>
-                  
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="font-medium mb-3">Age Range</h4>
-                      <div className="flex items-center gap-4">
-                        <Input 
-                          type="number" 
-                          className="w-20" 
-                          defaultValue={profileData.preferenceSettings.ageRange[0]} 
-                        />
-                        <span>to</span>
-                        <Input 
-                          type="number" 
-                          className="w-20" 
-                          defaultValue={profileData.preferenceSettings.ageRange[1]} 
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-medium mb-3">Distance (miles)</h4>
-                      <Input 
-                        type="number" 
-                        className="w-20" 
-                        defaultValue={profileData.preferenceSettings.distance} 
+              <FormField
+                control={form.control}
+                name="bio"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bio</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Tell us about yourself, your professional background, and what you're looking for" 
+                        className="h-24" 
+                        {...field} 
                       />
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-medium mb-3">Relationship Goals</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {["serious", "casual", "networking", "friendship"].map((goal) => (
-                          <Badge 
-                            key={goal}
-                            variant={profileData.preferenceSettings.relationshipGoals.includes(goal) ? "default" : "outline"}
-                            className="cursor-pointer capitalize"
-                          >
-                            {goal}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-medium mb-3">Matching Factors</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span>Interests & Hobbies</span>
-                          <span className="font-medium">40%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Location Proximity</span>
-                          <span className="font-medium">20%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Mutual Connections</span>
-                          <span className="font-medium">15%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Activity Level</span>
-                          <span className="font-medium">15%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Profile Completeness</span>
-                          <span className="font-medium">10%</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <Button>Save Preferences</Button>
-                  </div>
-                </div>
-              </TabsContent>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
-              <TabsContent value="privacy" className="space-y-6">
-                <div className="card-glass rounded-xl p-6">
-                  <h3 className="text-lg font-semibold mb-6">Privacy Settings</h3>
-                  
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="font-medium mb-3">Profile Visibility</h4>
-                      <Select defaultValue={profileData.preferenceSettings.profileVisibility}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Who can see your profile" />
-                        </SelectTrigger>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <FormField
+                  control={form.control}
+                  name="industry"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Industry</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select industry" />
+                          </SelectTrigger>
+                        </FormControl>
                         <SelectContent>
-                          <SelectItem value="all">Everyone</SelectItem>
-                          <SelectItem value="matches">Only My Matches</SelectItem>
-                          <SelectItem value="none">Nobody (Hidden)</SelectItem>
+                          <SelectItem value="technology">Technology</SelectItem>
+                          <SelectItem value="finance">Finance</SelectItem>
+                          <SelectItem value="healthcare">Healthcare</SelectItem>
+                          <SelectItem value="education">Education</SelectItem>
+                          <SelectItem value="engineering">Engineering</SelectItem>
+                          <SelectItem value="marketing">Marketing</SelectItem>
+                          <SelectItem value="design">Design</SelectItem>
+                          <SelectItem value="business">Business</SelectItem>
+                          <SelectItem value="legal">Legal</SelectItem>
+                          <SelectItem value="media">Media</SelectItem>
+                          <SelectItem value="arts">Arts</SelectItem>
+                          <SelectItem value="science">Science</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-medium mb-3">Notification Settings</h4>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span>New match notifications</span>
-                          <Button variant="outline" size="sm">
-                            {profileData.preferenceSettings.notification ? "On" : "Off"}
-                          </Button>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span>Message notifications</span>
-                          <Button variant="outline" size="sm">
-                            {profileData.preferenceSettings.notification ? "On" : "Off"}
-                          </Button>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span>Profile view notifications</span>
-                          <Button variant="outline" size="sm">
-                            {profileData.preferenceSettings.notification ? "On" : "Off"}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-medium mb-3">Account Management</h4>
-                      <div className="space-y-4">
-                        <Button variant="outline" className="w-full">
-                          Change Password
-                        </Button>
-                        <Button variant="outline" className="w-full text-red-500">
-                          Deactivate Account
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <Button>Save Settings</Button>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="userType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>User Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select user type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="professional">Professional</SelectItem>
+                          <SelectItem value="student">Student</SelectItem>
+                          <SelectItem value="mentor">Mentor</SelectItem>
+                          <SelectItem value="founder">Founder</SelectItem>
+                          <SelectItem value="investor">Investor</SelectItem>
+                          <SelectItem value="freelancer">Freelancer</SelectItem>
+                          <SelectItem value="collaborator">Collaborator</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="experienceLevel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Experience Level</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select experience level" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="beginner">Beginner</SelectItem>
+                          <SelectItem value="intermediate">Intermediate</SelectItem>
+                          <SelectItem value="expert">Expert</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="university"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>University / College</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select university" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">None/Not Applicable</SelectItem>
+                          <SelectItem value="IIT Delhi">IIT Delhi</SelectItem>
+                          <SelectItem value="IIT Bombay">IIT Bombay</SelectItem>
+                          <SelectItem value="IIT Madras">IIT Madras</SelectItem>
+                          <SelectItem value="IIT Kanpur">IIT Kanpur</SelectItem>
+                          <SelectItem value="IIT Kharagpur">IIT Kharagpur</SelectItem>
+                          <SelectItem value="BITS Pilani">BITS Pilani</SelectItem>
+                          <SelectItem value="Delhi University">Delhi University</SelectItem>
+                          <SelectItem value="NIT Trichy">NIT Trichy</SelectItem>
+                          <SelectItem value="NIT Warangal">NIT Warangal</SelectItem>
+                          <SelectItem value="VIT Vellore">VIT Vellore</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="courseYear"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Course Year</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select year" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">None/Not Applicable</SelectItem>
+                          <SelectItem value="1st Year">1st Year</SelectItem>
+                          <SelectItem value="2nd Year">2nd Year</SelectItem>
+                          <SelectItem value="3rd Year">3rd Year</SelectItem>
+                          <SelectItem value="4th Year">4th Year</SelectItem>
+                          <SelectItem value="5th Year">5th Year</SelectItem>
+                          <SelectItem value="Masters">Masters</SelectItem>
+                          <SelectItem value="PhD">PhD</SelectItem>
+                          <SelectItem value="Alumni">Alumni</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="skills"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Skills</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. javascript, design, leadership, marketing (comma-separated)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="interests"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Interests</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. technology, art, travel, sports (comma-separated)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="projectInterests"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Project Interests</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. web-development, machine-learning, data-science (comma-separated)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="flex justify-end gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate("/dashboard")}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "Saving..." : "Save Profile"}
+                </Button>
+              </div>
+            </form>
+          </Form>
         </div>
       </div>
     </Layout>

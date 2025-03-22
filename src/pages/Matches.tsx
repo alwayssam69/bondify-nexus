@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect } from "react";
 import { 
-  loadSampleUsers, 
-  UserProfile, 
   findMatches,
+  UserProfile, 
   calculateDistance 
 } from '@/lib/matchmaking';
 import MatchCardConnectable from '@/components/MatchCardConnectable';
@@ -11,35 +11,21 @@ import InstantChat from '@/components/InstantChat';
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, MessageSquareText, BookmarkPlus, MapPin, Trophy, Calendar, Bell, Search, GraduationCap, Building } from "lucide-react";
+import { Search, Users, MessageSquareText, BookmarkPlus, MapPin, Trophy, Calendar, Bell, Building, GraduationCap } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import MatchFilter, { FilterOptions } from "@/components/MatchFilter";
+import { useAuth } from "@/contexts/AuthContext";
+import { getMatches, getUserMatches, getSavedProfiles, recordSwipeAction } from "@/services/MatchmakingService";
 
 const Matches = () => {
+  const { user, profile } = useAuth();
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [matches, setMatches] = useState<UserProfile[]>([]);
   const [savedProfiles, setSavedProfiles] = useState<UserProfile[]>([]);
   const [activeTab, setActiveTab] = useState("discover");
   const [filterApplied, setFilterApplied] = useState(false);
   const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
-  const [currentUser, setCurrentUser] = useState<UserProfile>({
-    id: "current-user",
-    name: "You",
-    age: 25,
-    gender: "unspecified",
-    interests: ["technology", "music", "movies", "travel"],
-    location: "New York",
-    country: "United States",
-    relationshipGoal: "networking",
-    language: "English",
-    activityScore: 90,
-    imageUrl: "bg-gradient-to-br from-teal-400 to-emerald-600",
-    bio: "Looking to meet interesting people and have fun conversations.",
-    skills: ["coding", "photography"],
-    profileCompleteness: 85,
-    dailySwipes: 0,
-    maxDailySwipes: 20,
-  });
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   
   const [connections, setConnections] = useState<UserProfile[]>([]);
   const [userStreak, setUserStreak] = useState(3);
@@ -49,6 +35,7 @@ const Matches = () => {
   });
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showUniversityLeaderboard, setShowUniversityLeaderboard] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     if (navigator.geolocation) {
@@ -67,44 +54,96 @@ const Matches = () => {
   }, []);
   
   useEffect(() => {
-    const sampleUsers = loadSampleUsers();
-    
-    if (userLocation) {
-      const usersWithDistance = sampleUsers.map(user => {
-        const userCoords = getUserMockCoordinates(user.location);
-        
-        if (userCoords) {
-          const distance = calculateDistance(
-            userLocation.latitude,
-            userLocation.longitude,
-            userCoords.latitude,
-            userCoords.longitude
-          );
-          
-          return { ...user, distance };
-        }
-        
-        return user;
-      });
+    if (profile && user) {
+      // Create current user profile from auth data
+      const userProfile: UserProfile = {
+        id: user.id,
+        name: profile.full_name || user.email?.split('@')[0] || "User",
+        age: 25, // Default
+        gender: "unspecified",
+        interests: profile.interests || ["networking", "professional development"],
+        location: profile.location || "Unknown",
+        bio: profile.bio || "Looking to connect with professionals",
+        relationshipGoal: "networking",
+        skills: profile.skills || ["networking"],
+        language: "English",
+        industry: profile.industry || "",
+        userType: profile.user_type || "",
+        experienceLevel: profile.experience_level || "",
+        university: profile.university || "",
+        courseYear: profile.course_year || "",
+        projectInterests: profile.project_interests || [],
+        activityScore: profile.activity_score || 70,
+        profileCompleteness: profile.profile_completeness || 50,
+      };
       
-      setAllUsers(usersWithDistance);
+      setCurrentUser(userProfile);
       
-      const matchesFound = findMatches(currentUser)
-        .map(match => {
-          const userWithDistance = usersWithDistance.find(u => u.id === match.id);
-          return userWithDistance || match;
-        });
-      
-      setMatches(matchesFound);
-    } else {
-      setAllUsers(sampleUsers);
-      
-      const matchesFound = findMatches(currentUser);
-      setMatches(matchesFound);
+      // Load matches and connections
+      loadMatches();
+      loadConnections();
+      loadSavedProfiles();
     }
-    
-    setConnections([sampleUsers[2], sampleUsers[4]]);
-  }, [userLocation]);
+  }, [user, profile, userLocation]);
+  
+  const loadMatches = async () => {
+    setIsLoading(true);
+    if (user) {
+      try {
+        const matchList = await getMatches(user.id);
+        
+        // Add distance if we have location
+        if (userLocation) {
+          const matchesWithDistance = matchList.map(match => {
+            const userCoords = getUserMockCoordinates(match.location);
+            
+            if (userCoords) {
+              const distance = calculateDistance(
+                userLocation.latitude,
+                userLocation.longitude,
+                userCoords.latitude,
+                userCoords.longitude
+              );
+              
+              return { ...match, distance };
+            }
+            
+            return match;
+          });
+          
+          setMatches(matchesWithDistance);
+        } else {
+          setMatches(matchList);
+        }
+      } catch (error) {
+        console.error("Error loading matches:", error);
+        toast.error("Failed to load matches");
+      }
+    }
+    setIsLoading(false);
+  };
+  
+  const loadConnections = async () => {
+    if (user) {
+      try {
+        const connectionsList = await getUserMatches(user.id);
+        setConnections(connectionsList);
+      } catch (error) {
+        console.error("Error loading connections:", error);
+      }
+    }
+  };
+  
+  const loadSavedProfiles = async () => {
+    if (user) {
+      try {
+        const savedList = await getSavedProfiles(user.id);
+        setSavedProfiles(savedList);
+      } catch (error) {
+        console.error("Error loading saved profiles:", error);
+      }
+    }
+  };
   
   const getUserMockCoordinates = (location: string) => {
     const locationMap: Record<string, {latitude: number, longitude: number}> = {
@@ -129,7 +168,7 @@ const Matches = () => {
   const handleSendIntro = (profileId: string, message: string) => {
     const profile = matches.find(p => p.id === profileId);
     if (profile) {
-      console.log(`Sending intro to ${profile.name}: ${message}`);
+      toast.success(`Message sent to ${profile.name}`);
     }
   };
   
@@ -144,44 +183,45 @@ const Matches = () => {
     }, 1500);
   };
   
-  const handleRefreshMatches = () => {
-    let refreshedMatches = findMatches(currentUser);
-    
-    if (userLocation) {
-      refreshedMatches = refreshedMatches.map(match => {
-        const userCoords = getUserMockCoordinates(match.location);
-        
-        if (userCoords) {
-          const distance = calculateDistance(
-            userLocation.latitude,
-            userLocation.longitude,
-            userCoords.latitude,
-            userCoords.longitude
-          );
-          
-          return { ...match, distance };
-        }
-        
-        return match;
-      });
-    }
-    
-    setMatches(refreshedMatches);
+  const handleRefreshMatches = async () => {
+    await loadMatches();
     toast.success("Found new matches!");
   };
   
-  const handleConnect = (profileId: string) => {
-    const profile = matches.find(p => p.id === profileId) || 
+  const handleConnect = async (profileId: string) => {
+    if (!user) {
+      toast.error("You must be logged in to connect");
+      return;
+    }
+    
+    try {
+      const success = await recordSwipeAction(user.id, profileId, 'like');
+      
+      const profile = matches.find(p => p.id === profileId) || 
                     savedProfiles.find(p => p.id === profileId);
-    if (profile) {
-      setConnections(prev => {
-        if (prev.some(p => p.id === profileId)) return prev;
-        return [...prev, profile];
-      });
-      
-      setSavedProfiles(prev => prev.filter(p => p.id !== profileId));
-      
-      toast.success(`Connected with ${profile.name}!`);
+                    
+      if (profile) {
+        if (success) {
+          // It's a match!
+          setConnections(prev => {
+            if (prev.some(p => p.id === profileId)) return prev;
+            return [...prev, profile];
+          });
+          
+          setSavedProfiles(prev => prev.filter(p => p.id !== profileId));
+          setMatches(prev => prev.filter(p => p.id !== profileId));
+          
+          toast.success(`You matched with ${profile.name}!`, {
+            description: "You can now start messaging each other",
+          });
+        } else {
+          toast.success(`Connection request sent to ${profile.name}`);
+          setMatches(prev => prev.filter(p => p.id !== profileId));
+        }
+      }
+    } catch (error) {
+      console.error("Error connecting:", error);
+      toast.error("Failed to send connection request");
     }
   };
   
@@ -199,99 +239,115 @@ const Matches = () => {
     setActiveTab("discover");
   };
   
-  const handleSaveForLater = (profileId: string) => {
-    const profile = matches.find(p => p.id === profileId);
-    if (profile && !savedProfiles.some(p => p.id === profileId)) {
-      setSavedProfiles(prev => [...prev, profile]);
+  const handleSaveForLater = async (profileId: string) => {
+    if (!user) {
+      toast.error("You must be logged in to save profiles");
+      return;
+    }
+    
+    try {
+      await recordSwipeAction(user.id, profileId, 'save');
       
-      const profileIndex = matches.findIndex(p => p.id === profileId);
-      if (profileIndex !== -1) {
-        setMatches(prev => {
-          const newMatches = [...prev];
-          newMatches.splice(profileIndex, 1);
-          return newMatches;
+      const profile = matches.find(p => p.id === profileId);
+      if (profile && !savedProfiles.some(p => p.id === profileId)) {
+        setSavedProfiles(prev => [...prev, profile]);
+        
+        const profileIndex = matches.findIndex(p => p.id === profileId);
+        if (profileIndex !== -1) {
+          setMatches(prev => {
+            const newMatches = [...prev];
+            newMatches.splice(profileIndex, 1);
+            return newMatches;
+          });
+        }
+        
+        toast.success(`Saved ${profile.name} for later`);
+      }
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast.error("Failed to save profile");
+    }
+  };
+
+  const handleApplyFilters = async (filters: FilterOptions) => {
+    if (!user || !currentUser) {
+      toast.error("You must be logged in to apply filters");
+      return;
+    }
+    
+    setCurrentUser(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        userType: filters.userType || prev.userType,
+        industry: filters.industry.length > 0 ? filters.industry[0] : prev.industry,
+        skills: filters.skills.length > 0 ? filters.skills : prev.skills,
+        experienceLevel: filters.experienceLevel || prev.experienceLevel,
+        relationshipGoal: filters.relationshipGoal || prev.relationshipGoal,
+        location: filters.locationPreference === "local" ? prev.location : prev.location,
+      };
+    });
+    
+    // Load matches with filters
+    setIsLoading(true);
+    try {
+      const matchList = await getMatches(user.id);
+      
+      let filteredMatches = matchList;
+      
+      if (filters.userType) {
+        filteredMatches = filteredMatches.filter(m => m.userType === filters.userType);
+      }
+      
+      if (filters.industry.length > 0) {
+        filteredMatches = filteredMatches.filter(m => 
+          m.industry && filters.industry.includes(m.industry)
+        );
+      }
+      
+      if (filters.skills.length > 0) {
+        filteredMatches = filteredMatches.filter(m => 
+          m.skills && m.skills.some(skill => filters.skills.includes(skill))
+        );
+      }
+      
+      if (filters.experienceLevel) {
+        filteredMatches = filteredMatches.filter(m => 
+          m.experienceLevel === filters.experienceLevel
+        );
+      }
+      
+      if (userLocation) {
+        filteredMatches = filteredMatches.map(match => {
+          const userCoords = getUserMockCoordinates(match.location);
+          
+          if (userCoords) {
+            const distance = calculateDistance(
+              userLocation.latitude,
+              userLocation.longitude,
+              userCoords.latitude,
+              userCoords.longitude
+            );
+            
+            return { ...match, distance };
+          }
+          
+          return match;
         });
       }
+      
+      setMatches(filteredMatches);
+      setFilterApplied(true);
+      toast.success("Filters applied successfully!");
+    } catch (error) {
+      console.error("Error applying filters:", error);
+      toast.error("Failed to apply filters");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleApplyFilters = (filters: FilterOptions) => {
-    setCurrentUser(prev => ({
-      ...prev,
-      userType: filters.userType || prev.userType,
-      industry: filters.industry.length > 0 ? filters.industry[0] : prev.industry,
-      skills: filters.skills.length > 0 ? filters.skills : prev.skills,
-      experienceLevel: filters.experienceLevel || prev.experienceLevel,
-      relationshipGoal: filters.relationshipGoal || prev.relationshipGoal,
-      location: filters.locationPreference === "local" ? prev.location : prev.location,
-    }));
-    
-    let filteredMatches = findMatches(currentUser);
-    
-    if (filters.userType) {
-      filteredMatches = filteredMatches.filter(m => m.userType === filters.userType);
-    }
-    
-    if (filters.industry.length > 0) {
-      filteredMatches = filteredMatches.filter(m => 
-        m.industry && filters.industry.includes(m.industry)
-      );
-    }
-    
-    if (filters.skills.length > 0) {
-      filteredMatches = filteredMatches.filter(m => 
-        m.skills && m.skills.some(skill => filters.skills.includes(skill))
-      );
-    }
-    
-    if (filters.experienceLevel) {
-      filteredMatches = filteredMatches.filter(m => 
-        m.experienceLevel === filters.experienceLevel
-      );
-    }
-    
-    if (filters.locationPreference) {
-      filteredMatches = filteredMatches.filter(m => {
-        if (filters.locationPreference === "global") return true;
-        
-        if (filters.locationPreference === "country") {
-          const profileCountry = m.country || m.location;
-          const userCountry = currentUser.country || currentUser.location;
-          return profileCountry === userCountry;
-        }
-        
-        if (filters.locationPreference === "local") {
-          return m.location === currentUser.location;
-        }
-        
-        return true;
-      });
-    }
-    
-    if (userLocation) {
-      filteredMatches = filteredMatches.map(match => {
-        const userCoords = getUserMockCoordinates(match.location);
-        
-        if (userCoords) {
-          const distance = calculateDistance(
-            userLocation.latitude,
-            userLocation.longitude,
-            userCoords.latitude,
-            userCoords.longitude
-          );
-          
-          return { ...match, distance };
-        }
-        
-        return match;
-      });
-    }
-    
-    setMatches(filteredMatches);
-    setFilterApplied(true);
-    toast.success("Filters applied successfully!");
-  };
-
+  // Leaderboard data (could be fetched from the database in a real app)
   const leaderboardData = [
     { id: "leader1", name: "Alex Johnson", points: 356, connectionsThisWeek: 12 },
     { id: "leader2", name: "Taylor Swift", points: 298, connectionsThisWeek: 10 },
@@ -309,6 +365,17 @@ const Matches = () => {
     { id: "uni6", name: "Neha Gupta", university: "VIT Vellore", points: 248, connections: 7, projectsJoined: 2 },
     { id: "uni7", name: "Arjun Reddy", university: "IIT Madras", points: 215, connections: 6, projectsJoined: 1 },
   ];
+
+  if (!user || !currentUser) {
+    return (
+      <div className="container mx-auto py-32 px-4 text-center">
+        <h1 className="text-2xl font-bold mb-4">Please sign in to view matches</h1>
+        <Button onClick={() => window.location.href = "/login"}>
+          Sign In
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8 px-4 min-h-screen bg-gradient-to-b from-background to-background/70">
@@ -469,116 +536,140 @@ const Matches = () => {
           </TabsList>
           
           <TabsContent value="discover">
-            {!filterApplied && <MatchFilter onApplyFilters={handleApplyFilters} />}
-            
-            {filterApplied && matches.length === 0 ? (
-              <Card className="text-center p-6 mb-6 bg-background/60 backdrop-blur border border-border/40 shadow-sm">
-                <CardContent className="pt-6">
-                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">No matches found with these filters</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Try adjusting your filters to find more matches
-                  </p>
-                  <Button onClick={() => setFilterApplied(false)} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">Adjust Filters</Button>
-                </CardContent>
-              </Card>
+            {isLoading ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              </div>
             ) : (
-              filterApplied && (
-                <>
-                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm text-muted-foreground">
-                      Found {matches.length} matches with your filters
-                    </p>
-                    <Button variant="outline" size="sm" onClick={() => setFilterApplied(false)}>
-                      Adjust Filters
-                    </Button>
-                  </div>
-                  <SwipeContainer 
-                    profiles={matches}
-                    onNewMatch={handleNewMatch}
-                    onRefresh={handleRefreshMatches}
-                    onSendIntro={handleSendIntro}
-                  />
-                  <div className="text-center text-sm text-muted-foreground mt-4">
-                    Connect, pass, or save profiles for later
-                  </div>
-                </>
-              )
-            )}
-            
-            {filterApplied && matches.length > 0 && (
               <>
-                <SwipeContainer 
-                  profiles={matches}
-                  onNewMatch={handleNewMatch}
-                  onRefresh={handleRefreshMatches}
-                  onSendIntro={handleSendIntro}
-                />
-                <div className="text-center text-sm text-muted-foreground mt-4">
-                  Connect, pass, or save profiles for later
-                </div>
+                {!filterApplied && <MatchFilter onApplyFilters={handleApplyFilters} />}
+                
+                {filterApplied && matches.length === 0 ? (
+                  <Card className="text-center p-6 mb-6 bg-background/60 backdrop-blur border border-border/40 shadow-sm">
+                    <CardContent className="pt-6">
+                      <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold mb-2">No matches found with these filters</h3>
+                      <p className="text-muted-foreground mb-6">
+                        Try adjusting your filters to find more matches
+                      </p>
+                      <Button onClick={() => setFilterApplied(false)} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">Adjust Filters</Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  filterApplied && (
+                    <>
+                      <div className="flex items-center justify-between mb-4">
+                        <p className="text-sm text-muted-foreground">
+                          Found {matches.length} matches with your filters
+                        </p>
+                        <Button variant="outline" size="sm" onClick={() => setFilterApplied(false)}>
+                          Adjust Filters
+                        </Button>
+                      </div>
+                      <SwipeContainer 
+                        profiles={matches}
+                        onNewMatch={handleNewMatch}
+                        onRefresh={handleRefreshMatches}
+                        onSendIntro={handleSendIntro}
+                        onSaveForLater={handleSaveForLater}
+                        userId={user.id}
+                      />
+                      <div className="text-center text-sm text-muted-foreground mt-4">
+                        Connect, pass, or save profiles for later
+                      </div>
+                    </>
+                  )
+                )}
+                
+                {filterApplied && matches.length > 0 && (
+                  <>
+                    <SwipeContainer 
+                      profiles={matches}
+                      onNewMatch={handleNewMatch}
+                      onRefresh={handleRefreshMatches}
+                      onSendIntro={handleSendIntro}
+                      onSaveForLater={handleSaveForLater}
+                      userId={user.id}
+                    />
+                    <div className="text-center text-sm text-muted-foreground mt-4">
+                      Connect, pass, or save profiles for later
+                    </div>
+                  </>
+                )}
               </>
             )}
           </TabsContent>
           
           <TabsContent value="saved">
-            {savedProfiles.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {savedProfiles.map((profile, index) => (
-                  <MatchCardConnectable
-                    key={profile.id}
-                    profile={profile}
-                    delay={index * 100}
-                    onViewProfile={handleViewProfile}
-                    onConnect={() => handleConnect(profile.id)}
-                  />
-                ))}
+            {isLoading ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
             ) : (
-              <Card className="text-center p-6 bg-background/60 backdrop-blur border border-border/40 shadow-sm">
-                <CardContent className="pt-6">
-                  <BookmarkPlus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">No saved profiles yet</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Save interesting profiles while browsing to review them later.
-                  </p>
-                  <Button onClick={handleStartMatching} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">Start Discovering</Button>
-                </CardContent>
-              </Card>
+              savedProfiles.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {savedProfiles.map((profile, index) => (
+                    <MatchCardConnectable
+                      key={profile.id}
+                      profile={profile}
+                      delay={index * 100}
+                      onViewProfile={handleViewProfile}
+                      onConnect={() => handleConnect(profile.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <Card className="text-center p-6 bg-background/60 backdrop-blur border border-border/40 shadow-sm">
+                  <CardContent className="pt-6">
+                    <BookmarkPlus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No saved profiles yet</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Save interesting profiles while browsing to review them later.
+                    </p>
+                    <Button onClick={handleStartMatching} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">Start Discovering</Button>
+                  </CardContent>
+                </Card>
+              )
             )}
           </TabsContent>
           
           <TabsContent value="connections">
-            {connections.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {connections.map((connection, index) => (
-                  <MatchCardConnectable
-                    key={connection.id}
-                    profile={connection}
-                    delay={index * 100}
-                    onViewProfile={handleViewProfile}
-                    onConnect={() => {
-                      toast.info(`You're already connected with ${connection.name}`);
-                    }}
-                  />
-                ))}
+            {isLoading ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
             ) : (
-              <Card className="text-center p-6 bg-background/60 backdrop-blur border border-border/40 shadow-sm">
-                <CardContent className="pt-6">
-                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">No connections yet</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Start discovering people and make connections to see them here.
-                  </p>
-                  <Button onClick={handleStartMatching} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">Start Matching</Button>
-                </CardContent>
-              </Card>
+              connections.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {connections.map((connection, index) => (
+                    <MatchCardConnectable
+                      key={connection.id}
+                      profile={connection}
+                      delay={index * 100}
+                      onViewProfile={handleViewProfile}
+                      onConnect={() => {
+                        toast.info(`You're already connected with ${connection.name}`);
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <Card className="text-center p-6 bg-background/60 backdrop-blur border border-border/40 shadow-sm">
+                  <CardContent className="pt-6">
+                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No connections yet</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Start discovering people and make connections to see them here.
+                    </p>
+                    <Button onClick={handleStartMatching} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">Start Matching</Button>
+                  </CardContent>
+                </Card>
+              )
             )}
           </TabsContent>
           
           <TabsContent value="chat">
-            <InstantChat currentUser={currentUser} />
+            <InstantChat currentUser={currentUser} connections={connections} />
           </TabsContent>
         </Tabs>
       </div>
@@ -595,7 +686,7 @@ const Matches = () => {
               profile={match}
               delay={index * 100}
               onViewProfile={handleViewProfile}
-              onConnect={handleConnect}
+              onConnect={() => handleConnect(match.id)}
             />
           ))}
         </div>

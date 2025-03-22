@@ -2,8 +2,16 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 const AuthButtons = () => {
+  const { user } = useAuth();
+  
+  // If user is authenticated, don't show login/signup buttons
+  if (user) {
+    return null;
+  }
+  
   return (
     <>
       <Link to="/login">

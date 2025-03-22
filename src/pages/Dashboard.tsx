@@ -1,215 +1,537 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Link, useNavigate } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Building,
+  Users,
+  Briefcase,
+  MapPin,
+  Radio,
+  GraduationCap,
+  CheckCircle,
+  Clock,
+  Trophy,
+  LineChart,
+  PieChart,
+  BarChart4
+} from "lucide-react";
 
 const Dashboard = () => {
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
-
-  const handleUpdateProfile = () => {
-    navigate("/profile");
+  const [matchesCount, setMatchesCount] = useState(0);
+  const [savedProfilesCount, setSavedProfilesCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    if (user) {
+      fetchUserStats();
+    }
+  }, [user]);
+  
+  const fetchUserStats = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      // Get matches count
+      const { count: matchesCount, error: matchesError } = await supabase
+        .from('user_matches')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'matched');
+      
+      if (matchesError) {
+        console.error("Error fetching matches count:", matchesError);
+      } else {
+        setMatchesCount(matchesCount || 0);
+      }
+      
+      // Get saved profiles count
+      const { count: savedCount, error: savedError } = await supabase
+        .from('user_swipes')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('action', 'save');
+      
+      if (savedError) {
+        console.error("Error fetching saved profiles count:", savedError);
+      } else {
+        setSavedProfilesCount(savedCount || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching user stats:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
-
-  const handleFindMatches = () => {
-    navigate("/matches");
+  
+  // Placeholder data for statistics
+  const weeklyStats = {
+    views: 42,
+    connections: 8,
+    messages: 15,
+    matches: 5
   };
+  
+  const profileCompleteness = profile?.profile_completeness || 0;
+  
+  if (isLoading) {
+    return (
+      <Layout className="py-24 px-6">
+        <div className="max-w-6xl mx-auto flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </Layout>
+    );
+  }
+  
+  if (!user) {
+    return (
+      <Layout className="py-24 px-6">
+        <div className="max-w-6xl mx-auto text-center py-20">
+          <h2 className="text-2xl font-bold mb-4">Please sign in to view your dashboard</h2>
+          <Button onClick={() => navigate("/login")}>Sign In</Button>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
-    <Layout className="pt-28 pb-16 px-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-10 animate-fade-in">
+    <Layout className="py-24 px-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back! Here's your match overview.</p>
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">Welcome back, {profile?.full_name || user.email?.split('@')[0] || 'User'}</p>
           </div>
-          <div className="flex gap-4">
-            <Button variant="outline" className="rounded-lg animate-fade-in" style={{animationDelay: "0.1s"}} onClick={handleUpdateProfile}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
-                <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Update Profile
+          
+          <div className="flex gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate("/profile")}
+              className="flex items-center gap-2"
+            >
+              <Users size={16} />
+              Edit Profile
             </Button>
-            <Button className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 animate-fade-in" style={{animationDelay: "0.2s"}} onClick={handleFindMatches}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
-                <path d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+            <Button 
+              onClick={() => navigate("/matches")}
+              className="flex items-center gap-2"
+            >
+              <Radio size={16} />
               Find Matches
             </Button>
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          <div className="card-glass rounded-xl p-6 animate-slide-up" style={{animationDelay: "0.1s"}}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-600 flex items-center justify-center text-white">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21M12.5 7C12.5 9.20914 10.7091 11 8.5 11C6.29086 11 4.5 9.20914 4.5 7C4.5 4.79086 6.29086 3 8.5 3C10.7091 3 12.5 4.79086 12.5 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold">Profile Completion</h3>
-                <p className="text-sm text-muted-foreground">Complete your profile</p>
-              </div>
-            </div>
-            <div className="bg-secondary rounded-full h-2 mb-2">
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full w-[75%]"></div>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">75% complete</span>
-              <Link to="/profile" className="text-blue-600 font-medium">Complete Now</Link>
-            </div>
-          </div>
-          
-          <div className="card-glass rounded-xl p-6 animate-slide-up" style={{animationDelay: "0.2s"}}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-teal-600 flex items-center justify-center text-white">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M3 7L12 13L21 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold">New Messages</h3>
-                <p className="text-sm text-muted-foreground">From your connections</p>
-              </div>
-            </div>
-            <div className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-teal-500">5</div>
-            <Link to="/chat" className="text-blue-600 text-sm font-medium">View Messages</Link>
-          </div>
-          
-          <div className="card-glass rounded-xl p-6 animate-slide-up" style={{animationDelay: "0.3s"}}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-pink-600 flex items-center justify-center text-white">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20.42 4.58C19.9183 4.07659 19.3222 3.67728 18.6658 3.40463C18.0094 3.13198 17.3057 2.99175 16.595 2.992C15.8843 2.99224 15.1808 3.13295 14.5247 3.40603C13.8686 3.67911 13.273 4.07881 12.772 4.583C11.736 5.623 11.256 7.033 11.387 8.433L6 13.83V18H10.18L15.58 12.62C16.98 12.749 18.39 12.271 19.43 11.233C20.9669 9.69319 20.9669 7.23081 19.43 5.691L20.42 4.58ZM9 16H8V15H7V14H8.59L13.409 9.174C13.3975 8.84019 13.4336 8.50753 13.5161 8.18506C13.5986 7.86258 13.7262 7.55419 13.894 7.271L14 7.172C14.1667 7.00323 14.36 6.8641 14.5718 6.75946C14.7836 6.65482 15.0113 6.5862 15.2442 6.5562C15.4771 6.5262 15.7121 6.5352 15.9415 6.58291C16.1708 6.63062 16.3914 6.71645 16.592 6.835L9 14.41V15H10V16H9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold">New Matches</h3>
-                <p className="text-sm text-muted-foreground">Based on your preferences</p>
-              </div>
-            </div>
-            <div className="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-pink-500">12</div>
-            <Link to="/matches" className="text-blue-600 text-sm font-medium">View Matches</Link>
-          </div>
-        </div>
-        
-        <div className="card-glass rounded-xl p-6 mb-12 animate-scale-in">
-          <h2 className="text-xl font-semibold mb-6 bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">Recent Activity</h2>
-          <div className="space-y-4">
-            {[
-              { type: "match", name: "Alex", time: "2 hours ago" },
-              { type: "message", name: "Taylor", time: "Yesterday" },
-              { type: "view", name: "Jamie", time: "2 days ago" },
-              { type: "connect", name: "Riley", time: "3 days ago" },
-            ].map((activity, index) => (
-              <div key={index} className="flex items-center gap-4 py-2 border-b border-border last:border-0 hover:bg-gray-50 transition-colors duration-200">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white">
-                  {activity.type === "match" && (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20.84 4.61C20.3292 4.099 19.7228 3.69364 19.0554 3.41708C18.3879 3.14052 17.6725 2.99817 16.95 2.99817C16.2275 2.99817 15.5121 3.14052 14.8446 3.41708C14.1772 3.69364 13.5708 4.099 13.06 4.61L12 5.67L10.94 4.61C9.9083 3.57831 8.50903 2.99871 7.05 2.99871C5.59096 2.99871 4.19169 3.57831 3.16 4.61C2.12831 5.64169 1.54871 7.04097 1.54871 8.5C1.54871 9.95903 2.12831 11.3583 3.16 12.39L4.22 13.45L12 21.23L19.78 13.45L20.84 12.39C21.351 11.8792 21.7563 11.2728 22.0329 10.6054C22.3095 9.93791 22.4518 9.22249 22.4518 8.5C22.4518 7.77751 22.3095 7.06209 22.0329 6.39464C21.7563 5.72718 21.351 5.12075 20.84 4.61Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                  {activity.type === "message" && (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                  {activity.type === "view" && (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                  {activity.type === "connect" && (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M16 18L18 20L22 16M12 15.5H7.5C6.10444 15.5 5.40665 15.5 4.83886 15.6722C3.56045 16.06 2.56004 17.0605 2.17224 18.3389C2 18.9067 2 19.6044 2 21M14.5 7.5C14.5 9.98528 12.4853 12 10 12C7.51472 12 5.5 9.98528 5.5 7.5C5.5 5.01472 7.51472 3 10 3C12.4853 3 14.5 5.01472 14.5 7.5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Building className="h-5 w-5 text-primary" />
+                Profile
+              </CardTitle>
+              <CardDescription>Your profile information</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium mb-1">Profile Completeness</p>
+                  <div className="flex items-center gap-2">
+                    <Progress value={profileCompleteness} className="h-2" />
+                    <span className="text-sm font-medium">{profileCompleteness}%</span>
+                  </div>
+                  {profileCompleteness < 70 && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      Complete your profile to get better matches
+                    </p>
                   )}
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium">
-                    {activity.type === "match" && `You matched with ${activity.name}`}
-                    {activity.type === "message" && `${activity.name} sent you a message`}
-                    {activity.type === "view" && `${activity.name} viewed your profile`}
-                    {activity.type === "connect" && `${activity.name} requested to connect`}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{activity.time}</p>
+                
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium">Location</p>
+                      <p className="text-xs text-muted-foreground">
+                        {profile?.location || 'Not specified'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-2">
+                    <Briefcase className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium">Industry</p>
+                      <p className="text-xs text-muted-foreground">
+                        {profile?.industry || 'Not specified'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-2">
+                    <GraduationCap className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium">University</p>
+                      <p className="text-xs text-muted-foreground">
+                        {profile?.university || 'Not specified'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <Button variant="ghost" size="sm" className="text-blue-600">
-                  View
+                
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => navigate("/profile")}
+                >
+                  Update Profile
                 </Button>
               </div>
-            ))}
-          </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                Connections
+              </CardTitle>
+              <CardDescription>Your network statistics</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-muted/50 p-3 rounded-lg text-center">
+                    <p className="text-2xl font-bold">{matchesCount}</p>
+                    <p className="text-xs text-muted-foreground">Matches</p>
+                  </div>
+                  <div className="bg-muted/50 p-3 rounded-lg text-center">
+                    <p className="text-2xl font-bold">{savedProfilesCount}</p>
+                    <p className="text-xs text-muted-foreground">Saved</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Weekly Activity</p>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Profile Views</span>
+                    <span>{weeklyStats.views}</span>
+                  </div>
+                  <Progress value={(weeklyStats.views / 100) * 100} className="h-1" />
+                  
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>New Connections</span>
+                    <span>{weeklyStats.connections}</span>
+                  </div>
+                  <Progress value={(weeklyStats.connections / 20) * 100} className="h-1" />
+                  
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Messages</span>
+                    <span>{weeklyStats.messages}</span>
+                  </div>
+                  <Progress value={(weeklyStats.messages / 50) * 100} className="h-1" />
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => navigate("/matches")}
+                >
+                  View All Connections
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-primary" />
+                Achievement Goals
+              </CardTitle>
+              <CardDescription>Your networking milestones</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-muted/50 p-3 rounded-lg text-center">
+                    <p className="text-2xl font-bold">3</p>
+                    <p className="text-xs text-muted-foreground">Day Streak</p>
+                  </div>
+                  <div className="bg-muted/50 p-3 rounded-lg text-center">
+                    <p className="text-2xl font-bold">2/5</p>
+                    <p className="text-xs text-muted-foreground">Weekly Goal</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">Achievements</p>
+                  
+                  <div className="flex items-center gap-2 bg-muted/30 p-2 rounded-lg">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <div>
+                      <p className="text-sm font-medium">Profile Complete</p>
+                      <p className="text-xs text-muted-foreground">
+                        Fill out all profile fields
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 bg-muted/30 p-2 rounded-lg">
+                    <Clock className="h-4 w-4 text-amber-500" />
+                    <div>
+                      <p className="text-sm font-medium">Networking Pro</p>
+                      <p className="text-xs text-muted-foreground">
+                        Connect with 10 professionals
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 bg-muted/30 p-2 rounded-lg">
+                    <Clock className="h-4 w-4 text-amber-500" />
+                    <div>
+                      <p className="text-sm font-medium">Conversation Starter</p>
+                      <p className="text-xs text-muted-foreground">
+                        Send 20 messages to connections
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="card-glass rounded-xl p-6 animate-fade-in" style={{animationDelay: "0.4s"}}>
-            <h2 className="text-xl font-semibold mb-6 bg-gradient-to-r from-teal-500 to-blue-600 bg-clip-text text-transparent">Your Top Matches</h2>
-            <div className="space-y-4">
-              {[
-                { name: "Alex J.", match: 92, location: "San Francisco", img: "bg-gradient-to-br from-blue-400 to-indigo-600 text-white" },
-                { name: "Taylor M.", match: 87, location: "New York", img: "bg-gradient-to-br from-purple-400 to-pink-600 text-white" },
-                { name: "Jamie C.", match: 89, location: "Chicago", img: "bg-gradient-to-br from-green-400 to-teal-600 text-white" },
-              ].map((profile, index) => (
-                <div key={index} className="flex items-center gap-4 py-2 border-b border-border last:border-0 hover:bg-gray-50 transition-colors duration-200">
-                  <div className={`w-12 h-12 rounded-full ${profile.img} flex items-center justify-center`}>
-                    <span className="text-lg font-light">{profile.name[0]}</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between">
-                      <p className="font-medium">{profile.name}</p>
-                      <Badge variant="gradient" animation="pulse" className="text-sm px-2 py-0.5">
-                        {profile.match}% Match
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{profile.location}</p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Connect
-                  </Button>
-                </div>
-              ))}
-            </div>
-            <div className="text-center mt-6">
-              <Link to="/matches" className="text-blue-600 text-sm font-medium">
-                View All Matches
-              </Link>
-            </div>
-          </div>
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto mb-6">
+            <TabsTrigger value="overview" className="flex items-center gap-1">
+              <LineChart className="h-4 w-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="connections" className="flex items-center gap-1">
+              <PieChart className="h-4 w-4" />
+              Connections
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="flex items-center gap-1">
+              <BarChart4 className="h-4 w-4" />
+              Activity
+            </TabsTrigger>
+          </TabsList>
           
-          <div className="card-glass rounded-xl p-6 animate-fade-in" style={{animationDelay: "0.5s"}}>
-            <h2 className="text-xl font-semibold mb-6 bg-gradient-to-r from-orange-500 to-pink-600 bg-clip-text text-transparent">Latest Messages</h2>
-            <div className="space-y-4">
-              {[
-                { name: "Alex Johnson", message: "Hey, how are you doing today?", time: "2h ago", img: "bg-gradient-to-br from-blue-400 to-indigo-600 text-white" },
-                { name: "Taylor Moore", message: "I saw you like hiking too! Which trails do you recommend?", time: "5h ago", img: "bg-gradient-to-br from-purple-400 to-pink-600 text-white" },
-                { name: "Jamie Chen", message: "Thanks for accepting my connection!", time: "1d ago", img: "bg-gradient-to-br from-green-400 to-teal-600 text-white" },
-              ].map((message, index) => (
-                <div key={index} className="flex items-start gap-4 py-2 border-b border-border last:border-0 hover:bg-gray-50 transition-colors duration-200">
-                  <div className={`w-12 h-12 rounded-full ${message.img} flex items-center justify-center flex-shrink-0`}>
-                    <span className="text-lg font-light">{message.name[0]}</span>
+          <TabsContent value="overview">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Your Network Growth</CardTitle>
+                  <CardDescription>Connections over time</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80 flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <p>Network growth visualization</p>
+                    <p className="text-sm">Connect with more people to see your network grow!</p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start">
-                      <p className="font-medium">{message.name}</p>
-                      <span className="text-xs text-muted-foreground flex-shrink-0">{message.time}</span>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Connection Quality</CardTitle>
+                  <CardDescription>Match scores and engagement</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80 flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <p>Connection quality visualization</p>
+                    <p className="text-sm">Improve your profile to get higher-quality matches!</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="connections">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Connection Distribution</CardTitle>
+                  <CardDescription>By industry and type</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80 flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <p>Connection distribution visualization</p>
+                    <p className="text-sm">Expand your network across different industries!</p>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Connections</CardTitle>
+                  <CardDescription>Your latest matches</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {matchesCount > 0 ? (
+                    <div className="space-y-4">
+                      {/* Placeholder for real connections */}
+                      <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                          A
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm">Alex Johnson</p>
+                          <p className="text-xs text-muted-foreground">Technology • San Francisco</p>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => navigate("/chat")}>
+                          Message
+                        </Button>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                        <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                          T
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm">Taylor Martinez</p>
+                          <p className="text-xs text-muted-foreground">Finance • New York</p>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => navigate("/chat")}>
+                          Message
+                        </Button>
+                      </div>
+                      
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => navigate("/matches")}
+                      >
+                        View All Matches
+                      </Button>
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">{message.message}</p>
+                  ) : (
+                    <div className="h-60 flex items-center justify-center text-center">
+                      <div>
+                        <p className="text-muted-foreground mb-4">No connections yet</p>
+                        <Button onClick={() => navigate("/matches")}>
+                          Find Matches
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="activity">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Activity Timeline</CardTitle>
+                  <CardDescription>Your recent networking activity</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="relative pl-6 pb-4 border-l border-border">
+                      <div className="absolute left-0 top-0 -translate-x-1/2 w-4 h-4 rounded-full bg-primary"></div>
+                      <p className="text-sm font-medium">Profile Updated</p>
+                      <p className="text-xs text-muted-foreground">
+                        You updated your profile information
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        2 days ago
+                      </p>
+                    </div>
+                    
+                    <div className="relative pl-6 pb-4 border-l border-border">
+                      <div className="absolute left-0 top-0 -translate-x-1/2 w-4 h-4 rounded-full bg-primary"></div>
+                      <p className="text-sm font-medium">New Connection</p>
+                      <p className="text-xs text-muted-foreground">
+                        You connected with Alex Johnson
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        3 days ago
+                      </p>
+                    </div>
+                    
+                    <div className="relative pl-6 pb-4 border-l border-border">
+                      <div className="absolute left-0 top-0 -translate-x-1/2 w-4 h-4 rounded-full bg-primary"></div>
+                      <p className="text-sm font-medium">Message Sent</p>
+                      <p className="text-xs text-muted-foreground">
+                        You messaged Taylor Martinez
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        1 week ago
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Weekly Progress</CardTitle>
+                  <CardDescription>Your networking goals</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-sm font-medium">Connect with new people</p>
+                        <p className="text-sm font-medium">2/5</p>
+                      </div>
+                      <Progress value={40} className="h-2" />
+                    </div>
+                    
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-sm font-medium">Send messages</p>
+                        <p className="text-sm font-medium">8/10</p>
+                      </div>
+                      <Progress value={80} className="h-2" />
+                    </div>
+                    
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-sm font-medium">Profile views</p>
+                        <p className="text-sm font-medium">15/20</p>
+                      </div>
+                      <Progress value={75} className="h-2" />
+                    </div>
+                    
+                    <div className="bg-primary/5 p-4 rounded-lg">
+                      <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                        <Trophy className="h-4 w-4 text-amber-500" />
+                        Upcoming Achievement
+                      </h4>
+                      <p className="text-sm">Networking Pro: Connect with 10 professionals</p>
+                      <p className="text-xs text-muted-foreground mt-1">8 connections remaining</p>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-3"
+                        onClick={() => navigate("/matches")}
+                      >
+                        Find Connections
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-            <div className="text-center mt-6">
-              <Link to="/chat" className="text-blue-600 text-sm font-medium">
-                Open Chat
-              </Link>
-            </div>
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );

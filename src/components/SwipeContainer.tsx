@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import SwipeCard from "@/components/SwipeCard";
-import { UserProfile, recordSwipe } from '@/lib/matchmaking';
+import { UserProfile } from '@/lib/matchmaking';
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -16,20 +16,25 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { recordSwipeAction } from "@/services/MatchmakingService";
 
 interface SwipeContainerProps {
   profiles: UserProfile[];
   onNewMatch: (profile: UserProfile) => void;
   onRefresh: () => void;
   onSendIntro?: (profileId: string, message: string) => void;
+  onSaveForLater?: (profileId: string) => void;
+  userId?: string;
 }
 
 const SwipeContainer: React.FC<SwipeContainerProps> = ({ 
   profiles, 
   onNewMatch,
   onRefresh,
-  onSendIntro = () => {}
+  onSendIntro = () => {},
+  onSaveForLater = () => {},
+  userId,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swipedProfiles, setSwipedProfiles] = useState<Set<string>>(new Set());
@@ -190,23 +195,27 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({
     return true;
   });
 
-  const handleSwipe = (profileId: string, action: 'like' | 'reject' | 'save') => {
-    if (action !== 'save') {
-      recordSwipe("current-user", profileId, action);
+  const handleSwipe = async (profileId: string, action: 'like' | 'reject' | 'save') => {
+    if (!userId) {
+      toast.error("You must be logged in to perform this action");
+      return;
     }
     
     setSwipedProfiles(prev => new Set([...prev, profileId]));
     
     if (action === 'save') {
       setSavedProfiles(prev => new Set([...prev, profileId]));
+      onSaveForLater(profileId);
       return;
     }
     
-    if (action === 'like') {
-      if (Math.random() < 0.3) {
+    try {
+      // Record swipe action in database
+      const isMatch = await recordSwipeAction(userId, profileId, action);
+      
+      if (action === 'like' && isMatch) {
         const matchedProfile = profiles.find(p => p.id === profileId);
         if (matchedProfile) {
-          recordSwipe(profileId, "current-user", 'like');
           toast.success(`You matched with ${matchedProfile.name}!`, {
             description: "You can now start connecting!",
             position: "top-center",
@@ -215,6 +224,8 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({
           onNewMatch(matchedProfile);
         }
       }
+    } catch (error) {
+      console.error("Error recording swipe:", error);
     }
     
     setCurrentIndex(prev => prev + 1);
