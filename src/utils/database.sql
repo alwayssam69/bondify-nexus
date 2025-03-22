@@ -76,3 +76,113 @@ ADD COLUMN IF NOT EXISTS last_viewed TIMESTAMP WITH TIME ZONE;
 -- Make sure user_matches table has realtime enabled
 ALTER TABLE public.user_matches REPLICA IDENTITY FULL;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.user_matches;
+
+-- Create tables for Anonymous Industry Q&A feature
+CREATE TABLE IF NOT EXISTS public.questions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  industry TEXT NOT NULL,
+  content TEXT NOT NULL,
+  anonymous BOOLEAN DEFAULT false,
+  timestamp TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.answers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  question_id UUID NOT NULL REFERENCES public.questions(id),
+  expert_id UUID NOT NULL REFERENCES auth.users(id),
+  content TEXT NOT NULL,
+  timestamp TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Add expert_verified column to user_profiles if it doesn't exist
+ALTER TABLE public.user_profiles
+ADD COLUMN IF NOT EXISTS expert_verified BOOLEAN DEFAULT false;
+
+-- Add industry column to user_profiles if it doesn't exist
+ALTER TABLE public.user_profiles
+ADD COLUMN IF NOT EXISTS industry TEXT;
+
+-- Enable RLS on questions and answers
+ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.answers ENABLE ROW LEVEL SECURITY;
+
+-- RLS policies for questions
+CREATE POLICY "Anyone can read questions" 
+  ON public.questions 
+  FOR SELECT 
+  USING (true);
+
+CREATE POLICY "Users can create questions" 
+  ON public.questions 
+  FOR INSERT 
+  WITH CHECK (auth.uid() = user_id);
+
+-- RLS policies for answers
+CREATE POLICY "Anyone can read answers" 
+  ON public.answers 
+  FOR SELECT 
+  USING (true);
+
+CREATE POLICY "Experts can create answers" 
+  ON public.answers 
+  FOR INSERT 
+  WITH CHECK (auth.uid() = expert_id);
+
+-- Create table for AI-Driven Industry Insights feature
+CREATE TABLE IF NOT EXISTS public.news_feed (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  industry TEXT NOT NULL,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  source_url TEXT NOT NULL,
+  image_url TEXT,
+  timestamp TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Create table for news likes and comments
+CREATE TABLE IF NOT EXISTS public.news_interactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  news_id UUID NOT NULL REFERENCES public.news_feed(id),
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  liked BOOLEAN DEFAULT false,
+  comment TEXT,
+  timestamp TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Enable RLS on news tables
+ALTER TABLE public.news_feed ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.news_interactions ENABLE ROW LEVEL SECURITY;
+
+-- RLS policies for news_feed
+CREATE POLICY "Anyone can read news" 
+  ON public.news_feed 
+  FOR SELECT 
+  USING (true);
+
+-- RLS policies for news_interactions
+CREATE POLICY "Anyone can read news interactions" 
+  ON public.news_interactions 
+  FOR SELECT 
+  USING (true);
+
+CREATE POLICY "Users can create interactions" 
+  ON public.news_interactions 
+  FOR INSERT 
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their interactions" 
+  ON public.news_interactions 
+  FOR UPDATE 
+  USING (auth.uid() = user_id);
+
+-- Enable Supabase Realtime for new tables
+ALTER TABLE public.questions REPLICA IDENTITY FULL;
+ALTER TABLE public.answers REPLICA IDENTITY FULL;
+ALTER TABLE public.news_feed REPLICA IDENTITY FULL;
+ALTER TABLE public.news_interactions REPLICA IDENTITY FULL;
+
+ALTER PUBLICATION supabase_realtime ADD TABLE public.questions;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.answers;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.news_feed;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.news_interactions;

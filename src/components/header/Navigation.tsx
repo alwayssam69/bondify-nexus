@@ -24,6 +24,8 @@ const Navigation = ({ isLoggedIn }: NavigationProps) => {
     { name: "Dashboard", path: "/dashboard" },
     { name: "Matches", path: "/matches" },
     { name: "Chat", path: "/chat" },
+    { name: "Q&A", path: "/qa-forum" },
+    { name: "News", path: "/news-insights" },
   ];
   
   const navLinks = isLoggedIn ? loggedInNavLinks : loggedOutNavLinks;

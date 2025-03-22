@@ -13,6 +13,7 @@ const Card = React.forwardRef<
       "card-3d rounded-xl border bg-card text-card-foreground shadow-md transition-all duration-300 hover:shadow-lg hover:translate-y-[-3px] hover:shadow-blue-500/10",
       "bg-gradient-to-b from-background/80 to-background backdrop-blur-sm",
       "border-border/40 relative overflow-hidden",
+      "before:absolute before:inset-0 before:rounded-xl before:bg-gradient-to-r before:from-transparent before:to-blue-500/5 before:opacity-0 hover:before:opacity-100 before:transition-opacity",
       className
     )}
     {...props}

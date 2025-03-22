@@ -18,6 +18,8 @@ import Contact from "./pages/Contact";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Help from "./pages/Help";
+import QAForum from "./pages/QAForum";
+import NewsInsights from "./pages/NewsInsights";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -58,7 +60,19 @@ const App = () => (
                 </ProtectedRoute>
               } />
               
-              {/* New Routes for Landing Page Links */}
+              {/* New Feature Routes */}
+              <Route path="/qa-forum" element={
+                <ProtectedRoute>
+                  <QAForum />
+                </ProtectedRoute>
+              } />
+              <Route path="/news-insights" element={
+                <ProtectedRoute>
+                  <NewsInsights />
+                </ProtectedRoute>
+              } />
+              
+              {/* Landing Page Links */}
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/terms" element={<Terms />} />
