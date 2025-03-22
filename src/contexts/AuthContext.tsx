@@ -77,7 +77,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
         
-        data = result.data;
+        // Convert old profile structure to match new structure's expected fields
+        data = {
+          id: result.data?.id,
+          full_name: result.data?.full_name,
+          email: result.data?.email,
+          location: result.data?.location,
+          bio: result.data?.bio,
+          skills: result.data?.skills ? [result.data.skills] : [],
+          // Set defaults for required fields in the new structure
+          activity_score: 0,
+          experience_level: '',
+          interests: [],
+          created_at: result.data?.created_at,
+          updated_at: result.data?.updated_at,
+          industry: '',
+          course_year: '',
+          user_type: '',
+          image_url: '',
+          profile_completeness: 0,
+          last_active: new Date().toISOString(),
+        };
       }
 
       setProfile(data);

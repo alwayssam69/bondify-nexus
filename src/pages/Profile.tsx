@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -63,7 +62,6 @@ const Profile = () => {
     },
   });
   
-  // Load user profile data
   useEffect(() => {
     if (profile) {
       form.reset({
@@ -91,12 +89,10 @@ const Profile = () => {
     setIsLoading(true);
     
     try {
-      // Convert comma-separated strings to arrays
       const skillsArray = values.skills ? values.skills.split(',').map(s => s.trim()) : [];
       const interestsArray = values.interests ? values.interests.split(',').map(s => s.trim()) : [];
       const projectInterestsArray = values.projectInterests ? values.projectInterests.split(',').map(s => s.trim()) : [];
       
-      // Calculate profile completeness score (0-100)
       let completenessScore = 0;
       if (values.fullName) completenessScore += 10;
       if (values.location) completenessScore += 10;
@@ -123,9 +119,9 @@ const Profile = () => {
           skills: skillsArray,
           interests: interestsArray,
           project_interests: projectInterestsArray,
-          updated_at: new Date(),
+          updated_at: new Date().toISOString(),
           profile_completeness: completenessScore,
-          activity_score: 75, // Default activity score
+          activity_score: 75,
         })
         .eq('id', user.id);
       
@@ -133,7 +129,6 @@ const Profile = () => {
         throw error;
       }
       
-      // Refresh user profile
       await refreshProfile();
       
       toast.success("Profile updated successfully!");

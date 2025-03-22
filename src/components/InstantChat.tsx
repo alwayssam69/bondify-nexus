@@ -32,9 +32,9 @@ const InstantChat: React.FC<InstantChatProps> = ({ currentUser, connections = []
   const availableChats = connections.length > 0 
     ? connections 
     : [
-        { id: "chat1", name: "Alex J.", matchScore: 92, avatar: "", location: "San Francisco", isNew: true },
-        { id: "chat2", name: "Taylor M.", matchScore: 87, avatar: "", location: "New York", isNew: false },
-        { id: "chat3", name: "Jamie C.", matchScore: 89, avatar: "", location: "Chicago", isNew: true },
+        { id: "chat1", name: "Alex J.", matchScore: 92, location: "San Francisco", isNew: true },
+        { id: "chat2", name: "Taylor M.", matchScore: 87, location: "New York", isNew: false },
+        { id: "chat3", name: "Jamie C.", matchScore: 89, location: "Chicago", isNew: true },
       ] as UserProfile[];
 
   // Auto select first chat if none selected
