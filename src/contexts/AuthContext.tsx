@@ -88,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Set defaults for required fields in the new structure
           activity_score: 0,
           experience_level: '',
-          interests: [],
+          interests: [] as string[],
           created_at: result.data?.created_at,
           updated_at: result.data?.updated_at,
           industry: '',
@@ -97,6 +97,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           image_url: '',
           profile_completeness: 0,
           last_active: new Date().toISOString(),
+          // Set defaults for missing properties
+          match_preferences: {},
+          networking_goals: [] as string[],
+          profile_photos: [] as string[],
+          project_interests: [] as string[],
+          university: '',
         };
       }
 

@@ -32,9 +32,54 @@ const InstantChat: React.FC<InstantChatProps> = ({ currentUser, connections = []
   const availableChats = connections.length > 0 
     ? connections 
     : [
-        { id: "chat1", name: "Alex J.", matchScore: 92, location: "San Francisco", isNew: true },
-        { id: "chat2", name: "Taylor M.", matchScore: 87, location: "New York", isNew: false },
-        { id: "chat3", name: "Jamie C.", matchScore: 89, location: "Chicago", isNew: true },
+        { 
+          id: "chat1", 
+          name: "Alex J.", 
+          matchScore: 92, 
+          location: "San Francisco", 
+          age: 28,
+          gender: "male",
+          interests: ["technology", "startups"],
+          relationshipGoal: "networking",
+          industry: "technology",
+          skills: ["javascript", "react"],
+          userType: "professional",
+          experienceLevel: "intermediate",
+          activityScore: 85,
+          profileCompleteness: 90
+        },
+        { 
+          id: "chat2", 
+          name: "Taylor M.", 
+          matchScore: 87, 
+          location: "New York",
+          age: 30,
+          gender: "female",
+          interests: ["finance", "travel"],
+          relationshipGoal: "networking",
+          industry: "finance",
+          skills: ["analysis", "investment"],
+          userType: "professional",
+          experienceLevel: "expert",
+          activityScore: 78,
+          profileCompleteness: 85
+        },
+        { 
+          id: "chat3", 
+          name: "Jamie C.", 
+          matchScore: 89, 
+          location: "Chicago",
+          age: 25,
+          gender: "non-binary",
+          interests: ["marketing", "design"],
+          relationshipGoal: "networking",
+          industry: "marketing",
+          skills: ["social-media", "content"],
+          userType: "professional",
+          experienceLevel: "intermediate",
+          activityScore: 82,
+          profileCompleteness: 88
+        }
       ] as UserProfile[];
 
   // Auto select first chat if none selected
