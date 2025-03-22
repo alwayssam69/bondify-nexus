@@ -107,13 +107,7 @@ export async function fetchUserNotifications(userId: string): Promise<{
     // Fetch recent message notifications
     const { data: messageData, error: messageError } = await supabase
       .from('messages')
-      .select(`
-        id,
-        sender_id,
-        created_at,
-        content,
-        user_profiles:sender_id(full_name)
-      `)
+      .select('id, sender_id, created_at, content')
       .eq('recipient_id', userId)
       .eq('is_read', false)
       .order('created_at', { ascending: false })
@@ -124,18 +118,27 @@ export async function fetchUserNotifications(userId: string): Promise<{
       throw messageError;
     }
     
-    // Get sender names from user_profiles table
+    // Get sender names separately since the foreign key isn't set up in the database
     const messageNotifications = messageData || [];
+    const senderIds = messageNotifications.map(msg => msg.sender_id);
+    
+    // Get sender profiles
+    const { data: senderProfiles } = await supabase
+      .from('user_profiles')
+      .select('id, full_name')
+      .in('id', senderIds)
+      .then(({ data }) => ({ data: data || [] }));
+    
+    // Create a map of sender ids to names for easier lookup
+    const senderMap = new Map();
+    senderProfiles?.forEach(profile => {
+      senderMap.set(profile.id, profile.full_name);
+    });
     
     // Fetch profile view notifications
     const { data: viewData, error: viewError } = await supabase
       .from('profile_views')
-      .select(`
-        id,
-        viewer_id,
-        viewed_at,
-        user_profiles:viewer_id(full_name)
-      `)
+      .select('id, viewer_id, viewed_at')
       .eq('profile_id', userId)
       .eq('is_notified', false)
       .order('viewed_at', { ascending: false })
@@ -145,7 +148,22 @@ export async function fetchUserNotifications(userId: string): Promise<{
       throw viewError;
     }
     
+    // Get viewer profiles separately
     const viewNotifications = viewData || [];
+    const viewerIds = viewNotifications.map(view => view.viewer_id);
+    
+    // Get viewer profiles
+    const { data: viewerProfiles } = await supabase
+      .from('user_profiles')
+      .select('id, full_name')
+      .in('id', viewerIds)
+      .then(({ data }) => ({ data: data || [] }));
+    
+    // Create a map of viewer ids to names
+    const viewerMap = new Map();
+    viewerProfiles?.forEach(profile => {
+      viewerMap.set(profile.id, profile.full_name);
+    });
     
     // Format match notifications
     const formattedMatches = (matchNotifications || []).map((match, index) => ({
@@ -157,7 +175,7 @@ export async function fetchUserNotifications(userId: string): Promise<{
     
     // Format message notifications
     const formattedMessages = messageNotifications.map((message, index) => {
-      const senderName = message.user_profiles?.full_name || 'Someone';
+      const senderName = senderMap.get(message.sender_id) || 'Someone';
       return {
         id: formattedMatches.length + index,
         type: 'message' as const,
@@ -168,7 +186,7 @@ export async function fetchUserNotifications(userId: string): Promise<{
     
     // Format view notifications
     const formattedViews = viewNotifications.map((view, index) => {
-      const viewerName = view.user_profiles?.full_name || 'Someone';
+      const viewerName = viewerMap.get(view.viewer_id) || 'Someone';
       return {
         id: formattedMatches.length + formattedMessages.length + index,
         type: 'view' as const,
@@ -241,13 +259,7 @@ export async function fetchUserMessages(userId: string): Promise<{
   try {
     const { data, error } = await supabase
       .from('messages')
-      .select(`
-        id,
-        content,
-        created_at,
-        sender_id,
-        user_profiles:sender_id(full_name)
-      `)
+      .select('id, content, created_at, sender_id')
       .eq('recipient_id', userId)
       .order('created_at', { ascending: false })
       .limit(3);
@@ -259,9 +271,24 @@ export async function fetchUserMessages(userId: string): Promise<{
     // If no messages table yet, return empty array
     if (!data) return [];
     
+    // Get sender profiles separately
+    const senderIds = data.map(msg => msg.sender_id);
+    
+    const { data: senderProfiles } = await supabase
+      .from('user_profiles')
+      .select('id, full_name')
+      .in('id', senderIds)
+      .then(({ data }) => ({ data: data || [] }));
+    
+    // Create a map of sender ids to names
+    const senderMap = new Map();
+    senderProfiles?.forEach(profile => {
+      senderMap.set(profile.id, profile.full_name);
+    });
+    
     return data.map(message => ({
       id: parseInt(message.id.toString()) || Math.floor(Math.random() * 1000),
-      name: message.user_profiles?.full_name || 'User',
+      name: senderMap.get(message.sender_id) || 'User',
       message: message.content,
       time: getTimeAgo(new Date(message.created_at))
     }));
