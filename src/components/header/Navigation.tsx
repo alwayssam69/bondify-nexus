@@ -33,10 +33,16 @@ const Navigation = ({ isLoggedIn }: NavigationProps) => {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1 }}
-      className="hidden md:flex items-center"
+      className="hidden md:flex items-center justify-center absolute left-1/2 transform -translate-x-1/2 top-4 z-50"
     >
-      <div className="bg-gray-900/60 backdrop-blur-lg rounded-full py-2 px-4 border border-gray-800/50 shadow-lg">
-        <div className="flex items-center gap-1">
+      <motion.div 
+        className="bg-gray-900/60 backdrop-blur-lg rounded-full py-2 px-4 border border-gray-800/50 shadow-lg hover:shadow-blue-500/10 transition-all duration-300"
+        whileHover={{ scale: 1.02, y: -2 }}
+      >
+        <div className="flex items-center gap-1 relative overflow-hidden">
+          {/* Glow effect behind the active pill */}
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 blur-xl opacity-70 rounded-full"></div>
+          
           {navLinks.map((link) => (
             <Link
               key={link.name}
@@ -62,7 +68,7 @@ const Navigation = ({ isLoggedIn }: NavigationProps) => {
             </Link>
           ))}
         </div>
-      </div>
+      </motion.div>
     </motion.nav>
   );
 };
