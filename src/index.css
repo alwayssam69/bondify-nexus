@@ -5,153 +5,105 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 220 40% 10%;
-
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 220 40% 10%;
-
+    --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 40% 10%;
-
-    --primary: 224 76% 48%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 220 40% 10%;
-
-    --muted: 210 20% 96%;
-    --muted-foreground: 220 10% 40%;
-
-    --accent: 210 20% 96%;
-    --accent-foreground: 220 40% 10%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 220 15% 90%;
-    --input: 220 15% 90%;
-    --ring: 224 76% 48%;
-
-    --radius: 0.75rem;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 1rem;
   }
 
   .dark {
-    --background: 224 40% 10%;
-    --foreground: 210 20% 98%;
-
-    --card: 224 40% 12%;
-    --card-foreground: 210 20% 98%;
-
-    --popover: 224 40% 12%;
-    --popover-foreground: 210 20% 98%;
-
-    --primary: 224 76% 55%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 224 35% 20%;
-    --secondary-foreground: 210 20% 98%;
-
-    --muted: 224 35% 20%;
-    --muted-foreground: 210 20% 75%;
-
-    --accent: 224 35% 20%;
-    --accent-foreground: 210 20% 98%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 224 35% 20%;
-    --input: 224 35% 20%;
-    --ring: 224 76% 55%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
   }
+}
 
+@layer base {
   * {
     @apply border-border;
   }
-
   body {
-    @apply bg-background text-foreground antialiased;
-    font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
+    @apply bg-background text-foreground transition-colors duration-300;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
 
-  html {
-    scroll-behavior: smooth;
+@layer components {
+  .card-glass {
+    @apply bg-background/70 backdrop-blur-lg border border-border/50 shadow-sm;
+  }
+  
+  .glassmorphic {
+    @apply bg-white/10 backdrop-blur-lg border border-white/20 shadow-md;
+  }
+  
+  .button-premium {
+    @apply bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white;
+  }
+  
+  .button-premium-outline {
+    @apply bg-transparent border border-blue-500 text-blue-500 hover:bg-blue-500/10;
+  }
+  
+  .dashboard-card {
+    @apply border bg-card overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-shadow;
+  }
+  
+  .dashboard-stat {
+    @apply p-6 flex flex-col space-y-2;
+  }
+  
+  .dashboard-stat-value {
+    @apply text-3xl font-bold;
+  }
+  
+  .dashboard-stat-label {
+    @apply text-sm text-muted-foreground;
+  }
+  
+  .logo-text {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400;
   }
 }
 
 @layer utilities {
-  .glass {
-    @apply bg-white/70 backdrop-blur-lg border border-white/30 shadow-glass;
-  }
-  
-  .card-glass {
-    @apply bg-white/80 backdrop-blur-md border border-white/30 shadow-card transition-all duration-300 hover:shadow-soft;
-  }
-  
-  .text-balance {
-    text-wrap: balance;
-  }
-
-  .text-gradient {
-    @apply bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent;
-  }
-  
-  .animate-delay-100 {
-    animation-delay: 100ms;
-  }
-  
-  .animate-delay-200 {
+  .animation-delay-200 {
     animation-delay: 200ms;
   }
   
-  .animate-delay-300 {
-    animation-delay: 300ms;
-  }
-  
-  .animate-delay-400 {
+  .animation-delay-400 {
     animation-delay: 400ms;
   }
-  
-  .animate-delay-500 {
-    animation-delay: 500ms;
-  }
-
-  .premium-card {
-    @apply relative overflow-hidden bg-white rounded-2xl border border-gray-200/50 shadow-premium transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
-  }
-
-  .premium-card::before {
-    content: "";
-    @apply absolute inset-0 bg-shimmer bg-[length:200%_100%] animate-shimmer opacity-0 transition-opacity duration-300;
-  }
-
-  .premium-card:hover::before {
-    @apply opacity-100;
-  }
-
-  .gradient-border {
-    @apply relative rounded-xl p-[1px] overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-blue-500 before:via-purple-500 before:to-pink-500 before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100;
-  }
-
-  .gradient-border > * {
-    @apply relative z-10 bg-background rounded-xl;
-  }
-
-  .button-glow {
-    @apply relative overflow-hidden;
-  }
-
-  .button-glow::after {
-    content: "";
-    @apply absolute inset-0 rounded-md bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer opacity-0 transition-opacity duration-300;
-  }
-
-  .button-glow:hover::after {
-    @apply opacity-100;
-  }
 }
-
-/* Add custom Google font for SF Pro */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
