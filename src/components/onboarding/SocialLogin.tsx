@@ -15,17 +15,36 @@ const SocialLogin = () => {
       });
       
       if (error) {
-        toast.error(error.message);
+        console.error("Google login error:", error);
+        toast.error(`Login failed: ${error.message}`);
+      } else {
+        toast.success("Redirecting to Google login...");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Google login error:", error);
-      toast.error("An error occurred during Google login");
+      toast.error(`An error occurred during Google login: ${error.message}`);
     }
   };
 
   const handleLinkedInLogin = async () => {
-    toast.info("LinkedIn login is coming soon");
-    // Implementation would be similar to Google login
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "linkedin",
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+      
+      if (error) {
+        console.error("LinkedIn login error:", error);
+        toast.error(`Login failed: ${error.message}`);
+      } else {
+        toast.success("Redirecting to LinkedIn login...");
+      }
+    } catch (error: any) {
+      console.error("LinkedIn login error:", error);
+      toast.error(`An error occurred during LinkedIn login: ${error.message}`);
+    }
   };
 
   return (

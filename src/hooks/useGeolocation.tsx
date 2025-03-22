@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 interface GeolocationState {
   latitude: number | null;
@@ -14,6 +15,7 @@ interface UseGeolocationOptions {
   maximumAge?: number;
   timeout?: number;
   watch?: boolean;
+  showErrorToasts?: boolean;
 }
 
 export const useGeolocation = (options: UseGeolocationOptions = {}) => {
@@ -27,11 +29,16 @@ export const useGeolocation = (options: UseGeolocationOptions = {}) => {
 
   useEffect(() => {
     if (!navigator.geolocation) {
+      const errorMessage = 'Geolocation is not supported by your browser';
       setState(prev => ({
         ...prev,
-        error: 'Geolocation is not supported by your browser',
+        error: errorMessage,
         isLoading: false,
       }));
+      
+      if (options.showErrorToasts) {
+        toast.error(errorMessage);
+      }
       return;
     }
 
@@ -52,11 +59,30 @@ export const useGeolocation = (options: UseGeolocationOptions = {}) => {
     };
 
     const handleError = (error: GeolocationPositionError) => {
+      let errorMessage = '';
+      switch (error.code) {
+        case 1:
+          errorMessage = 'Permission denied. Please allow location access to find matches near you.';
+          break;
+        case 2:
+          errorMessage = 'Position unavailable. Could not determine your location.';
+          break;
+        case 3:
+          errorMessage = 'Location request timed out. Please try again.';
+          break;
+        default:
+          errorMessage = error.message || 'An unknown error occurred.';
+      }
+      
       setState(prev => ({
         ...prev,
-        error: error.message,
+        error: errorMessage,
         isLoading: false,
       }));
+      
+      if (options.showErrorToasts) {
+        toast.error(errorMessage);
+      }
     };
 
     let watchId: number | null = null;
@@ -80,7 +106,7 @@ export const useGeolocation = (options: UseGeolocationOptions = {}) => {
         navigator.geolocation.clearWatch(watchId);
       }
     };
-  }, [options.enableHighAccuracy, options.maximumAge, options.timeout, options.watch]);
+  }, [options.enableHighAccuracy, options.maximumAge, options.timeout, options.watch, options.showErrorToasts]);
 
   return state;
 };
