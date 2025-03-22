@@ -105,9 +105,15 @@ export async function fetchUserNotifications(userId: string): Promise<{
     if (matchError) throw matchError;
     
     // Fetch recent message notifications
-    const { data: messageNotifications, error: messageError } = await supabase
+    const { data: messageData, error: messageError } = await supabase
       .from('messages')
-      .select('id, sender_id, created_at, content, user_profiles:sender_id(full_name)')
+      .select(`
+        id,
+        sender_id,
+        created_at,
+        content,
+        user_profiles:sender_id(full_name)
+      `)
       .eq('recipient_id', userId)
       .eq('is_read', false)
       .order('created_at', { ascending: false })
@@ -118,10 +124,18 @@ export async function fetchUserNotifications(userId: string): Promise<{
       throw messageError;
     }
     
+    // Get sender names from user_profiles table
+    const messageNotifications = messageData || [];
+    
     // Fetch profile view notifications
-    const { data: viewNotifications, error: viewError } = await supabase
+    const { data: viewData, error: viewError } = await supabase
       .from('profile_views')
-      .select('id, viewer_id, viewed_at, user_profiles:viewer_id(full_name)')
+      .select(`
+        id,
+        viewer_id,
+        viewed_at,
+        user_profiles:viewer_id(full_name)
+      `)
       .eq('profile_id', userId)
       .eq('is_notified', false)
       .order('viewed_at', { ascending: false })
@@ -130,6 +144,8 @@ export async function fetchUserNotifications(userId: string): Promise<{
     if (viewError && viewError.code !== 'PGRST116') {
       throw viewError;
     }
+    
+    const viewNotifications = viewData || [];
     
     // Format match notifications
     const formattedMatches = (matchNotifications || []).map((match, index) => ({
@@ -140,20 +156,26 @@ export async function fetchUserNotifications(userId: string): Promise<{
     }));
     
     // Format message notifications
-    const formattedMessages = (messageNotifications || []).map((message, index) => ({
-      id: formattedMatches.length + index,
-      type: 'message' as const,
-      message: `${message.user_profiles?.full_name || 'Someone'} sent you a message`,
-      time: getTimeAgo(new Date(message.created_at))
-    }));
+    const formattedMessages = messageNotifications.map((message, index) => {
+      const senderName = message.user_profiles?.full_name || 'Someone';
+      return {
+        id: formattedMatches.length + index,
+        type: 'message' as const,
+        message: `${senderName} sent you a message`,
+        time: getTimeAgo(new Date(message.created_at))
+      };
+    });
     
     // Format view notifications
-    const formattedViews = (viewNotifications || []).map((view, index) => ({
-      id: formattedMatches.length + formattedMessages.length + index,
-      type: 'view' as const,
-      message: `${view.user_profiles?.full_name || 'Someone'} viewed your profile`,
-      time: getTimeAgo(new Date(view.viewed_at))
-    }));
+    const formattedViews = viewNotifications.map((view, index) => {
+      const viewerName = view.user_profiles?.full_name || 'Someone';
+      return {
+        id: formattedMatches.length + formattedMessages.length + index,
+        type: 'view' as const,
+        message: `${viewerName} viewed your profile`,
+        time: getTimeAgo(new Date(view.viewed_at))
+      };
+    });
     
     // Combine all notifications
     return [...formattedMatches, ...formattedMessages, ...formattedViews]
@@ -238,7 +260,7 @@ export async function fetchUserMessages(userId: string): Promise<{
     if (!data) return [];
     
     return data.map(message => ({
-      id: message.id,
+      id: parseInt(message.id.toString()) || Math.floor(Math.random() * 1000),
       name: message.user_profiles?.full_name || 'User',
       message: message.content,
       time: getTimeAgo(new Date(message.created_at))
