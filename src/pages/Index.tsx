@@ -9,6 +9,7 @@ import HowItWorks from "@/components/HowItWorks";
 import Features from "@/components/Features";
 import Testimonials from "@/components/Testimonials";
 import DynamicMatches from "@/components/DynamicMatches";
+import WhatWeOffer from "@/components/WhatWeOffer";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const Index = () => {
     <Layout>
       <div className="min-h-screen flex flex-col">
         <Hero user={user} onGetStarted={() => navigate("/register")} onSignIn={() => navigate("/login")} onDashboard={() => navigate("/dashboard")} />
+        <WhatWeOffer />
         <HowItWorks />
         <Features />
         <Testimonials />
