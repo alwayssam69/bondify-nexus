@@ -9,6 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          recipient_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          recipient_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          recipient_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
+      profile_views: {
+        Row: {
+          id: string
+          is_notified: boolean | null
+          profile_id: string
+          viewed_at: string | null
+          viewer_id: string
+        }
+        Insert: {
+          id?: string
+          is_notified?: boolean | null
+          profile_id: string
+          viewed_at?: string | null
+          viewer_id: string
+        }
+        Update: {
+          id?: string
+          is_notified?: boolean | null
+          profile_id?: string
+          viewed_at?: string | null
+          viewer_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           bio: string | null
@@ -59,6 +110,7 @@ export type Database = {
           created_at: string
           id: string
           last_activity: string | null
+          last_viewed: string | null
           match_score: number | null
           matched_user_id: string
           status: string
@@ -69,6 +121,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_activity?: string | null
+          last_viewed?: string | null
           match_score?: number | null
           matched_user_id: string
           status?: string
@@ -79,6 +132,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_activity?: string | null
+          last_viewed?: string | null
           match_score?: number | null
           matched_user_id?: string
           status?: string

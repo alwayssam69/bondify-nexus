@@ -9,7 +9,7 @@ export async function fetchRecentMatches(limit = 6): Promise<{ city: string; cou
     // Get actual match data grouped by location
     const { data, error } = await supabase
       .from('user_matches')
-      .select('matched_user_id, last_activity, user_profiles(location)')
+      .select('matched_user_id, last_activity, user_profiles!user_matches_matched_user_id_fkey(location)')
       .order('last_activity', { ascending: false })
       .limit(limit * 3); // Fetch extra to ensure we have enough unique cities
     
@@ -106,8 +106,8 @@ export async function fetchUserNotifications(userId: string): Promise<{
     
     // Fetch recent message notifications
     const { data: messageNotifications, error: messageError } = await supabase
-      .from('messages') // Assuming you'll create this table
-      .select('id, sender_id, created_at, user_profiles!messages_sender_id_fkey(full_name)')
+      .from('messages')
+      .select('id, sender_id, created_at, content, user_profiles:sender_id(full_name)')
       .eq('recipient_id', userId)
       .eq('is_read', false)
       .order('created_at', { ascending: false })
@@ -118,10 +118,10 @@ export async function fetchUserNotifications(userId: string): Promise<{
       throw messageError;
     }
     
-    // Fetch profile view notifications (if you track these)
+    // Fetch profile view notifications
     const { data: viewNotifications, error: viewError } = await supabase
-      .from('profile_views') // Assuming you'll create this table
-      .select('id, viewer_id, viewed_at, user_profiles!profile_views_viewer_id_fkey(full_name)')
+      .from('profile_views')
+      .select('id, viewer_id, viewed_at, user_profiles:viewer_id(full_name)')
       .eq('profile_id', userId)
       .eq('is_notified', false)
       .order('viewed_at', { ascending: false })
@@ -218,13 +218,13 @@ export async function fetchUserMessages(userId: string): Promise<{
 }[]> {
   try {
     const { data, error } = await supabase
-      .from('messages') // You'll need to create this table
+      .from('messages')
       .select(`
         id,
         content,
         created_at,
         sender_id,
-        user_profiles!messages_sender_id_fkey(full_name)
+        user_profiles:sender_id(full_name)
       `)
       .eq('recipient_id', userId)
       .order('created_at', { ascending: false })
@@ -252,7 +252,8 @@ export async function fetchUserMessages(userId: string): Promise<{
 // Fetch chat contacts
 export async function fetchChatContacts(userId: string): Promise<ChatContact[]> {
   try {
-    const { data, error } = await supabase
+    // Get all matches for the user
+    const { data: matches, error: matchesError } = await supabase
       .from('user_matches')
       .select(`
         matched_user_id,
@@ -262,58 +263,55 @@ export async function fetchChatContacts(userId: string): Promise<ChatContact[]> 
           location,
           image_url,
           last_active
-        ),
-        messages:messages(
-          id,
-          content,
-          created_at,
-          is_read
         )
       `)
       .eq('user_id', userId)
       .eq('status', 'matched')
       .order('last_activity', { ascending: false });
     
-    if (error && error.code !== 'PGRST116') {
-      throw error;
-    }
+    if (matchesError) throw matchesError;
     
-    // If no matches or messages table yet, return empty array
-    if (!data) return [];
+    if (!matches) return [];
     
-    return data.map(match => {
-      // Find the latest message
-      let lastMessage = "No messages yet";
-      let unreadCount = 0;
-      
-      if (match.messages && match.messages.length > 0) {
-        // Sort messages by date
-        const sortedMessages = [...match.messages].sort(
-          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
+    // Get message counts for each matched user
+    const contactsData = await Promise.all(matches.map(async (match) => {
+      // Get latest message
+      const { data: latestMessages, error: messagesError } = await supabase
+        .from('messages')
+        .select('id, content, created_at, sender_id, recipient_id, is_read')
+        .or(`and(sender_id.eq.${userId},recipient_id.eq.${match.matched_user_id}),and(sender_id.eq.${match.matched_user_id},recipient_id.eq.${userId})`)
+        .order('created_at', { ascending: false })
+        .limit(1);
         
-        // Get the most recent message
-        lastMessage = sortedMessages[0].content;
-        
-        // Count unread messages
-        unreadCount = sortedMessages.filter(m => !m.is_read).length;
-      }
+      // Count unread messages
+      const { count: unreadCount, error: countError } = await supabase
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('sender_id', match.matched_user_id)
+        .eq('recipient_id', userId)
+        .eq('is_read', false);
       
       // Generate avatar color based on name
       const name = match.user_profiles?.full_name || 'User';
       const colors = ['bg-blue-100', 'bg-purple-100', 'bg-green-100', 'bg-yellow-100'];
       const colorIndex = name.charCodeAt(0) % colors.length;
       
+      const latestMessage = latestMessages && latestMessages.length > 0 
+        ? latestMessages[0].content 
+        : 'No messages yet';
+        
       return {
         id: match.matched_user_id,
         name: match.user_profiles?.full_name || 'User',
-        lastMessage,
+        lastMessage: latestMessage,
         avatar: colors[colorIndex],
-        unread: unreadCount,
+        unread: unreadCount || 0,
         online: isUserOnline(match.user_profiles?.last_active),
         lastSeen: match.user_profiles?.last_active ? new Date(match.user_profiles.last_active) : undefined
       };
-    });
+    }));
+    
+    return contactsData;
   } catch (error) {
     console.error("Error fetching chat contacts:", error);
     return [];
@@ -332,11 +330,9 @@ export async function fetchChatMessages(
       .or(`and(sender_id.eq.${userId},recipient_id.eq.${contactId}),and(sender_id.eq.${contactId},recipient_id.eq.${userId})`)
       .order('created_at', { ascending: true });
     
-    if (error && error.code !== 'PGRST116') {
-      throw error;
-    }
+    if (error) throw error;
     
-    // If no messages table yet, return empty array
+    // If no messages, return empty array
     if (!data) return [];
     
     return data.map(message => ({
