@@ -12,10 +12,10 @@ const ThemeToggle = () => {
       variant={theme === "dark" ? "outline" : "ghost"}
       size="icon"
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className={`rounded-full w-9 h-9 hover:scale-110 transition-transform ${
+      className={`rounded-full w-10 h-10 hover:scale-110 transition-transform ${
         theme === "dark" 
           ? "bg-gray-800 border-gray-700 hover:bg-gray-700" 
-          : "hover:bg-gray-100"
+          : "bg-white hover:bg-gray-100 border border-gray-200"
       }`}
       aria-label="Toggle theme"
     >

@@ -22,12 +22,24 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const root = window.document.documentElement;
+    
+    // Remove both theme classes first
     root.classList.remove("dark", "light");
+    
+    // Add the current theme class
     root.classList.add(theme);
+    
+    // Store theme preference
     localStorage.setItem("theme", theme);
     
     // Add data-theme attribute for additional CSS targeting
     root.setAttribute("data-theme", theme);
+    
+    // Apply additional color scheme meta tag
+    document.querySelector('meta[name="theme-color"]')?.setAttribute(
+      "content",
+      theme === "dark" ? "#0f172a" : "#f8fafc"
+    );
   }, [theme]);
 
   return (
