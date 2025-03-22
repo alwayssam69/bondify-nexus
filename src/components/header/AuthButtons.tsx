@@ -5,11 +5,15 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
 const AuthButtons = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   
-  // If user is authenticated, don't show login/signup buttons
+  // If user is authenticated, show logout button instead of login/signup
   if (user) {
-    return null;
+    return (
+      <Button variant="ghost" className="text-sm" onClick={signOut}>
+        Sign Out
+      </Button>
+    );
   }
   
   return (

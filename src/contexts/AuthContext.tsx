@@ -56,15 +56,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      // First try to get from user_profiles table (new structure)
+      let { data, error } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching profile:", error);
-        return;
+      if (error || !data) {
+        console.log("Trying fallback profile fetch from profiles table");
+        // Fall back to profiles table (old structure) if needed
+        const result = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+        
+        if (result.error) {
+          console.error("Error fetching profile:", result.error);
+          return;
+        }
+        
+        data = result.data;
       }
 
       setProfile(data);

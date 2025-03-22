@@ -54,6 +54,168 @@ export type Database = {
         }
         Relationships: []
       }
+      user_matches: {
+        Row: {
+          created_at: string
+          id: string
+          last_activity: string | null
+          match_score: number | null
+          matched_user_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_activity?: string | null
+          match_score?: number | null
+          matched_user_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_activity?: string | null
+          match_score?: number | null
+          matched_user_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_matches_matched_user_id_fkey"
+            columns: ["matched_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_matches_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_profiles: {
+        Row: {
+          activity_score: number | null
+          bio: string | null
+          course_year: string | null
+          created_at: string
+          email: string | null
+          experience_level: string | null
+          full_name: string | null
+          id: string
+          image_url: string | null
+          industry: string | null
+          interests: string[] | null
+          last_active: string | null
+          location: string | null
+          match_preferences: Json | null
+          networking_goals: string[] | null
+          profile_completeness: number | null
+          profile_photos: string[] | null
+          project_interests: string[] | null
+          skills: string[] | null
+          university: string | null
+          updated_at: string
+          user_type: string | null
+        }
+        Insert: {
+          activity_score?: number | null
+          bio?: string | null
+          course_year?: string | null
+          created_at?: string
+          email?: string | null
+          experience_level?: string | null
+          full_name?: string | null
+          id: string
+          image_url?: string | null
+          industry?: string | null
+          interests?: string[] | null
+          last_active?: string | null
+          location?: string | null
+          match_preferences?: Json | null
+          networking_goals?: string[] | null
+          profile_completeness?: number | null
+          profile_photos?: string[] | null
+          project_interests?: string[] | null
+          skills?: string[] | null
+          university?: string | null
+          updated_at?: string
+          user_type?: string | null
+        }
+        Update: {
+          activity_score?: number | null
+          bio?: string | null
+          course_year?: string | null
+          created_at?: string
+          email?: string | null
+          experience_level?: string | null
+          full_name?: string | null
+          id?: string
+          image_url?: string | null
+          industry?: string | null
+          interests?: string[] | null
+          last_active?: string | null
+          location?: string | null
+          match_preferences?: Json | null
+          networking_goals?: string[] | null
+          profile_completeness?: number | null
+          profile_photos?: string[] | null
+          project_interests?: string[] | null
+          skills?: string[] | null
+          university?: string | null
+          updated_at?: string
+          user_type?: string | null
+        }
+        Relationships: []
+      }
+      user_swipes: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          target_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          target_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          target_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_swipes_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_swipes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
