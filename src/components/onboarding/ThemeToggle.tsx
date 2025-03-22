@@ -15,7 +15,7 @@ const ThemeToggle = () => {
       className={`rounded-full w-10 h-10 hover:scale-110 transition-transform ${
         theme === "dark" 
           ? "bg-gray-800 border-gray-700 hover:bg-gray-700" 
-          : "bg-white hover:bg-gray-100 border border-gray-200"
+          : "bg-white hover:bg-gray-100 border border-gray-200 shadow-sm"
       }`}
       aria-label="Toggle theme"
     >

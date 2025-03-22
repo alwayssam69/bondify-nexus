@@ -40,6 +40,12 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       "content",
       theme === "dark" ? "#0f172a" : "#f8fafc"
     );
+    
+    // Force a re-painting of the page to ensure styles are applied
+    document.body.style.display = 'none';
+    setTimeout(() => {
+      document.body.style.display = '';
+    }, 10);
   }, [theme]);
 
   return (
