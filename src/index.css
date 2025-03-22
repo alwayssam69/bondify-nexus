@@ -157,6 +157,51 @@
   .medium-contrast-text {
     @apply text-gray-700 dark:text-gray-300;
   }
+  
+  /* 3D card effects */
+  .card-3d {
+    @apply relative transition-all duration-300 transform-gpu hover:shadow-xl;
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+  
+  .card-3d-inner {
+    @apply relative w-full h-full transition-transform duration-300;
+    transform-style: preserve-3d;
+  }
+  
+  .card-3d:hover .card-3d-inner {
+    transform: rotateY(5deg) rotateX(5deg);
+  }
+  
+  /* Floating elements */
+  .floating {
+    animation: float 6s ease-in-out infinite;
+    transform-style: preserve-3d;
+  }
+  
+  .floating-slow {
+    animation: float 8s ease-in-out infinite;
+    transform-style: preserve-3d;
+  }
+  
+  .floating-fast {
+    animation: float 4s ease-in-out infinite;
+    transform-style: preserve-3d;
+  }
+  
+  /* Glass morphism */
+  .glass-panel {
+    @apply bg-white/10 backdrop-blur-md border border-white/20 rounded-xl shadow-lg;
+  }
+  
+  .glass-button {
+    @apply bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all text-white rounded-full;
+  }
+  
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl shadow-md;
+  }
 }
 
 @layer utilities {
@@ -207,5 +252,41 @@
   
   .text-gradient-purple-indigo {
     @apply bg-gradient-to-r from-purple-500 to-indigo-500 bg-clip-text text-transparent;
+  }
+  
+  /* 3D transforms */
+  .transform-3d {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+  
+  .rotate-y-10 {
+    transform: rotateY(10deg);
+  }
+  
+  .rotate-x-10 {
+    transform: rotateX(10deg);
+  }
+  
+  /* Glassmorphism utilities */
+  .backdrop-blur-xs {
+    backdrop-filter: blur(2px);
+  }
+  
+  .backdrop-blur-2xl {
+    backdrop-filter: blur(40px);
+  }
+  
+  /* Glow effects */
+  .glow {
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+  }
+  
+  .glow-purple {
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+  }
+  
+  .glow-pink {
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.5);
   }
 }

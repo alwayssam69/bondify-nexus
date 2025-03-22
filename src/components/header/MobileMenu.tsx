@@ -40,59 +40,68 @@ const MobileMenu = ({ isOpen, isLoggedIn, onClose }: MobileMenuProps) => {
   return (
     <div
       className={cn(
-        "md:hidden fixed inset-0 bg-gray-900 z-40 transition-transform duration-300 ease-in-out pt-20 px-6",
+        "md:hidden fixed inset-0 bg-black/60 backdrop-blur-lg z-40 transition-transform duration-300 ease-in-out pt-20 px-6",
         isOpen ? "translate-x-0" : "translate-x-full"
       )}
     >
-      <nav className="flex flex-col gap-6">
-        {navLinks.map((link) => (
-          <Link
-            key={link.name}
-            to={link.path}
-            className={cn(
-              "text-base font-medium transition-colors hover:text-blue-400 py-2",
-              isActive(link.path)
-                ? "text-blue-400"
-                : "text-gray-300"
-            )}
-            onClick={onClose}
-          >
-            {link.name}
-          </Link>
-        ))}
-        
-        {isLoggedIn && (
-          <>
+      <div className="bg-gradient-to-br from-gray-900/80 to-gray-800/80 border border-white/10 rounded-3xl backdrop-blur-md shadow-2xl p-6 animate-fade-in max-w-md mx-auto">
+        <nav className="flex flex-col gap-6">
+          {navLinks.map((link) => (
             <Link
-              to="/profile"
-              className="text-base font-medium transition-colors hover:text-blue-400 py-2 text-gray-300"
+              key={link.name}
+              to={link.path}
+              className={cn(
+                "text-base font-medium transition-colors hover:text-blue-400 py-2 px-4 rounded-full",
+                isActive(link.path)
+                  ? "bg-blue-500/20 text-blue-400 shadow-inner"
+                  : "text-gray-200"
+              )}
               onClick={onClose}
             >
-              Profile
+              {link.name}
             </Link>
-            
-            <button
-              className="text-base font-medium transition-colors hover:text-blue-400 py-2 text-gray-300 text-left"
-              onClick={handleLogout}
-            >
-              Logout
-            </button>
-          </>
-        )}
-        
-        {!isLoggedIn && (
-          <div className="flex flex-col gap-4 mt-4">
-            <Link to="/login" onClick={onClose}>
-              <Button variant="outline" className="w-full bg-transparent border-gray-700 text-gray-200 hover:bg-gray-800">
-                Sign In
-              </Button>
-            </Link>
-            <Link to="/register" onClick={onClose}>
-              <Button className="w-full bg-blue-600 hover:bg-blue-700">Get Started</Button>
-            </Link>
-          </div>
-        )}
-      </nav>
+          ))}
+          
+          {isLoggedIn && (
+            <>
+              <Link
+                to="/profile"
+                className={cn(
+                  "text-base font-medium transition-colors hover:text-blue-400 py-2 px-4 rounded-full",
+                  isActive("/profile") 
+                    ? "bg-blue-500/20 text-blue-400 shadow-inner"
+                    : "text-gray-200"
+                )}
+                onClick={onClose}
+              >
+                Profile
+              </Link>
+              
+              <button
+                className="text-base font-medium transition-colors hover:text-red-400 py-2 px-4 rounded-full text-left text-gray-200"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </>
+          )}
+          
+          {!isLoggedIn && (
+            <div className="flex flex-col gap-4 mt-4">
+              <Link to="/login" onClick={onClose}>
+                <Button variant="outline" className="w-full bg-white/5 border-gray-700 text-gray-200 hover:bg-gray-800 rounded-full">
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/register" onClick={onClose}>
+                <Button className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 rounded-full">
+                  Get Started
+                </Button>
+              </Link>
+            </div>
+          )}
+        </nav>
+      </div>
     </div>
   );
 };

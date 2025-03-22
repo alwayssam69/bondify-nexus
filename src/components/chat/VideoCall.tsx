@@ -23,6 +23,21 @@ const VideoCall: React.FC<VideoCallProps> = ({
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [callDuration, setCallDuration] = useState(0);
   const timerRef = useRef<number | null>(null);
+  const [floatingPosition, setFloatingPosition] = useState({ x: 0, y: 0 });
+
+  // Create a floating animation effect for the connecting avatar
+  useEffect(() => {
+    if (callStatus === 'connecting') {
+      const interval = setInterval(() => {
+        setFloatingPosition({
+          x: Math.sin(Date.now() / 1000) * 5,
+          y: Math.cos(Date.now() / 1000) * 5
+        });
+      }, 50);
+      
+      return () => clearInterval(interval);
+    }
+  }, [callStatus]);
 
   // Simulate connecting and then connected
   useEffect(() => {
@@ -114,15 +129,23 @@ const VideoCall: React.FC<VideoCallProps> = ({
       <div className="flex-1 bg-gradient-to-br from-gray-900 to-gray-800 relative overflow-hidden">
         {callStatus === 'connecting' ? (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center text-white">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mx-auto flex items-center justify-center mb-4 animate-pulse">
-                <span className="text-2xl">{contactName[0]}</span>
+            <div 
+              className="text-center text-white transform-gpu"
+              style={{ 
+                transform: `translate(${floatingPosition.x}px, ${floatingPosition.y}px)`,
+                transition: 'transform 0.1s linear'
+              }}
+            >
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 mx-auto flex items-center justify-center mb-6 shadow-xl shadow-blue-500/20 animate-float-rotate">
+                <span className="text-3xl">{contactName[0]}</span>
               </div>
-              <h3 className="text-xl font-medium mb-2">{isIncoming ? "Incoming call from" : "Calling"} {contactName}</h3>
+              <h3 className="text-xl font-medium mb-3 bg-clip-text text-transparent bg-gradient-to-r from-blue-200 to-indigo-200">
+                {isIncoming ? "Incoming call from" : "Calling"} {contactName}
+              </h3>
               <div className="flex items-center justify-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
-                <span className="w-2 h-2 rounded-full bg-white animate-pulse" style={{ animationDelay: '0.2s' }}></span>
-                <span className="w-2 h-2 rounded-full bg-white animate-pulse" style={{ animationDelay: '0.4s' }}></span>
+                <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" style={{ animationDelay: '0.2s' }}></span>
+                <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" style={{ animationDelay: '0.4s' }}></span>
               </div>
             </div>
           </div>
@@ -137,11 +160,13 @@ const VideoCall: React.FC<VideoCallProps> = ({
             />
             {isCameraOff && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center text-white">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mx-auto flex items-center justify-center mb-4">
-                    <span className="text-2xl">{contactName[0]}</span>
+                <div className="text-center text-white animate-float-rotate">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 mx-auto flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20">
+                    <span className="text-3xl">{contactName[0]}</span>
                   </div>
-                  <p>Camera is turned off</p>
+                  <p className="text-lg font-light bg-clip-text text-transparent bg-gradient-to-r from-blue-200 to-indigo-200">
+                    Camera is turned off
+                  </p>
                 </div>
               </div>
             )}
@@ -149,12 +174,12 @@ const VideoCall: React.FC<VideoCallProps> = ({
         )}
         
         {/* Call duration */}
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-black/50 rounded-full px-4 py-1 text-white text-sm">
+        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 glass-panel px-4 py-2 rounded-full text-white text-sm backdrop-blur-lg">
           {callStatus === 'connected' ? formatDuration(callDuration) : 'Connecting...'}
         </div>
         
         {/* Local video (picture-in-picture) */}
-        <div className="absolute bottom-4 right-4 w-32 h-48 rounded-lg overflow-hidden border-2 border-white shadow-lg">
+        <div className="absolute bottom-6 right-6 w-32 h-48 rounded-2xl overflow-hidden border-2 border-white/20 shadow-xl shadow-black/30 backdrop-blur-sm">
           <video 
             ref={localVideoRef}
             autoPlay 
@@ -163,19 +188,19 @@ const VideoCall: React.FC<VideoCallProps> = ({
             className="w-full h-full object-cover"
           />
           {isCameraOff && (
-            <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-700 flex items-center justify-center">
-              <span className="text-white">Camera Off</span>
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+              <span className="text-white text-sm">Camera Off</span>
             </div>
           )}
         </div>
       </div>
       
       {/* Call controls */}
-      <div className="bg-black p-4 flex items-center justify-center gap-4">
+      <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-6 flex items-center justify-center gap-4">
         <Button 
           variant="outline" 
           size="icon" 
-          className={`rounded-full h-12 w-12 ${isMuted ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-800 text-white'}`}
+          className={`rounded-full h-12 w-12 backdrop-blur-md ${isMuted ? 'bg-red-500/80 text-white hover:bg-red-600/80' : 'bg-white/5 text-white hover:bg-white/10 border-white/10'}`}
           onClick={toggleMute}
         >
           {isMuted ? (
@@ -199,7 +224,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
         <Button 
           variant="outline" 
           size="icon" 
-          className={`rounded-full h-12 w-12 ${isCameraOff ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-800 text-white'}`}
+          className={`rounded-full h-12 w-12 backdrop-blur-md ${isCameraOff ? 'bg-red-500/80 text-white hover:bg-red-600/80' : 'bg-white/5 text-white hover:bg-white/10 border-white/10'}`}
           onClick={toggleCamera}
         >
           {isCameraOff ? (
@@ -220,7 +245,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
         <Button 
           variant="destructive" 
           size="icon" 
-          className="rounded-full h-14 w-14 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700"
+          className="rounded-full h-14 w-14 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 shadow-lg shadow-red-500/20"
           onClick={handleEndCall}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

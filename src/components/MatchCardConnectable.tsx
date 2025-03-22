@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { UserProfile } from "@/lib/matchmaking";
@@ -28,9 +28,39 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [tiltStyle, setTiltStyle] = useState({});
+  const cardRef = useRef<HTMLDivElement>(null);
   
-  const initial = profile.name.charAt(0);
+  const initial = profile.name?.charAt(0) || "?";
   const matchPercentage = profile.matchScore !== undefined ? Math.floor(profile.matchScore) : 85;
+  
+  // Handle mouse movement for 3D tilt effect
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    
+    const card = cardRef.current;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    const tiltX = (y - centerY) / 10;
+    const tiltY = (centerX - x) / 10;
+    
+    setTiltStyle({
+      transform: `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.02, 1.02, 1.02)`,
+      transition: 'transform 0.1s ease'
+    });
+  };
+  
+  const handleMouseLeave = () => {
+    setTiltStyle({
+      transform: 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)',
+      transition: 'transform 0.5s ease'
+    });
+  };
   
   const handleConnect = () => {
     if (onConnect) {
@@ -51,34 +81,44 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
 
   // Function to get the right color based on match percentage
   const getMatchScoreColor = () => {
-    if (matchPercentage >= 90) return "bg-green-500 text-white";
-    if (matchPercentage >= 75) return "bg-blue-500 text-white";
-    if (matchPercentage >= 60) return "bg-amber-500 text-white";
-    return "bg-gray-500 text-white";
+    if (matchPercentage >= 90) return "bg-gradient-to-r from-green-500 to-emerald-600 text-white";
+    if (matchPercentage >= 75) return "bg-gradient-to-r from-blue-500 to-indigo-600 text-white";
+    if (matchPercentage >= 60) return "bg-gradient-to-r from-amber-500 to-orange-600 text-white";
+    return "bg-gradient-to-r from-gray-600 to-gray-700 text-white";
   };
   
   return (
     <>
       <div 
+        ref={cardRef}
         className={cn(
-          "bg-gray-900 rounded-xl overflow-hidden hover:-translate-y-1 transition-all duration-300",
-          "opacity-0 animate-scale-in shadow-lg border border-gray-800"
+          "bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl overflow-hidden transition-all duration-300",
+          "opacity-0 animate-scale-in shadow-xl border border-gray-800/50 backdrop-blur-sm",
+          "hover:shadow-indigo-500/10 hover:border-indigo-500/30"
         )}
-        style={{ animationDelay: `${delay}ms`, animationFillMode: "forwards" }}
+        style={{ 
+          animationDelay: `${delay}ms`, 
+          animationFillMode: "forwards",
+          ...tiltStyle 
+        }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
       >
-        <div className={`${profile.imageUrl || 'bg-gradient-to-br from-blue-600 to-indigo-700'} h-32 flex items-center justify-center relative`}>
-          <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl font-medium text-white">
+        <div className={`${profile.imageUrl || 'bg-gradient-to-br from-blue-600 to-indigo-800'} h-32 flex items-center justify-center relative overflow-hidden`}>
+          {/* 3D floating avatar effect */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30"></div>
+          <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-lg flex items-center justify-center text-3xl font-medium text-white shadow-lg animate-float transform-gpu">
             {initial}
           </div>
-          <div className={`absolute top-3 right-3 ${getMatchScoreColor()} rounded-full px-2 py-1 text-xs font-bold flex items-center`}>
+          <div className={`absolute top-3 right-3 ${getMatchScoreColor()} rounded-full px-3 py-1 text-xs font-bold flex items-center shadow-lg`}>
             {matchPercentage}% Match
           </div>
         </div>
         <div className="p-5">
           <div className="flex justify-between items-start mb-3">
             <div>
-              <h3 className="font-semibold text-lg text-white">{profile.name}, {profile.age}</h3>
-              <div className="flex items-center text-sm text-gray-400 mt-1">
+              <h3 className="font-semibold text-lg text-white">{profile.name}{profile.age ? `, ${profile.age}` : ''}</h3>
+              <div className="flex items-center text-sm text-blue-300 mt-1">
                 <Briefcase className="h-3.5 w-3.5 mr-1" />
                 <span>{profile.industry || profile.userType || "Professional"}</span>
                 {profile.location && (
@@ -99,7 +139,7 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
             {profile.skills?.slice(0, 2).map((skill, index) => (
               <span 
                 key={`skill-${index}`} 
-                className="text-xs px-2 py-1 bg-blue-900/30 text-blue-300 rounded-full"
+                className="text-xs px-2 py-1 bg-blue-900/40 text-blue-300 rounded-full border border-blue-800/50"
               >
                 {skill}
               </span>
@@ -107,7 +147,7 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
             {profile.interests?.slice(0, profile.skills?.length ? 1 : 3).map((interest, index) => (
               <span 
                 key={`interest-${index}`} 
-                className="text-xs px-2 py-1 bg-purple-900/30 text-purple-300 rounded-full"
+                className="text-xs px-2 py-1 bg-purple-900/40 text-purple-300 rounded-full border border-purple-800/50"
               >
                 {interest}
               </span>
@@ -119,11 +159,12 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
             )}
           </div>
           
+          {/* Floating action buttons with glass effect */}
           <div className="flex gap-2">
             <Button 
               variant="outline" 
               size="sm" 
-              className="w-1/3 rounded-lg bg-gray-800 hover:bg-gray-700 border-gray-700 text-gray-300"
+              className="w-1/3 rounded-full bg-white/5 hover:bg-white/10 border-white/10 text-gray-300 backdrop-blur-sm"
               onClick={handleViewProfile}
             >
               <MessageCircle className="mr-1 h-4 w-4" />
@@ -132,7 +173,7 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
             <Button 
               variant="outline"
               size="sm" 
-              className="w-1/3 rounded-lg bg-gray-800 hover:bg-gray-700 border-gray-700 text-gray-300"
+              className="w-1/3 rounded-full bg-white/5 hover:bg-white/10 border-white/10 text-gray-300 backdrop-blur-sm"
               onClick={handleViewProfile}
             >
               <Phone className="mr-1 h-4 w-4" />
@@ -140,7 +181,9 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
             </Button>
             <Button 
               size="sm" 
-              className={`w-1/3 rounded-lg ${isConnected ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+              className={`w-1/3 rounded-full backdrop-blur-sm ${isConnected 
+                ? 'bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800' 
+                : 'bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800'}`}
               onClick={handleConnect}
               disabled={isConnected}
             >
@@ -161,51 +204,52 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
       </div>
       
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] bg-gray-900 text-white border-gray-800">
+        <DialogContent className="sm:max-w-[500px] bg-gradient-to-br from-gray-900 to-gray-800 text-white border-gray-800 shadow-xl">
           <DialogHeader>
-            <DialogTitle className="text-white">{profile.name}, {profile.age}</DialogTitle>
+            <DialogTitle className="text-white">{profile.name}{profile.age ? `, ${profile.age}` : ''}</DialogTitle>
             <DialogDescription className="text-gray-400">{profile.location}</DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
-            <div className={`${profile.imageUrl || 'bg-gradient-to-br from-blue-600 to-indigo-700'} h-48 rounded-md flex items-center justify-center`}>
-              <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl font-light text-white">
+            <div className={`${profile.imageUrl || 'bg-gradient-to-br from-blue-600 to-indigo-700'} h-48 rounded-md flex items-center justify-center relative overflow-hidden`}>
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30"></div>
+              <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-lg flex items-center justify-center text-4xl font-light text-white shadow-lg animate-float">
                 {initial}
               </div>
-              <div className={`absolute top-4 right-4 ${getMatchScoreColor()} rounded-full px-2 py-1 text-xs font-bold`}>
+              <div className={`absolute top-4 right-4 ${getMatchScoreColor()} rounded-full px-3 py-1 text-xs font-bold shadow-lg`}>
                 {matchPercentage}% Match
               </div>
             </div>
             
             {profile.bio && (
-              <div>
-                <h4 className="text-sm font-medium mb-1 text-white">About</h4>
-                <p className="text-sm text-gray-400">{profile.bio}</p>
+              <div className="bg-white/5 rounded-xl p-4 backdrop-blur-sm">
+                <h4 className="text-sm font-medium mb-2 text-white">About</h4>
+                <p className="text-sm text-gray-300">{profile.bio}</p>
               </div>
             )}
             
-            <div>
-              <h4 className="text-sm font-medium mb-1 text-white">Interests</h4>
+            <div className="bg-white/5 rounded-xl p-4 backdrop-blur-sm">
+              <h4 className="text-sm font-medium mb-2 text-white">Interests</h4>
               <div className="flex flex-wrap gap-1">
-                {profile.interests.map((interest, index) => (
+                {profile.interests?.map((interest, index) => (
                   <span 
                     key={index} 
-                    className="text-xs px-2 py-1 bg-purple-900/30 text-purple-300 rounded-full"
+                    className="text-xs px-2 py-1 bg-purple-900/40 text-purple-300 rounded-full border border-purple-800/50"
                   >
                     {interest}
                   </span>
-                ))}
+                )) || <span className="text-gray-400">No interests listed</span>}
               </div>
             </div>
             
             {profile.skills && profile.skills.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium mb-1 text-white">Skills</h4>
+              <div className="bg-white/5 rounded-xl p-4 backdrop-blur-sm">
+                <h4 className="text-sm font-medium mb-2 text-white">Skills</h4>
                 <div className="flex flex-wrap gap-1">
                   {profile.skills.map((skill, index) => (
                     <span 
                       key={index} 
-                      className="text-xs px-2 py-1 bg-blue-900/30 text-blue-300 rounded-full"
+                      className="text-xs px-2 py-1 bg-blue-900/40 text-blue-300 rounded-full border border-blue-800/50"
                     >
                       {skill}
                     </span>
@@ -216,7 +260,7 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
             
             <div className="pt-4">
               <Button 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-full" 
                 onClick={() => {
                   handleConnect();
                   setIsDialogOpen(false);
