@@ -40,7 +40,7 @@ const MobileMenu = ({ isOpen, isLoggedIn, onClose }: MobileMenuProps) => {
   return (
     <div
       className={cn(
-        "md:hidden fixed inset-0 bg-white z-40 transition-transform duration-300 ease-in-out pt-20 px-6",
+        "md:hidden fixed inset-0 bg-gray-900 z-40 transition-transform duration-300 ease-in-out pt-20 px-6",
         isOpen ? "translate-x-0" : "translate-x-full"
       )}
     >
@@ -50,10 +50,10 @@ const MobileMenu = ({ isOpen, isLoggedIn, onClose }: MobileMenuProps) => {
             key={link.name}
             to={link.path}
             className={cn(
-              "text-base font-medium transition-colors hover:text-primary py-2",
+              "text-base font-medium transition-colors hover:text-blue-400 py-2",
               isActive(link.path)
-                ? "text-primary"
-                : "text-muted-foreground"
+                ? "text-blue-400"
+                : "text-gray-300"
             )}
             onClick={onClose}
           >
@@ -65,14 +65,14 @@ const MobileMenu = ({ isOpen, isLoggedIn, onClose }: MobileMenuProps) => {
           <>
             <Link
               to="/profile"
-              className="text-base font-medium transition-colors hover:text-primary py-2 text-muted-foreground"
+              className="text-base font-medium transition-colors hover:text-blue-400 py-2 text-gray-300"
               onClick={onClose}
             >
               Profile
             </Link>
             
             <button
-              className="text-base font-medium transition-colors hover:text-primary py-2 text-muted-foreground text-left"
+              className="text-base font-medium transition-colors hover:text-blue-400 py-2 text-gray-300 text-left"
               onClick={handleLogout}
             >
               Logout
@@ -83,12 +83,12 @@ const MobileMenu = ({ isOpen, isLoggedIn, onClose }: MobileMenuProps) => {
         {!isLoggedIn && (
           <div className="flex flex-col gap-4 mt-4">
             <Link to="/login" onClick={onClose}>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full bg-transparent border-gray-700 text-gray-200 hover:bg-gray-800">
                 Sign In
               </Button>
             </Link>
             <Link to="/register" onClick={onClose}>
-              <Button className="w-full">Get Started</Button>
+              <Button className="w-full bg-blue-600 hover:bg-blue-700">Get Started</Button>
             </Link>
           </div>
         )}

@@ -37,17 +37,17 @@ const DynamicMatches = () => {
   }, []);
 
   return (
-    <section className="py-20 px-6">
+    <section className="py-20 px-6 bg-gray-950 text-white">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <div className="inline-block mb-4">
-            <div className="flex items-center gap-2 bg-blue-50 rounded-full py-1 px-4">
-              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-              <span className="text-sm font-medium text-blue-900">Live Network</span>
+            <div className="flex items-center gap-2 bg-blue-900/40 rounded-full py-1 px-4">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+              <span className="text-sm font-medium text-blue-200">Live Network</span>
             </div>
           </div>
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Growing Every Minute</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-blue-200/80 max-w-2xl mx-auto">
             Join thousands of professionals connecting across India. See where connections are happening right now.
           </p>
         </div>
@@ -57,12 +57,12 @@ const DynamicMatches = () => {
             {[...Array(6)].map((_, index) => (
               <div 
                 key={index}
-                className="bg-white rounded-xl overflow-hidden shadow-md border border-gray-100 h-[160px] animate-pulse"
+                className="bg-gray-800/40 rounded-xl overflow-hidden h-[180px] animate-pulse"
               >
-                <div className="h-24 bg-gray-200"></div>
+                <div className="h-24 bg-gray-700/50"></div>
                 <div className="p-4">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-700/50 rounded w-3/4 mb-2"></div>
+                  <div className="h-4 bg-gray-700/50 rounded w-1/2"></div>
                 </div>
               </div>
             ))}
@@ -76,29 +76,31 @@ const DynamicMatches = () => {
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: index * 0.05 }}
                 viewport={{ once: true }}
-                className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all border border-gray-100"
+                className="rounded-xl overflow-hidden shadow-lg border border-gray-800 hover:shadow-blue-900/20 hover:-translate-y-1 transition-all"
               >
-                <div className={`h-24 bg-gradient-to-r ${city.color} flex items-center justify-center relative`}>
-                  <h3 className="text-2xl font-bold text-white">{city.city}</h3>
-                  <div className="absolute bottom-2 right-2 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5 text-white text-xs flex items-center">
+                <div className={`h-32 ${city.color} flex items-center justify-center relative`}>
+                  <h3 className="text-2xl md:text-3xl font-bold text-white">{city.city}</h3>
+                  <div className="absolute top-2 right-2 bg-black/20 backdrop-blur-sm rounded-full px-2 py-0.5 text-white text-xs flex items-center">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 mr-1 animate-pulse"></span>
                     Live
                   </div>
                 </div>
-                <div className="p-4">
+                <div className="p-4 bg-gray-900">
                   <div className="flex justify-between items-center mb-2">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4 mr-1" />
+                    <div className="flex items-center text-sm text-gray-300">
+                      <MapPin className="h-4 w-4 mr-1 text-gray-400" />
                       {city.city} Network
                     </div>
-                    <div className="flex items-center text-sm font-medium text-blue-600">
+                    <div className="flex items-center text-sm font-medium text-blue-300">
                       <Users className="h-4 w-4 mr-1" />
                       {city.count}+ Users
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-4">Last match: {city.lastMatched}</p>
+                  <p className="text-xs text-gray-400 mb-4">Last match: {city.lastMatched}</p>
                   <Link to="/register">
-                    <Button variant="outline" size="sm" className="w-full">
+                    <Button 
+                      className="w-full bg-gray-800 hover:bg-gray-700 text-white"
+                    >
                       Connect in {city.city}
                     </Button>
                   </Link>

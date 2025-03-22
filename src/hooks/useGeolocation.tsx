@@ -37,7 +37,10 @@ export const useGeolocation = (options: UseGeolocationOptions = {}) => {
       }));
       
       if (options.showErrorToasts) {
-        toast.error(errorMessage);
+        toast.error(errorMessage, {
+          className: "bg-gray-900 text-white border border-gray-800",
+          descriptionClassName: "text-gray-300",
+        });
       }
       return;
     }
@@ -81,7 +84,10 @@ export const useGeolocation = (options: UseGeolocationOptions = {}) => {
       }));
       
       if (options.showErrorToasts) {
-        toast.error(errorMessage);
+        toast.error(errorMessage, {
+          className: "bg-gray-900 text-white border border-gray-800",
+          descriptionClassName: "text-gray-300",
+        });
       }
     };
 
