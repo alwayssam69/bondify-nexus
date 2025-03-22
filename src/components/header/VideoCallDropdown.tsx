@@ -44,27 +44,45 @@ const VideoCallDropdown = ({
     
     setLoading(true);
     try {
-      // In a real implementation, this would fetch from Supabase
-      // Placeholder for actual database call
-      const { data, error } = await supabase
-        .from('connections')
-        .select('id, contact_id, contact_name, avatar, last_connected')
+      // We'll use user_matches to get recent contacts
+      const { data: matchData, error: matchError } = await supabase
+        .from('user_matches')
+        .select('matched_user_id, status, last_activity')
         .eq('user_id', user.id)
-        .order('last_connected', { ascending: false })
+        .eq('status', 'connected')
+        .order('last_activity', { ascending: false })
         .limit(5);
       
-      if (error) {
-        console.error("Error fetching contacts:", error);
+      if (matchError) {
+        console.error("Error fetching contacts:", matchError);
         return;
       }
       
-      // If we have data, map it to our contact format
-      if (data && data.length > 0) {
-        setRecentContacts(data.map(contact => ({
-          id: contact.contact_id,
-          name: contact.contact_name,
-          avatar: contact.avatar
-        })));
+      if (matchData && matchData.length > 0) {
+        // Get details for each matched user
+        const profilePromises = matchData.map(async (match) => {
+          const { data: profileData, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('id, full_name, image_url')
+            .eq('id', match.matched_user_id)
+            .single();
+            
+          if (profileError) {
+            console.error("Error fetching profile:", profileError);
+            return null;
+          }
+          
+          return {
+            id: profileData.id,
+            name: profileData.full_name || 'Unknown User',
+            avatar: profileData.image_url
+          };
+        });
+        
+        const profiles = await Promise.all(profilePromises);
+        setRecentContacts(profiles.filter(Boolean) as Contact[]);
+      } else {
+        setRecentContacts([]);
       }
     } catch (error) {
       console.error("Error in fetching contacts:", error);
@@ -116,8 +134,12 @@ const VideoCallDropdown = ({
               className="hover:bg-gray-800 focus:bg-gray-800 rounded-lg my-1 cursor-pointer"
             >
               <div className="flex items-center gap-3 w-full p-1">
-                <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${contact.avatar || getRandomGradient(contact.id)} flex items-center justify-center text-white`}>
-                  <span>{getInitial(contact.name)}</span>
+                <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${contact.avatar ? '' : getRandomGradient(contact.id)} flex items-center justify-center text-white`}>
+                  {contact.avatar ? (
+                    <img src={contact.avatar} alt={contact.name} className="w-full h-full object-cover rounded-full" />
+                  ) : (
+                    <span>{getInitial(contact.name)}</span>
+                  )}
                 </div>
                 <span>Call {contact.name}</span>
               </div>

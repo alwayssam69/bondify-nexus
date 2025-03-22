@@ -26,20 +26,35 @@ const Navigation = ({ isLoggedIn }: NavigationProps) => {
   
   const navLinks = isLoggedIn ? loggedInNavLinks : loggedOutNavLinks;
   
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    // For hash links on home page
+    if (path.includes('#') && location.pathname === '/') {
+      return location.hash === path.substring(path.indexOf('#'));
+    }
+    return location.pathname === path;
+  };
 
   return (
     <motion.nav 
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1 }}
-      className="hidden md:flex items-center justify-center absolute left-1/2 transform -translate-x-1/2 top-4 z-50"
+      className="hidden md:flex items-center justify-center fixed left-1/2 transform -translate-x-1/2 top-6 z-50"
     >
       <motion.div 
-        className="bg-gray-900/60 backdrop-blur-lg rounded-full py-2 px-4 border border-gray-800/50 shadow-lg hover:shadow-blue-500/10 transition-all duration-300"
-        whileHover={{ scale: 1.02, y: -2 }}
+        className="bg-gray-900/60 backdrop-blur-xl rounded-full py-2.5 px-5 border border-gray-800/50 shadow-lg hover:shadow-blue-500/20 transition-all duration-300"
+        whileHover={{ scale: 1.03, y: -3, boxShadow: "0 15px 25px rgba(59, 130, 246, 0.1)" }}
+        animate={{ 
+          boxShadow: ["0 5px 15px rgba(0, 0, 0, 0.1)", "0 8px 25px rgba(59, 130, 246, 0.1)", "0 5px 15px rgba(0, 0, 0, 0.1)"],
+        }}
+        transition={{
+          boxShadow: {
+            repeat: Infinity,
+            duration: 3,
+          }
+        }}
       >
-        <div className="flex items-center gap-1 relative overflow-hidden">
+        <div className="flex items-center gap-2 relative overflow-hidden">
           {/* Glow effect behind the active pill */}
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 blur-xl opacity-70 rounded-full"></div>
           
@@ -57,7 +72,7 @@ const Navigation = ({ isLoggedIn }: NavigationProps) => {
               {isActive(link.path) && (
                 <motion.span
                   layoutId="nav-pill"
-                  className="absolute inset-0 bg-gradient-to-r from-blue-600/30 to-indigo-600/30 rounded-full -z-10"
+                  className="absolute inset-0 bg-gradient-to-r from-blue-600/50 to-indigo-600/50 rounded-full -z-10"
                   transition={{ type: "spring", duration: 0.6 }}
                 />
               )}
