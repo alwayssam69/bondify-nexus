@@ -69,10 +69,10 @@ const MultiInterestSelect = ({
         option.label.toLowerCase().includes(searchQuery.toLowerCase()))
     : interestOptions;
 
-  // Group interests by category for better organization
+  // Group interests by category for better organization - default to "General" category
   const groupedInterests = filteredOptions.reduce<Record<string, typeof filteredOptions>>(
     (groups, interest) => {
-      const category = interest.category || 'General';
+      const category = "General";
       if (!groups[category]) {
         groups[category] = [];
       }
