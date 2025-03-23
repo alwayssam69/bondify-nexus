@@ -1,26 +1,36 @@
 
-export interface ChatMessage {
+/**
+ * Interface for a recent match in the UI
+ */
+export interface RecentMatch {
   id: string;
-  sender: 'user' | 'match';
-  text: string;
-  timestamp: Date;
+  name: string;
+  location: string;
+  matchPercentage: number;
+  isNew: boolean;
 }
 
+/**
+ * Interface for a chat message
+ */
+export interface ChatMessage {
+  id: string;
+  sender: string;
+  receiver: string;
+  content: string;
+  timestamp: string;
+  read: boolean;
+}
+
+/**
+ * Interface for a chat contact
+ */
 export interface ChatContact {
   id: string;
   name: string;
   lastMessage: string;
-  avatar: string;
-  unread: number;
+  lastMessageTime: string;
+  unreadCount: number;
   online: boolean;
-  lastSeen?: Date;
-}
-
-export interface RecentMatch {
-  id: string;
-  name: string;
-  matchPercentage: number;
-  avatar: string;
-  location: string;
-  isNew: boolean;
+  imageUrl?: string;
 }

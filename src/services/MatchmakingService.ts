@@ -1,186 +1,61 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { UserProfile } from "@/lib/matchmaking";
+import { getMatchRecommendations, getProximityMatches } from "./MatchmakingAPI";
 
-export interface DatabaseUserProfile {
-  id: string;
-  full_name: string;
-  email: string;
-  location: string;
-  bio: string | null;
-  industry: string | null;
-  user_type: string | null;
-  experience_level: string | null;
-  skills: string[] | null;
-  interests: string[] | null;
-  university: string | null;
-  course_year: string | null;
-  networking_goals: string[] | null;
-  project_interests: string[] | null;
-  profile_photos: string[] | null;
-  image_url: string | null;
-  activity_score: number | null;
-  profile_completeness: number | null;
-  created_at: string;
-  updated_at: string;
-}
-
+/**
+ * Get match recommendations for a user
+ */
 export const getMatches = async (userId: string, limit: number = 20): Promise<UserProfile[]> => {
   try {
-    // Get current user's profile for matching criteria
-    const { data: userProfile, error: userError } = await supabase
+    // Check if location-based matching is enabled for this user
+    const { data: userProfile } = await supabase
       .from('user_profiles')
-      .select('*')
+      .select('latitude, longitude')
       .eq('id', userId)
       .single();
     
-    if (userError) {
-      console.error("Error fetching user profile:", userError);
-      return [];
+    // If user has location data, use proximity-based matching
+    if (userProfile?.latitude && userProfile?.longitude) {
+      return getProximityMatches(userId, 100, limit);
     }
     
-    // Create basic query for potential matches
-    let query = supabase
-      .from('user_profiles')
-      .select('*')
-      .neq('id', userId);
-    
-    // Apply filters if user profile has data
-    if (userProfile) {
-      // Filter by industry if user has one
-      if (userProfile.industry) {
-        query = query.eq('industry', userProfile.industry);
-      }
-      
-      // Filter by university if university networking mode
-      if (userProfile.university) {
-        query = query.eq('university', userProfile.university);
-      }
-    }
-    
-    // Execute the query
-    const { data: matchProfiles, error: matchError } = await query.limit(limit);
-    
-    if (matchError) {
-      console.error("Error fetching potential matches:", matchError);
-      return [];
-    }
-    
-    if (!matchProfiles || matchProfiles.length === 0) {
-      return [];
-    }
-    
-    // Convert database profiles to UserProfile format
-    const matches: UserProfile[] = matchProfiles.map((profile: DatabaseUserProfile) => {
-      // Calculate match score based on profile similarity
-      const matchScore = calculateMatchScore(userProfile, profile);
-      
-      return {
-        id: profile.id,
-        name: profile.full_name,
-        age: estimateAgeFromExperienceLevel(profile.experience_level), // Placeholder
-        gender: "unspecified", // Not stored in our schema
-        interests: profile.interests || [],
-        location: profile.location,
-        bio: profile.bio || "",
-        skills: profile.skills || [],
-        language: "English", // Default
-        imageUrl: profile.image_url || "bg-gradient-to-br from-blue-400 to-indigo-600",
-        matchScore: matchScore,
-        industry: profile.industry || "",
-        userType: profile.user_type || "",
-        experienceLevel: profile.experience_level || "",
-        activityScore: profile.activity_score || 70,
-        profileCompleteness: profile.profile_completeness || 50,
-        university: profile.university || "",
-        courseYear: profile.course_year || "",
-        projectInterests: profile.project_interests || [],
-        profilePhotos: profile.profile_photos || [],
-        relationshipGoal: "networking", // Default for this app
-        networkingGoals: profile.networking_goals || [],
-      };
-    });
-    
-    // Sort by match score
-    matches.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
-    
-    return matches;
+    // Otherwise use regular matching algorithm
+    return getMatchRecommendations(userId, limit);
   } catch (error) {
     console.error("Error in getMatches:", error);
     return [];
   }
 };
 
-export const recordSwipeAction = async (userId: string, targetId: string, action: string): Promise<boolean> => {
-  try {
-    // Record the swipe action
-    const { error } = await supabase
-      .from('user_swipes')
-      .insert({
-        user_id: userId,
-        target_id: targetId,
-        action: action
-      });
-    
-    if (error) {
-      console.error("Error recording swipe:", error);
-      return false;
-    }
-    
-    // If the action is 'like', check if the other person has liked too
-    if (action === 'like') {
-      const { data, error: matchError } = await supabase
-        .from('user_swipes')
-        .select('*')
-        .eq('user_id', targetId)
-        .eq('target_id', userId)
-        .eq('action', 'like')
-        .single();
-      
-      // If there's a mutual like, create a match
-      if (!matchError && data) {
-        const { error: createMatchError } = await supabase
-          .from('user_matches')
-          .insert([
-            {
-              user_id: userId,
-              matched_user_id: targetId,
-              status: 'matched'
-            },
-            {
-              user_id: targetId,
-              matched_user_id: userId,
-              status: 'matched'
-            }
-          ]);
-        
-        if (createMatchError) {
-          console.error("Error creating match:", createMatchError);
-          return false;
-        }
-        
-        return true; // Match created
-      }
-    }
-    
-    return false; // No match yet
-  } catch (error) {
-    console.error("Error in recordSwipeAction:", error);
-    return false;
-  }
-};
-
+/**
+ * Get confirmed matches for a user
+ */
 export const getUserMatches = async (userId: string): Promise<UserProfile[]> => {
   try {
-    // Get all matched users
+    // Get confirmed matches from user_matches table
     const { data, error } = await supabase
       .from('user_matches')
-      .select('matched_user_id')
+      .select(`
+        matched_with,
+        match_score,
+        user_profiles!user_matches_matched_with_fkey(
+          id,
+          full_name,
+          location,
+          industry,
+          user_type,
+          experience_level,
+          skills,
+          interests,
+          bio,
+          image_url
+        )
+      `)
       .eq('user_id', userId)
-      .eq('status', 'matched');
+      .eq('status', 'confirmed');
     
     if (error) {
-      console.error("Error fetching matches:", error);
+      console.error("Error fetching user matches:", error);
       return [];
     }
     
@@ -188,57 +63,61 @@ export const getUserMatches = async (userId: string): Promise<UserProfile[]> => 
       return [];
     }
     
-    // Get matched user profiles
-    const matchedUserIds = data.map(match => match.matched_user_id);
-    const { data: matchedProfiles, error: profilesError } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .in('id', matchedUserIds);
-    
-    if (profilesError) {
-      console.error("Error fetching matched profiles:", profilesError);
-      return [];
-    }
-    
-    // Convert to UserProfile format
-    return matchedProfiles.map((profile: DatabaseUserProfile) => ({
-      id: profile.id,
-      name: profile.full_name,
-      age: estimateAgeFromExperienceLevel(profile.experience_level),
-      gender: "unspecified",
-      interests: profile.interests || [],
-      location: profile.location,
-      bio: profile.bio || "",
-      skills: profile.skills || [],
-      language: "English",
-      imageUrl: profile.image_url || "bg-gradient-to-br from-blue-400 to-indigo-600",
-      matchScore: 100, // These are confirmed matches
-      industry: profile.industry || "",
-      userType: profile.user_type || "",
-      experienceLevel: profile.experience_level || "",
-      activityScore: profile.activity_score || 70,
-      profileCompleteness: profile.profile_completeness || 50,
-      university: profile.university || "",
-      courseYear: profile.course_year || "",
-      projectInterests: profile.project_interests || [],
-      profilePhotos: profile.profile_photos || [],
-      relationshipGoal: "networking",
-      networkingGoals: profile.networking_goals || [],
-    }));
+    // Transform the data to UserProfile format
+    return data.map(match => {
+      const profile = match.user_profiles;
+      return {
+        id: profile.id,
+        name: profile.full_name,
+        age: 25 + Math.floor(Math.random() * 15), // Estimate age
+        gender: "unspecified",
+        location: profile.location || "Unknown",
+        interests: profile.interests || [],
+        bio: profile.bio || "",
+        relationshipGoal: "networking",
+        skills: profile.skills || [],
+        language: "English",
+        imageUrl: profile.image_url || "",
+        matchScore: match.match_score * 100,
+        industry: profile.industry || "",
+        userType: profile.user_type || "",
+        experienceLevel: profile.experience_level || "",
+        // Default values for required properties
+        activityScore: 75,
+        profileCompleteness: 80,
+      };
+    });
   } catch (error) {
     console.error("Error in getUserMatches:", error);
     return [];
   }
 };
 
+/**
+ * Get saved profiles for a user
+ */
 export const getSavedProfiles = async (userId: string): Promise<UserProfile[]> => {
   try {
-    // Get all saved profiles (user_swipes with action 'save')
+    // Get saved profiles from user_matches table
     const { data, error } = await supabase
-      .from('user_swipes')
-      .select('target_id')
+      .from('user_matches')
+      .select(`
+        matched_with,
+        user_profiles!user_matches_matched_with_fkey(
+          id,
+          full_name,
+          location,
+          industry,
+          user_type,
+          experience_level,
+          skills,
+          interests,
+          bio,
+          image_url
+        )
+      `)
       .eq('user_id', userId)
-      .eq('action', 'save');
+      .eq('status', 'saved');
     
     if (error) {
       console.error("Error fetching saved profiles:", error);
@@ -249,119 +128,129 @@ export const getSavedProfiles = async (userId: string): Promise<UserProfile[]> =
       return [];
     }
     
-    // Get saved user profiles
-    const savedUserIds = data.map(swipe => swipe.target_id);
-    const { data: savedProfiles, error: profilesError } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .in('id', savedUserIds);
-    
-    if (profilesError) {
-      console.error("Error fetching saved profiles:", profilesError);
-      return [];
-    }
-    
-    // Convert to UserProfile format (similar to getUserMatches)
-    return savedProfiles.map((profile: DatabaseUserProfile) => ({
-      id: profile.id,
-      name: profile.full_name,
-      age: estimateAgeFromExperienceLevel(profile.experience_level),
-      gender: "unspecified",
-      interests: profile.interests || [],
-      location: profile.location,
-      bio: profile.bio || "",
-      skills: profile.skills || [],
-      language: "English",
-      imageUrl: profile.image_url || "bg-gradient-to-br from-blue-400 to-indigo-600",
-      industry: profile.industry || "",
-      userType: profile.user_type || "",
-      experienceLevel: profile.experience_level || "",
-      activityScore: profile.activity_score || 70,
-      profileCompleteness: profile.profile_completeness || 50,
-      university: profile.university || "",
-      courseYear: profile.course_year || "",
-      projectInterests: profile.project_interests || [],
-      profilePhotos: profile.profile_photos || [],
-      relationshipGoal: "networking",
-      networkingGoals: profile.networking_goals || [],
-    }));
+    // Transform the data to UserProfile format
+    return data.map(match => {
+      const profile = match.user_profiles;
+      return {
+        id: profile.id,
+        name: profile.full_name,
+        age: 25 + Math.floor(Math.random() * 15), // Estimate age
+        gender: "unspecified",
+        location: profile.location || "Unknown",
+        interests: profile.interests || [],
+        bio: profile.bio || "",
+        relationshipGoal: "networking",
+        skills: profile.skills || [],
+        language: "English",
+        imageUrl: profile.image_url || "",
+        matchScore: 70 + Math.floor(Math.random() * 20),
+        industry: profile.industry || "",
+        userType: profile.user_type || "",
+        experienceLevel: profile.experience_level || "",
+        // Default values for required properties
+        activityScore: 75,
+        profileCompleteness: 80,
+      };
+    });
   } catch (error) {
     console.error("Error in getSavedProfiles:", error);
     return [];
   }
 };
 
-// Helper function to calculate match score based on profile similarity
-const calculateMatchScore = (userProfile: any, otherProfile: any): number => {
-  if (!userProfile || !otherProfile) return 0;
-  
-  let score = 0;
-  
-  // Industry match
-  if (userProfile.industry && otherProfile.industry && userProfile.industry === otherProfile.industry) {
-    score += 20;
-  }
-  
-  // Experience level match
-  if (userProfile.experience_level && otherProfile.experience_level) {
-    if (userProfile.experience_level === otherProfile.experience_level) {
-      score += 10;
+/**
+ * Record a swipe action by a user
+ */
+export const recordSwipeAction = async (
+  userId: string,
+  profileId: string,
+  action: 'like' | 'pass' | 'save'
+): Promise<boolean> => {
+  try {
+    // Determine the status based on the action
+    let status;
+    switch (action) {
+      case 'like':
+        status = 'pending';
+        break;
+      case 'pass':
+        status = 'rejected';
+        break;
+      case 'save':
+        status = 'saved';
+        break;
+      default:
+        status = 'pending';
     }
-  }
-  
-  // Skills match
-  if (userProfile.skills && otherProfile.skills) {
-    const commonSkills = otherProfile.skills.filter((skill: string) => 
-      userProfile.skills.includes(skill)
-    );
-    score += commonSkills.length * 5;
-  }
-  
-  // Interests match
-  if (userProfile.interests && otherProfile.interests) {
-    const commonInterests = otherProfile.interests.filter((interest: string) => 
-      userProfile.interests.includes(interest)
-    );
-    score += commonInterests.length * 5;
-  }
-  
-  // University match
-  if (userProfile.university && otherProfile.university && userProfile.university === otherProfile.university) {
-    score += 15;
-  }
-  
-  // Project interests match
-  if (userProfile.project_interests && otherProfile.project_interests) {
-    const commonProjectInterests = otherProfile.project_interests.filter((interest: string) => 
-      userProfile.project_interests.includes(interest)
-    );
-    score += commonProjectInterests.length * 5;
-  }
-  
-  // Location match
-  if (userProfile.location === otherProfile.location) {
-    score += 10;
-  }
-  
-  // Add profile completeness bonus
-  if (otherProfile.profile_completeness) {
-    score += otherProfile.profile_completeness / 10;
-  }
-  
-  // Cap at 100
-  return Math.min(score, 100);
-};
-
-// Helper function to estimate age based on experience level
-const estimateAgeFromExperienceLevel = (experienceLevel: string | null): number => {
-  switch (experienceLevel) {
-    case 'beginner':
-      return 20 + Math.floor(Math.random() * 5);
-    case 'intermediate':
-      return 25 + Math.floor(Math.random() * 5);
-    case 'expert':
-      return 30 + Math.floor(Math.random() * 10);
-    default:
-      return 25 + Math.floor(Math.random() * 10);
+    
+    // Record the swipe action
+    const { error } = await supabase
+      .from('user_matches')
+      .upsert({
+        user_id: userId,
+        matched_with: profileId,
+        status: status,
+        updated_at: new Date().toISOString()
+      });
+    
+    if (error) {
+      console.error("Error recording swipe action:", error);
+      return false;
+    }
+    
+    // If this was a like, check if there's a mutual match
+    if (action === 'like') {
+      const { data, error: matchError } = await supabase
+        .from('user_matches')
+        .select('*')
+        .eq('user_id', profileId)
+        .eq('matched_with', userId)
+        .eq('status', 'pending')
+        .single();
+      
+      if (matchError && matchError.code !== 'PGRST116') {
+        console.error("Error checking for mutual match:", matchError);
+      }
+      
+      // If there's a mutual match, update both records to 'confirmed'
+      if (data) {
+        // Update the other user's record
+        await supabase
+          .from('user_matches')
+          .update({ status: 'confirmed' })
+          .eq('user_id', profileId)
+          .eq('matched_with', userId);
+        
+        // Update current user's record
+        await supabase
+          .from('user_matches')
+          .update({ status: 'confirmed' })
+          .eq('user_id', userId)
+          .eq('matched_with', profileId);
+        
+        // Create a notification for both users
+        await supabase.from('notifications').insert([
+          {
+            user_id: userId,
+            type: 'match',
+            message: `You matched with a new connection!`,
+            related_user_id: profileId
+          },
+          {
+            user_id: profileId,
+            type: 'match',
+            message: `You matched with a new connection!`,
+            related_user_id: userId
+          }
+        ]);
+        
+        return true; // Mutual match!
+      }
+    }
+    
+    return false; // No mutual match or not a like action
+  } catch (error) {
+    console.error("Error in recordSwipeAction:", error);
+    return false;
   }
 };
