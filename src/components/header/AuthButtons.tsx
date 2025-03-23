@@ -3,6 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { LogOut, User } from "lucide-react";
 
 const AuthButtons = () => {
   const { user, signOut } = useAuth();
@@ -10,7 +11,12 @@ const AuthButtons = () => {
   // If user is authenticated, show logout button instead of login/signup
   if (user) {
     return (
-      <Button variant="ghost" className="text-sm" onClick={signOut}>
+      <Button 
+        variant="ghost" 
+        className="text-sm flex items-center gap-1" 
+        onClick={signOut}
+      >
+        <LogOut className="h-4 w-4 mr-1" />
         Sign Out
       </Button>
     );
@@ -19,7 +25,8 @@ const AuthButtons = () => {
   return (
     <>
       <Link to="/login">
-        <Button variant="ghost" className="text-sm">
+        <Button variant="ghost" className="text-sm flex items-center gap-1">
+          <User className="h-4 w-4 mr-1" />
           Sign In
         </Button>
       </Link>
