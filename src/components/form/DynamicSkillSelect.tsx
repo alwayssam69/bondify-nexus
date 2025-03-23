@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Check, ChevronsUpDown, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { skillsByIndustry } from "@/data/formOptions";
+import { industrySkills } from "@/data/formOptions";
 
 interface DynamicSkillSelectProps {
   industry: string;
@@ -27,6 +26,7 @@ interface DynamicSkillSelectProps {
   placeholder?: string;
   label?: string;
   error?: boolean;
+  maxSelections?: number;
 }
 
 const DynamicSkillSelect: React.FC<DynamicSkillSelectProps> = ({
@@ -36,20 +36,26 @@ const DynamicSkillSelect: React.FC<DynamicSkillSelectProps> = ({
   placeholder = "Select skills",
   label,
   error = false,
+  maxSelections,
 }) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   // Get skills for the selected industry
-  const availableSkills = industry ? skillsByIndustry[industry] || [] : [];
+  const availableSkills = industry ? industrySkills[industry] || [] : [];
 
   const handleSelect = (selectedValue: string) => {
-    const newValue = value.includes(selectedValue)
-      ? value.filter((item) => item !== selectedValue)
-      : [...value, selectedValue];
-    
-    onChange(newValue);
+    if (value.includes(selectedValue)) {
+      // If already selected, remove it
+      onChange(value.filter((item) => item !== selectedValue));
+    } else if (maxSelections && value.length >= maxSelections) {
+      // If max selections reached, don't add
+      return;
+    } else {
+      // Otherwise add it
+      onChange([...value, selectedValue]);
+    }
   };
 
   const removeItem = (item: string) => {
@@ -141,7 +147,7 @@ const DynamicSkillSelect: React.FC<DynamicSkillSelectProps> = ({
           </Button>
         </PopoverTrigger>
         <PopoverContent 
-          className="w-full p-0 z-50" 
+          className="w-full p-0 z-[200]" 
           style={{ width: triggerRef.current ? `${triggerRef.current.offsetWidth}px` : "300px" }}
         >
           <Command>
@@ -163,14 +169,23 @@ const DynamicSkillSelect: React.FC<DynamicSkillSelectProps> = ({
               {industry && filteredSkills.length === 0 && (
                 <CommandEmpty>No skills found.</CommandEmpty>
               )}
-              {industry && (
+              {industry && filteredSkills.length > 0 && (
                 <ScrollArea className="max-h-[300px]">
                   <CommandGroup>
+                    {maxSelections && value.length >= maxSelections && (
+                      <div className="p-2 text-xs text-amber-600 text-center">
+                        Maximum of {maxSelections} skills can be selected
+                      </div>
+                    )}
                     {filteredSkills.map((skill) => (
                       <CommandItem
                         key={skill.value}
                         value={skill.value}
                         onSelect={() => handleSelect(skill.value)}
+                        disabled={maxSelections ? value.length >= maxSelections && !value.includes(skill.value) : false}
+                        className={cn(
+                          maxSelections && value.length >= maxSelections && !value.includes(skill.value) ? "opacity-50 cursor-not-allowed" : ""
+                        )}
                       >
                         <div className="flex items-center w-full">
                           <Check
@@ -192,6 +207,11 @@ const DynamicSkillSelect: React.FC<DynamicSkillSelectProps> = ({
           </Command>
         </PopoverContent>
       </Popover>
+      {maxSelections && (
+        <p className="text-xs text-gray-500 mt-1">
+          Select up to {maxSelections} skills
+        </p>
+      )}
     </div>
   );
 };

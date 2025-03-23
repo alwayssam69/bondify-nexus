@@ -100,6 +100,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
                 onChange={field.onChange}
                 placeholder="Select skills relevant to your industry"
                 error={!!errors.skills}
+                maxSelections={5}
               />
             </FormControl>
             <FormMessage />
@@ -119,6 +120,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
                 onChange={field.onChange}
                 placeholder="Select your personal interests"
                 error={!!errors.interests}
+                maxSelections={5}
               />
             </FormControl>
             <FormMessage />
