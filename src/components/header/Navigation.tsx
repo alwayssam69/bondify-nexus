@@ -51,10 +51,7 @@ const Navigation = ({ isLoggedIn }: NavigationProps) => {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1 }}
-      className={cn(
-        "fixed z-40 left-1/2 transform -translate-x-1/2",
-        isMobile ? "bottom-6" : "top-24"
-      )}
+      className="w-full flex justify-center"
     >
       <motion.div 
         className={cn(

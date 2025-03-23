@@ -11,7 +11,7 @@ const FloatingNavigation = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   
-  // We'll only show floating navigation on mobile devices now
+  // Only show floating navigation on mobile devices
   if (!isMobile) {
     return null;
   }
