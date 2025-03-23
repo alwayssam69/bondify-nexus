@@ -12,7 +12,15 @@ import FindMatchButton from "@/components/matchmaking/FindMatchButton";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  
+  // Safely access auth context
+  let user = null;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+  } catch (error) {
+    console.log("Auth context not available yet in Index page:", error);
+  }
 
   return (
     <Layout>

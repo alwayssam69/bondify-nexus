@@ -12,7 +12,14 @@ interface LayoutProps {
 }
 
 const Layout = ({ children, className }: LayoutProps) => {
-  const { user } = useAuth();
+  // Safely access auth context
+  let user = null;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+  } catch (error) {
+    console.log("Auth context not available yet in Layout component:", error);
+  }
 
   return (
     <SidebarProvider defaultOpen={true}>

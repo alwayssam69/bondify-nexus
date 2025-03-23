@@ -27,10 +27,16 @@ const Header = () => {
   const [incomingCall, setIncomingCall] = useState<{contactId: string, contactName: string} | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
   
   // Determine if user is logged in based on auth state
-  const isLoggedIn = !!user;
+  let isLoggedIn = false;
+  try {
+    const { user } = useAuth();
+    isLoggedIn = !!user;
+  } catch (error) {
+    console.log("Auth context not available yet in Header:", error);
+    isLoggedIn = false;
+  }
 
   useEffect(() => {
     const handleScroll = () => {
