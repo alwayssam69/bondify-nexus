@@ -51,16 +51,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!result.data) {
             const userData = await supabase.auth.getUser();
             if (userData.data?.user) {
+              const userTag = userData.data.user.user_metadata?.user_tag || `user_${Math.floor(Math.random() * 10000)}`;
+              
               const newProfile = {
                 id: userId,
                 full_name: userData.data.user.user_metadata?.full_name || "User",
                 email: userData.data.user.email,
-                user_tag: userData.data.user.user_metadata?.user_tag || "",
+                user_tag: userTag,
               };
               
               // Insert basic profile
-              await supabase.from('profiles').insert(newProfile);
-              await supabase.from('user_profiles').insert({
+              const { error: profileError } = await supabase.from('profiles').insert(newProfile);
+              if (profileError) {
+                console.error("Error creating profile in profiles table:", profileError);
+              }
+              
+              const userProfileData = {
                 ...newProfile,
                 activity_score: 0,
                 experience_level: '',
@@ -72,16 +78,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 profile_completeness: 20,
                 skills: [],
                 last_active: new Date().toISOString(),
-              });
+              };
+              
+              const { error: userProfileError } = await supabase.from('user_profiles').insert(userProfileData);
+              if (userProfileError) {
+                console.error("Error creating profile in user_profiles table:", userProfileError);
+              }
               
               data = newProfile;
             }
+          } else {
+            data = result.data;
           }
-          return;
-        }
-        
-        // Convert old profile structure to match new structure's expected fields
-        if (result.data) {
+        } else if (result.data) {
+          // Convert old profile structure to match new structure's expected fields
           data = {
             id: result.data?.id,
             full_name: result.data?.full_name,
@@ -89,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             location: result.data?.location,
             bio: result.data?.bio,
             skills: result.data?.skills ? [result.data.skills] : [],
-            user_tag: result.data?.user_tag || "",
+            user_tag: result.data?.user_tag || `user_${Math.floor(Math.random() * 10000)}`,
             // Set defaults for required fields in the new structure
             activity_score: 0,
             experience_level: '',
@@ -124,11 +134,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     console.log("AuthProvider: Setting up auth state listener");
+    let isActive = true;
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log("Auth state changed:", event, session?.user?.id);
+        if (!isActive) return;
+        
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -143,6 +156,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // THEN check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!isActive) return;
+      
       console.log("Initial session check:", session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
@@ -158,6 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => {
+      isActive = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -191,7 +207,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       console.log("Starting signOut process in AuthContext");
+      setIsLoading(true);
       const { error } = await supabase.auth.signOut();
+      
       if (error) {
         console.error("Error signing out from Supabase:", error);
         toast.error(error.message);
@@ -201,6 +219,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
         setSession(null);
         setProfile(null);
+        setIsLoading(false);
         
         // Use window.location for a complete refresh after sign out
         window.location.href = "/login";
@@ -209,6 +228,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error("Exception during sign out:", error);
       toast.error("An error occurred while signing out");
+      setIsLoading(false);
       throw error;
     }
   };

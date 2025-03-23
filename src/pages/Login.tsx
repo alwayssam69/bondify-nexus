@@ -58,14 +58,28 @@ const Login = () => {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (isLoading) return; // Prevent multiple submissions
+    
     setIsLoading(true);
     console.log("Login attempt with email:", values.email);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // Add a timeout to prevent indefinite loading
+      const loginPromise = supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
+      
+      // Create a timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Login timeout - server not responding")), 10000);
+      });
+      
+      // Race the login against the timeout
+      const { data, error } = await Promise.race([
+        loginPromise,
+        timeoutPromise
+      ]) as any;
       
       if (error) {
         console.error("Login error:", error.message);
@@ -74,22 +88,20 @@ const Login = () => {
         return;
       }
       
-      if (data.user) {
+      if (data?.user) {
         console.log("Login successful for user:", data.user.id);
         toast.success("Login successful!");
         
-        // Wait a moment to ensure auth state is properly updated
-        setTimeout(() => {
-          navigate("/dashboard");
-        }, 500);
+        // Force redirect to dashboard after successful login
+        window.location.href = "/dashboard";
       } else {
         console.error("No user returned after successful login");
         toast.error("Login failed. Please try again.");
+        setIsLoading(false);
       }
     } catch (error: any) {
       console.error("Unexpected login error:", error);
-      toast.error("An unexpected error occurred. Please try again.");
-    } finally {
+      toast.error(error.message || "An unexpected error occurred. Please try again.");
       setIsLoading(false);
     }
   };
