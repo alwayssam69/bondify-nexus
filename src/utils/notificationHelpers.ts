@@ -1,108 +1,88 @@
 
 import { supabase } from "@/integrations/supabase/client";
-
-export type NotificationType = 'match' | 'message' | 'view';
-
-/**
- * Creates a new notification for a user
- * @param userId The ID of the user to create the notification for
- * @param type The type of notification
- * @param message The notification message
- * @param relatedEntityId Optional ID of a related entity (e.g., match ID, message ID)
- * @param metadata Optional additional data as JSON
- * @returns Promise with the result of the operation
- */
-export const createNotification = async (
-  userId: string,
-  type: NotificationType,
-  message: string,
-  relatedEntityId?: string,
-  metadata?: Record<string, any>
-) => {
-  try {
-    // Try to create a notification in the real table
-    const { data, error } = await supabase
-      .from('user_notifications' as any)
-      .insert({
-        user_id: userId,
-        type,
-        message,
-        related_entity_id: relatedEntityId || null,
-        metadata: metadata || {},
-        is_read: false
-      })
-      .select()
-      .single();
-    
-    if (error) {
-      // If there's an error (table might not exist), log what would have been created
-      console.warn("Could not create notification, table might not exist:", error.message);
-      console.log("Notification would have been created with:", {
-        userId,
-        type,
-        message,
-        relatedEntityId,
-        metadata
-      });
-      
-      return { success: true, simulated: true };
-    }
-    
-    return { success: true, data };
-  } catch (error) {
-    console.error("Unexpected error creating notification:", error);
-    return { error };
-  }
-};
+import { toast } from "sonner";
+import type { Notification } from "@/components/header/notifications/types";
 
 /**
- * Marks all notifications as read for a user
- * @param userId The ID of the user
- * @returns Promise with the result of the operation
+ * Marks a single notification as read
+ * @param notificationId The ID of the notification to mark as read
+ * @returns Promise that resolves when the operation is complete
  */
-export const markAllNotificationsAsRead = async (userId: string) => {
+export const markNotificationAsRead = async (notificationId: string): Promise<void> => {
   try {
-    // Try to update notifications in the real table
+    // Attempt to update the notification's read status in the database
     const { error } = await supabase
-      .from('user_notifications' as any)
-      .update({ is_read: true })
-      .eq('user_id', userId);
-    
-    if (error) {
-      // If there's an error (table might not exist), log what would have happened
-      console.warn("Could not mark notifications as read, table might not exist:", error.message);
-      console.log(`Would mark all notifications as read for user ${userId}`);
-      
-      return { success: true, simulated: true };
-    }
-    
-    return { success: true };
-  } catch (error) {
-    console.error("Unexpected error marking notifications as read:", error);
-    return { error };
-  }
-};
-
-/**
- * Marks a specific notification as read
- * @param notificationId The ID of the notification
- * @returns Promise with the result of the operation
- */
-export const markNotificationAsRead = async (notificationId: string) => {
-  try {
-    const { error } = await supabase
-      .from('user_notifications' as any)
+      .from('user_notifications')
       .update({ is_read: true })
       .eq('id', notificationId);
     
     if (error) {
-      console.warn("Could not mark notification as read, table might not exist:", error.message);
-      return { success: true, simulated: true };
+      console.error("Error marking notification as read:", error);
+      throw error;
+    }
+  } catch (error) {
+    console.error("Failed to mark notification as read:", error);
+    toast.error("Failed to update notification status");
+    throw error;
+  }
+};
+
+/**
+ * Creates a new notification for a user
+ * @param notification The notification data to create
+ * @returns Promise that resolves with the created notification ID
+ */
+export const createNotification = async (
+  notification: Omit<Notification, 'id' | 'created_at'>
+): Promise<string> => {
+  try {
+    // Ensure is_read is false by default for new notifications
+    const newNotification = {
+      ...notification,
+      is_read: false,
+      created_at: new Date().toISOString()
+    };
+    
+    const { data, error } = await supabase
+      .from('user_notifications')
+      .insert(newNotification)
+      .select('id')
+      .single();
+    
+    if (error) {
+      console.error("Error creating notification:", error);
+      throw error;
     }
     
-    return { success: true };
+    return data.id;
   } catch (error) {
-    console.error("Unexpected error marking notification as read:", error);
-    return { error };
+    console.error("Failed to create notification:", error);
+    toast.error("Failed to create notification");
+    throw error;
+  }
+};
+
+/**
+ * Deletes a notification
+ * @param notificationId The ID of the notification to delete
+ * @returns Promise that resolves when the deletion is complete
+ */
+export const deleteNotification = async (notificationId: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('user_notifications')
+      .delete()
+      .eq('id', notificationId);
+    
+    if (error) {
+      console.error("Error deleting notification:", error);
+      throw error;
+    }
+    
+    toast.success("Notification removed");
+  } catch (error) {
+    console.error("Failed to delete notification:", error);
+    toast.error("Failed to remove notification");
+    throw error;
   }
 };

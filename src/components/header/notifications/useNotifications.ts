@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Notification, NotificationState } from "./types";
+import { REALTIME_SUBSCRIBE_STATES } from "@supabase/supabase-js";
 
 export const useNotifications = (limit = 5, offset = 0) => {
   const { user } = useAuth();
@@ -20,7 +21,7 @@ export const useNotifications = (limit = 5, offset = 0) => {
     try {
       // Try to fetch from the real table if it exists
       const query = supabase
-        .from('user_notifications' as any)
+        .from('user_notifications')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -98,7 +99,7 @@ export const useNotifications = (limit = 5, offset = 0) => {
     try {
       // Update the notifications in the database
       const { error } = await supabase
-        .from('user_notifications' as any)
+        .from('user_notifications')
         .update({ is_read: true })
         .eq('user_id', user.id);
       
@@ -151,7 +152,7 @@ export const useNotifications = (limit = 5, offset = 0) => {
         .subscribe((status) => {
           console.log('Realtime subscription status:', status);
           
-          if (status === 'SUBSCRIPTION_ERROR' as any) {
+          if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIPTION_ERROR) {
             console.warn('Could not set up realtime subscription, falling back to sample data');
             fallbackToSampleData();
           }
