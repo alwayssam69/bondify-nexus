@@ -39,7 +39,7 @@ export const useNotifications = (limit = 5, offset = 0) => {
         setState({
           notifications: [],
           isLoading: false,
-          error: error.message
+          error: new Error(error.message)
         });
         return;
       }
@@ -55,7 +55,7 @@ export const useNotifications = (limit = 5, offset = 0) => {
       setState({
         notifications: [],
         isLoading: false,
-        error: "Failed to fetch notifications"
+        error: error instanceof Error ? error : new Error('Failed to fetch notifications')
       });
     }
   };
