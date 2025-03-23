@@ -14,10 +14,11 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { Check, ChevronsUpDown, X } from "lucide-react";
+import { Check, ChevronsUpDown, X, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { interestOptions } from "@/data/formOptions";
+import { toast } from "sonner";
 
 interface MultiInterestSelectProps {
   label: string;
@@ -25,6 +26,7 @@ interface MultiInterestSelectProps {
   onChange: (value: string[]) => void;
   placeholder?: string;
   className?: string;
+  maxSelections?: number;
 }
 
 const MultiInterestSelect = ({
@@ -33,25 +35,38 @@ const MultiInterestSelect = ({
   onChange,
   placeholder = "Select interests",
   className,
+  maxSelections = 10,
 }: MultiInterestSelectProps) => {
   const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleSelect = (interestValue: string) => {
     if (value.includes(interestValue)) {
       onChange(value.filter(v => v !== interestValue));
     } else {
+      if (value.length >= maxSelections) {
+        toast.warning(`You can select a maximum of ${maxSelections} interests`);
+        return;
+      }
       onChange([...value, interestValue]);
+      toast.success(`Added ${getInterestLabel(interestValue)} to your interests`);
     }
   };
 
   const removeInterest = (interestValue: string) => {
     onChange(value.filter(v => v !== interestValue));
+    toast.info(`Removed ${getInterestLabel(interestValue)} from your interests`);
   };
 
   const getInterestLabel = (interestValue: string) => {
     const interest = interestOptions.find(i => i.value === interestValue);
     return interest ? interest.label : interestValue;
   };
+
+  const filteredOptions = searchQuery 
+    ? interestOptions.filter(option => 
+        option.label.toLowerCase().includes(searchQuery.toLowerCase()))
+    : interestOptions;
 
   return (
     <FormItem className={className}>
@@ -91,10 +106,15 @@ const MultiInterestSelect = ({
           </PopoverTrigger>
           <PopoverContent className="w-full p-0">
             <Command>
-              <CommandInput placeholder="Search interests..." className="h-9" />
-              <CommandEmpty>No interests found.</CommandEmpty>
+              <CommandInput 
+                placeholder="Search interests..." 
+                className="h-9" 
+                value={searchQuery}
+                onValueChange={setSearchQuery}
+              />
+              <CommandEmpty>No interests found. Try a different search.</CommandEmpty>
               <CommandGroup className="max-h-[300px] overflow-auto">
-                {interestOptions.map((interest) => (
+                {filteredOptions.map((interest) => (
                   <CommandItem
                     key={interest.value}
                     onSelect={() => handleSelect(interest.value)}
@@ -110,6 +130,23 @@ const MultiInterestSelect = ({
                   </CommandItem>
                 ))}
               </CommandGroup>
+              <div className="flex items-center justify-between p-2 border-t">
+                <div className="text-xs text-muted-foreground">
+                  {value.length} of {maxSelections} selected
+                </div>
+                {value.length > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      onChange([]);
+                      toast.info("All interests cleared");
+                    }}
+                  >
+                    Clear all
+                  </Button>
+                )}
+              </div>
             </Command>
           </PopoverContent>
         </Popover>
