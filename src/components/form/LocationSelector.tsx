@@ -58,7 +58,7 @@ const LocationSelector = ({
     if (checked) {
       if (geolocation.error) {
         toast.error("Unable to access location. Please enable location services.");
-      } else if (!geolocation.loading) {
+      } else if (!geolocation.isLoading) {
         toast.success("Using your current location for better matching");
       }
     }
