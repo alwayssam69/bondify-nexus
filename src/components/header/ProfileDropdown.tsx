@@ -34,8 +34,9 @@ const ProfileDropdown = () => {
     const handleSignOut = async () => {
       try {
         console.log("Signing out...");
+        toast.info("Signing out...");
         await signOut();
-        // Note: No need for the redirect here as it's now handled in the AuthContext
+        // No need for redirect as it's handled in AuthContext
       } catch (error) {
         console.error("Error signing out:", error);
         toast.error("Failed to sign out. Please try again.");

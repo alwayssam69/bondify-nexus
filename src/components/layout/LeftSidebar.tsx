@@ -19,8 +19,18 @@ import { useToast } from "@/hooks/use-toast";
 const LeftSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
   const { toast } = useToast();
+  
+  let user = null;
+  let signOut = async () => {};
+  
+  try {
+    const auth = useAuth();
+    user = auth.user;
+    signOut = auth.signOut;
+  } catch (error) {
+    console.log("Auth context not available in LeftSidebar:", error);
+  }
   
   const navLinks = [
     { name: "Dashboard", path: "/dashboard", icon: Home },
@@ -41,8 +51,12 @@ const LeftSidebar = () => {
   const handleLogout = async () => {
     try {
       console.log("Signing out from LeftSidebar...");
+      toast({
+        title: "Signing out...",
+        description: "Please wait"
+      });
       await signOut();
-      // Note: No need for the redirect here as it's now handled in the AuthContext
+      // No need for the redirect here as it's now handled in the AuthContext
     } catch (error) {
       console.error("Logout failed", error);
       toast({

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -34,8 +35,12 @@ export const useNotifications = (limit = 5, offset = 0) => {
       const { data, error } = await query;
       
       if (error) {
-        console.warn("Error fetching notifications, using sample data:", error.message);
-        fallbackToSampleData();
+        console.warn("Error fetching notifications:", error.message);
+        setState({
+          notifications: [],
+          isLoading: false,
+          error: error.message
+        });
         return;
       }
       
@@ -47,43 +52,12 @@ export const useNotifications = (limit = 5, offset = 0) => {
       });
     } catch (error) {
       console.error("Error in fetchNotifications:", error);
-      fallbackToSampleData();
+      setState({
+        notifications: [],
+        isLoading: false,
+        error: "Failed to fetch notifications"
+      });
     }
-  };
-
-  const fallbackToSampleData = () => {
-    const sampleData: Notification[] = [
-      {
-        id: '1',
-        type: 'match',
-        message: 'You have a new connection with Jane Doe',
-        created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-        is_read: false,
-        user_id: user?.id || ''
-      },
-      {
-        id: '2',
-        type: 'message',
-        message: 'You received a new message from John Smith',
-        created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-        is_read: true,
-        user_id: user?.id || ''
-      },
-      {
-        id: '3',
-        type: 'view',
-        message: 'Sarah Williams viewed your profile',
-        created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-        is_read: false,
-        user_id: user?.id || ''
-      }
-    ];
-    
-    setState({
-      notifications: sampleData,
-      isLoading: false,
-      error: null
-    });
   };
 
   const handleMarkAllRead = async () => {
@@ -138,11 +112,6 @@ export const useNotifications = (limit = 5, offset = 0) => {
         })
         .subscribe((status) => {
           console.log('Realtime subscription status:', status);
-          
-          if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            console.warn('Could not set up realtime subscription, falling back to sample data');
-            fallbackToSampleData();
-          }
         });
       
       return () => {

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -199,9 +200,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Starting signOut process in AuthContext");
       setIsLoading(true);
       
+      // 1. Clear all storage to ensure complete session destruction
       localStorage.clear();
       sessionStorage.clear();
       
+      // 2. Sign out with scope: 'global' to ensure all devices are signed out
       const { error } = await supabase.auth.signOut({ scope: 'global' });
       
       if (error) {
@@ -210,10 +213,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       } else {
         console.log("Supabase signOut successful, clearing state");
+        // 3. Clear all auth state
         setUser(null);
         setSession(null);
         setProfile(null);
         
+        // 4. Force navigation to login page
         window.location.href = "/login";
         return;
       }

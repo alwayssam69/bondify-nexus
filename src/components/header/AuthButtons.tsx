@@ -14,8 +14,9 @@ const AuthButtons = () => {
     const handleSignOut = async () => {
       try {
         console.log("Signing out from AuthButtons...");
+        toast.info("Signing out...");
         await signOut();
-        // Note: No need for redirect here as it's handled in AuthContext
+        // No need for redirect as it's handled in AuthContext
       } catch (error) {
         console.error("Error signing out:", error);
         toast.error("Failed to sign out. Please try again.");
