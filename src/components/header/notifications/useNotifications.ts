@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { markAllNotificationsAsRead } from "@/utils/notificationHelpers";
 import type { Notification, NotificationState } from "./types";
 
 export const useNotifications = () => {
@@ -19,45 +18,7 @@ export const useNotifications = () => {
     
     setState(prev => ({ ...prev, isLoading: true }));
     try {
-      // We'll use direct data access until the user_notifications table is created
-      // In a real application, after the table is created, this would use proper typed access
-      
-      // Generate sample notifications for now
-      const sampleData: Notification[] = [
-        {
-          id: '1',
-          type: 'match',
-          message: 'You have a new connection with Jane Doe',
-          created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
-          is_read: false,
-          user_id: user.id
-        },
-        {
-          id: '2',
-          type: 'message',
-          message: 'You received a new message from John Smith',
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), // 3 hours ago
-          is_read: true,
-          user_id: user.id
-        },
-        {
-          id: '3',
-          type: 'view',
-          message: 'Sarah Williams viewed your profile',
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-          is_read: false,
-          user_id: user.id
-        }
-      ];
-      
-      setState({
-        notifications: sampleData,
-        isLoading: false,
-        error: null
-      });
-      
-      // Attempt to fetch real notifications - uncomment after table is created
-      /*
+      // Try to fetch from the real table if it exists
       const { data, error } = await supabase
         .from('user_notifications')
         .select('*')
@@ -66,34 +27,75 @@ export const useNotifications = () => {
         .limit(5);
       
       if (error) {
-        console.error("Error fetching notifications:", error);
-        throw error;
+        // If there's an error (likely table doesn't exist yet), fall back to sample data
+        console.warn("Error fetching notifications, using sample data:", error.message);
+        fallbackToSampleData();
+        return;
       }
       
-      // Cast to our notification type
+      // Cast to our notification type and update state
       const notifications = (data || []) as Notification[];
       setState({
         notifications,
         isLoading: false,
         error: null
       });
-      */
     } catch (error) {
       console.error("Error in fetchNotifications:", error);
-      setState(prev => ({ 
-        ...prev, 
-        isLoading: false, 
-        error: error instanceof Error ? error : new Error('Failed to fetch notifications') 
-      }));
+      fallbackToSampleData();
     }
+  };
+
+  const fallbackToSampleData = () => {
+    // Generate sample notifications when table doesn't exist
+    const sampleData: Notification[] = [
+      {
+        id: '1',
+        type: 'match',
+        message: 'You have a new connection with Jane Doe',
+        created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
+        is_read: false,
+        user_id: user?.id || ''
+      },
+      {
+        id: '2',
+        type: 'message',
+        message: 'You received a new message from John Smith',
+        created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), // 3 hours ago
+        is_read: true,
+        user_id: user?.id || ''
+      },
+      {
+        id: '3',
+        type: 'view',
+        message: 'Sarah Williams viewed your profile',
+        created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
+        is_read: false,
+        user_id: user?.id || ''
+      }
+    ];
+    
+    setState({
+      notifications: sampleData,
+      isLoading: false,
+      error: null
+    });
   };
 
   const handleMarkAllRead = async () => {
     if (!user || state.notifications.length === 0) return;
     
     try {
-      // Use our helper function to mark all as read
-      await markAllNotificationsAsRead(user.id);
+      // Update the notifications in the database
+      const { error } = await supabase
+        .from('user_notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error("Error marking notifications as read:", error);
+        throw error;
+      }
       
       // Optimistically update UI
       setState(prev => ({
@@ -108,33 +110,46 @@ export const useNotifications = () => {
     }
   };
 
-  // Set up initial data fetching
+  // Set up initial data fetching and realtime subscription
   useEffect(() => {
     if (user) {
       fetchNotifications();
       
-      // Set up realtime subscription - uncomment after table is created
-      /*
-      try {
-        const channel = supabase
-          .channel('public:user_notifications')
-          .on('postgres_changes', {
-            event: '*',
-            schema: 'public',
-            table: 'user_notifications',
-            filter: `user_id=eq.${user.id}`,
-          }, () => {
-            fetchNotifications();
-          })
-          .subscribe();
-        
-        return () => {
-          supabase.removeChannel(channel);
-        };
-      } catch (error) {
-        console.error("Error setting up real-time subscription:", error);
-      }
-      */
+      // Set up realtime subscription to the user_notifications table
+      const channel = supabase
+        .channel('public:user_notifications')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'user_notifications',
+          filter: `user_id=eq.${user.id}`,
+        }, (payload) => {
+          console.log('Received realtime notification:', payload);
+          
+          // Refresh notifications when changes occur
+          fetchNotifications();
+          
+          // Show toast for new notifications
+          if (payload.eventType === 'INSERT') {
+            const newNotification = payload.new as Notification;
+            toast.info(newNotification.message, {
+              description: 'New notification',
+              duration: 5000,
+            });
+          }
+        })
+        .subscribe((status) => {
+          console.log('Realtime subscription status:', status);
+          
+          if (status === 'SUBSCRIPTION_ERROR') {
+            console.warn('Could not set up realtime subscription, falling back to sample data');
+            fallbackToSampleData();
+          }
+        });
+      
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 

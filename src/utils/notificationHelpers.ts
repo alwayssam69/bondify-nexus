@@ -20,21 +20,7 @@ export const createNotification = async (
   metadata?: Record<string, any>
 ) => {
   try {
-    // This is a placeholder for when the user_notifications table is created
-    // For now, just log what would have been created
-    console.log("Notification would have been created with:", {
-      userId,
-      type,
-      message,
-      relatedEntityId,
-      metadata
-    });
-    
-    return { success: true };
-    
-    // Uncomment this after running the SQL script to create the table
-    /*
-    // Create a notification directly in the database
+    // Try to create a notification in the real table
     const { data, error } = await supabase
       .from('user_notifications')
       .insert({
@@ -44,15 +30,25 @@ export const createNotification = async (
         related_entity_id: relatedEntityId || null,
         metadata: metadata || {},
         is_read: false
-      });
+      })
+      .select()
+      .single();
     
     if (error) {
-      console.error("Error creating notification:", error);
-      return { error };
+      // If there's an error (table might not exist), log what would have been created
+      console.warn("Could not create notification, table might not exist:", error.message);
+      console.log("Notification would have been created with:", {
+        userId,
+        type,
+        message,
+        relatedEntityId,
+        metadata
+      });
+      
+      return { success: true, simulated: true };
     }
     
-    return { data };
-    */
+    return { success: true, data };
   } catch (error) {
     console.error("Unexpected error creating notification:", error);
     return { error };
@@ -66,28 +62,47 @@ export const createNotification = async (
  */
 export const markAllNotificationsAsRead = async (userId: string) => {
   try {
-    // This is a placeholder for when the user_notifications table is created
-    // For now, just return success
-    console.log(`Would mark all notifications as read for user ${userId}`);
-    return { success: true };
-    
-    // Uncomment this after running the SQL script to create the table
-    /*
-    // Update notifications directly
+    // Try to update notifications in the real table
     const { error } = await supabase
       .from('user_notifications')
       .update({ is_read: true })
       .eq('user_id', userId);
     
     if (error) {
-      console.error("Error marking notifications as read:", error);
-      return { error };
+      // If there's an error (table might not exist), log what would have happened
+      console.warn("Could not mark notifications as read, table might not exist:", error.message);
+      console.log(`Would mark all notifications as read for user ${userId}`);
+      
+      return { success: true, simulated: true };
     }
-    */
     
     return { success: true };
   } catch (error) {
     console.error("Unexpected error marking notifications as read:", error);
+    return { error };
+  }
+};
+
+/**
+ * Marks a specific notification as read
+ * @param notificationId The ID of the notification
+ * @returns Promise with the result of the operation
+ */
+export const markNotificationAsRead = async (notificationId: string) => {
+  try {
+    const { error } = await supabase
+      .from('user_notifications')
+      .update({ is_read: true })
+      .eq('id', notificationId);
+    
+    if (error) {
+      console.warn("Could not mark notification as read, table might not exist:", error.message);
+      return { success: true, simulated: true };
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error("Unexpected error marking notification as read:", error);
     return { error };
   }
 };

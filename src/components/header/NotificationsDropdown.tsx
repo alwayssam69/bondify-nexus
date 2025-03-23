@@ -1,5 +1,6 @@
 
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,9 +12,28 @@ import {
 import { Bell } from "lucide-react";
 import NotificationList from "./notifications/NotificationList";
 import { useNotifications } from "./notifications/useNotifications";
+import type { Notification } from "./notifications/types";
 
 const NotificationsDropdown = () => {
+  const navigate = useNavigate();
   const { notifications, isLoading, unreadCount, handleMarkAllRead } = useNotifications();
+
+  const handleNotificationClick = (notification: Notification) => {
+    // Handle navigation based on notification type
+    if (notification.type === 'match' && notification.related_entity_id) {
+      navigate(`/matches/${notification.related_entity_id}`);
+    } 
+    else if (notification.type === 'message' && notification.related_entity_id) {
+      navigate(`/chat/${notification.related_entity_id}`);
+    }
+    else if (notification.type === 'view' && notification.related_entity_id) {
+      navigate(`/profile/${notification.related_entity_id}`);
+    }
+    else {
+      // Default fallback if we can't determine a specific route
+      navigate('/dashboard');
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -47,7 +67,8 @@ const NotificationsDropdown = () => {
         
         <NotificationList 
           notifications={notifications} 
-          isLoading={isLoading} 
+          isLoading={isLoading}
+          onNotificationClick={handleNotificationClick}
         />
       </DropdownMenuContent>
     </DropdownMenu>

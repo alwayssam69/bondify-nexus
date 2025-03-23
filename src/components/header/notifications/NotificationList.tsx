@@ -7,9 +7,10 @@ import type { Notification } from "./types";
 interface NotificationListProps {
   notifications: Notification[];
   isLoading: boolean;
+  onNotificationClick?: (notification: Notification) => void;
 }
 
-const NotificationList = ({ notifications, isLoading }: NotificationListProps) => {
+const NotificationList = ({ notifications, isLoading, onNotificationClick }: NotificationListProps) => {
   if (isLoading) {
     return (
       <div className="p-4 flex justify-center">
@@ -30,7 +31,10 @@ const NotificationList = ({ notifications, isLoading }: NotificationListProps) =
     <>
       {notifications.map((notification) => (
         <DropdownMenuItem key={notification.id} className="p-3 cursor-pointer">
-          <NotificationItem notification={notification} />
+          <NotificationItem 
+            notification={notification} 
+            onNotificationClick={onNotificationClick}
+          />
         </DropdownMenuItem>
       ))}
     </>
