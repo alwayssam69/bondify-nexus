@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { motion } from "framer-motion";
 import { User, MapPin, Briefcase, Check, Send } from "lucide-react";
-import { ProfileData } from "./Step2Profile";
+import { ProfileData } from "./Step2ProfileSchema";
 import { PreferencesData } from "./Step3Preferences";
 import { toast } from "sonner";
 
