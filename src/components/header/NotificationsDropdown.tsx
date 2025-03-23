@@ -13,7 +13,6 @@ import { Bell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchUserNotifications } from "@/services/DataService";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Notification {
   id: string;
@@ -33,29 +32,9 @@ const NotificationsDropdown = () => {
       
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('notifications')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
-        
-        if (error) {
-          console.error("Error fetching notifications:", error);
-          setNotifications([]);
-        } else if (data && data.length > 0) {
-          // Convert from database format to component format
-          const notificationsData = data.map(item => ({
-            id: item.id,
-            type: item.type as 'match' | 'message' | 'view',
-            message: item.message,
-            time: new Date(item.created_at).toLocaleString()
-          }));
-          setNotifications(notificationsData);
-        } else {
-          // If no data in database, use empty array
-          setNotifications([]);
-        }
+        // Since we don't have a notifications table yet, use the service which returns mock data
+        const notificationsData = await fetchUserNotifications(user.id);
+        setNotifications(notificationsData);
       } catch (error) {
         console.error("Error loading notifications:", error);
         setNotifications([]);
@@ -67,29 +46,15 @@ const NotificationsDropdown = () => {
     if (user) {
       loadNotifications();
       
-      // Set up real-time listener for new notifications
-      try {
-        const channel = supabase
-          .channel('public:notifications')
-          .on('postgres_changes', 
-            { 
-              event: 'INSERT', 
-              schema: 'public', 
-              table: 'notifications',
-              filter: `user_id=eq.${user.id}`
-            }, 
-            () => {
-              loadNotifications();
-            }
-          )
-          .subscribe();
-        
-        return () => {
-          supabase.removeChannel(channel);
-        };
-      } catch (error) {
-        console.error("Error setting up notifications listener:", error);
-      }
+      // Set up real-time listener for future notifications implementation
+      // We'll simulate this with a timer for now
+      const interval = setInterval(() => {
+        loadNotifications();
+      }, 60000); // Refresh every minute
+      
+      return () => {
+        clearInterval(interval);
+      };
     }
   }, [user]);
 
@@ -97,18 +62,9 @@ const NotificationsDropdown = () => {
     if (!user) return;
     
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('user_id', user.id);
-        
-      if (error) {
-        console.error("Error marking notifications as read:", error);
-        toast.error("Failed to mark notifications as read");
-      } else {
-        toast.success("All notifications marked as read");
-        setNotifications([]);
-      }
+      // For now, just clear the notifications array since we're using mock data
+      toast.success("All notifications marked as read");
+      setNotifications([]);
     } catch (error) {
       console.error("Error:", error);
       toast.error("An error occurred");

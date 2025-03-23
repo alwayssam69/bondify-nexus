@@ -1,4 +1,3 @@
-
 /**
  * Interface for a recent match in the UI
  */
@@ -8,6 +7,7 @@ export interface RecentMatch {
   location: string;
   matchPercentage: number;
   isNew: boolean;
+  imageUrl?: string;
 }
 
 /**

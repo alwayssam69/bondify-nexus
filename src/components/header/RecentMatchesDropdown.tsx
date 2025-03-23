@@ -33,8 +33,8 @@ const RecentMatchesDropdown = () => {
           .select(`
             id,
             created_at,
-            is_new,
-            match_percentage,
+            match_score,
+            status,
             user_profiles!user_matches_matched_user_id_fkey (
               id,
               full_name,
@@ -51,14 +51,21 @@ const RecentMatchesDropdown = () => {
           setRecentMatches([]);
         } else if (data && data.length > 0) {
           // Transform database data to component format
-          const matchesData: RecentMatch[] = data.map(item => ({
-            id: item.id,
-            name: item.user_profiles?.full_name || 'Unknown User',
-            location: item.user_profiles?.location || 'Unknown Location',
-            matchPercentage: item.match_percentage || 0,
-            isNew: item.is_new || false,
-            avatar: item.user_profiles?.image_url || ''
-          }));
+          const matchesData: RecentMatch[] = data.map(item => {
+            // Get timestamp from 24 hours ago to mark new matches
+            const oneDayAgo = new Date();
+            oneDayAgo.setHours(oneDayAgo.getHours() - 24);
+            const isNew = new Date(item.created_at) > oneDayAgo;
+            
+            return {
+              id: item.id,
+              name: item.user_profiles?.full_name || 'Unknown User',
+              location: item.user_profiles?.location || 'Unknown Location',
+              matchPercentage: Math.round((item.match_score || 0) * 100),
+              isNew: isNew,
+              imageUrl: item.user_profiles?.image_url || ''
+            };
+          });
           setRecentMatches(matchesData);
         } else {
           setRecentMatches([]);
@@ -139,9 +146,9 @@ const RecentMatchesDropdown = () => {
             <DropdownMenuItem key={match.id} className="p-3 cursor-pointer" asChild>
               <Link to={`/matches?highlight=${match.id}`} className="w-full">
                 <div className="flex gap-3 w-full">
-                  {match.avatar ? (
+                  {match.imageUrl ? (
                     <div className="w-10 h-10 rounded-full bg-cover bg-center flex-shrink-0" 
-                         style={{ backgroundImage: `url(${match.avatar})` }} />
+                         style={{ backgroundImage: `url(${match.imageUrl})` }} />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                       <span className="text-base text-blue-600">{match.name[0]}</span>
