@@ -35,10 +35,7 @@ const ProfileDropdown = () => {
       try {
         console.log("Signing out...");
         await signOut();
-        console.log("Sign out successful, redirecting to login page");
-        // Ensure we force a full navigation to login page
-        window.location.href = '/login';
-        toast.success("You have been signed out successfully");
+        // Note: No need for the redirect here as it's now handled in the AuthContext
       } catch (error) {
         console.error("Error signing out:", error);
         toast.error("Failed to sign out. Please try again.");

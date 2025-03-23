@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +10,9 @@ interface AuthContextType {
   isLoading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  resetPasswordWithOTP: (mobile: string) => Promise<void>;
+  signInWithOTP: (mobile: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,7 +27,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchProfile = async (userId: string) => {
     try {
       console.log("Fetching profile for user:", userId);
-      // First try to get from user_profiles table (new structure)
       let { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -38,7 +39,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!data) {
         console.log("No profile found in user_profiles, trying profiles table");
-        // Fall back to profiles table (old structure) if needed
         const result = await supabase
           .from('profiles')
           .select('*')
@@ -47,7 +47,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (result.error) {
           console.error("Error fetching profile from profiles table:", result.error);
-          // Create a basic profile if none exists
           if (!result.data) {
             const userData = await supabase.auth.getUser();
             if (userData.data?.user) {
@@ -60,7 +59,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 user_tag: userTag,
               };
               
-              // Insert basic profile
               const { error: profileError } = await supabase.from('profiles').insert(newProfile);
               if (profileError) {
                 console.error("Error creating profile in profiles table:", profileError);
@@ -91,7 +89,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             data = result.data;
           }
         } else if (result.data) {
-          // Convert old profile structure to match new structure's expected fields
           data = {
             id: result.data?.id,
             full_name: result.data?.full_name,
@@ -100,7 +97,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             bio: result.data?.bio,
             skills: result.data?.skills ? [result.data.skills] : [],
             user_tag: result.data?.user_tag || `user_${Math.floor(Math.random() * 10000)}`,
-            // Set defaults for required fields in the new structure
             activity_score: 0,
             experience_level: '',
             interests: [] as string[],
@@ -128,7 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProfileLoaded(true);
     } catch (error) {
       console.error("Error in fetchProfile:", error);
-      setProfileLoaded(true); // Set to true even on error to stop loading state
+      setProfileLoaded(true);
     }
   };
 
@@ -136,7 +132,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log("AuthProvider: Setting up auth state listener");
     let isActive = true;
     
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log("Auth state changed:", event, session?.user?.id);
@@ -154,7 +149,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!isActive) return;
       
@@ -168,7 +162,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfileLoaded(true);
       }
       
-      // Set loading to false only after profile is loaded or if there's no user
       setIsLoading(false);
     });
 
@@ -178,9 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Extra effect to ensure we're not stuck in loading state
   useEffect(() => {
-    // If it's taking too long, stop the loading state after 5 seconds
     const timeout = setTimeout(() => {
       if (isLoading) {
         console.log("Force ending loading state after timeout");
@@ -191,7 +182,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => clearTimeout(timeout);
   }, [isLoading]);
 
-  // Update loading state when profile is loaded
   useEffect(() => {
     if (profileLoaded && isLoading) {
       setIsLoading(false);
@@ -208,7 +198,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log("Starting signOut process in AuthContext");
       setIsLoading(true);
-      const { error } = await supabase.auth.signOut();
+      
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
       
       if (error) {
         console.error("Error signing out from Supabase:", error);
@@ -219,16 +213,83 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
         setSession(null);
         setProfile(null);
-        setIsLoading(false);
         
-        // Use window.location for a complete refresh after sign out
         window.location.href = "/login";
-        return; // Return successfully
+        return;
       }
     } catch (error) {
       console.error("Exception during sign out:", error);
       toast.error("An error occurred while signing out");
       setIsLoading(false);
+      throw error;
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) {
+        console.error("Error resetting password:", error);
+        toast.error(error.message || "Error sending password reset email");
+        throw error;
+      }
+      
+      toast.success("Password reset instructions sent to your email");
+      return;
+    } catch (error) {
+      console.error("Exception during password reset:", error);
+      toast.error("An error occurred while processing your request");
+      throw error;
+    }
+  };
+
+  const resetPasswordWithOTP = async (mobile: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: mobile,
+        options: {
+          shouldCreateUser: false,
+        }
+      });
+      
+      if (error) {
+        console.error("Error sending OTP for password reset:", error);
+        toast.error(error.message || "Error sending OTP");
+        throw error;
+      }
+      
+      toast.success("OTP sent to your mobile number");
+      return;
+    } catch (error) {
+      console.error("Exception during OTP send:", error);
+      toast.error("An error occurred while sending OTP");
+      throw error;
+    }
+  };
+
+  const signInWithOTP = async (mobile: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: mobile,
+        options: {
+          shouldCreateUser: true,
+        }
+      });
+      
+      if (error) {
+        console.error("Error sending OTP for login:", error);
+        toast.error(error.message || "Error sending OTP");
+        throw error;
+      }
+      
+      toast.success("OTP sent to your mobile number");
+      return;
+    } catch (error) {
+      console.error("Exception during OTP send:", error);
+      toast.error("An error occurred while sending OTP");
       throw error;
     }
   };
@@ -240,7 +301,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       profile, 
       isLoading,
       signOut,
-      refreshProfile
+      refreshProfile,
+      resetPassword,
+      resetPasswordWithOTP,
+      signInWithOTP
     }}>
       {children}
     </AuthContext.Provider>
