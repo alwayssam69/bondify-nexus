@@ -26,10 +26,13 @@ const ChatHeader = ({ contact, onInitiateVideoCall }: ChatHeaderProps) => {
     }
   };
 
+  // Use the avatar property or fall back to a default background color
+  const avatarClass = contact.avatar || "bg-blue-100 text-blue-600";
+
   return (
     <div className="p-4 border-b border-border flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-full ${contact.avatar} flex items-center justify-center`}>
+        <div className={`w-10 h-10 rounded-full ${avatarClass} flex items-center justify-center`}>
           <span className="text-base font-light">{contact.name[0]}</span>
         </div>
         <div>

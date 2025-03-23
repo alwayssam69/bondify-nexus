@@ -36,20 +36,8 @@ export const getUserMatches = async (userId: string): Promise<UserProfile[]> => 
     const { data, error } = await supabase
       .from('user_matches')
       .select(`
-        matched_with,
-        match_score,
-        user_profiles!user_matches_matched_with_fkey(
-          id,
-          full_name,
-          location,
-          industry,
-          user_type,
-          experience_level,
-          skills,
-          interests,
-          bio,
-          image_url
-        )
+        matched_user_id,
+        match_score
       `)
       .eq('user_id', userId)
       .eq('status', 'confirmed');
@@ -63,12 +51,35 @@ export const getUserMatches = async (userId: string): Promise<UserProfile[]> => 
       return [];
     }
     
+    // Get user profiles for matched users
+    const matchedUserIds = data.map(match => match.matched_user_id);
+    const { data: profiles, error: profilesError } = await supabase
+      .from('user_profiles')
+      .select(`
+        id,
+        full_name,
+        location,
+        industry,
+        user_type,
+        experience_level,
+        skills,
+        interests,
+        bio,
+        image_url
+      `)
+      .in('id', matchedUserIds);
+    
+    if (profilesError || !profiles) {
+      console.error("Error fetching matched user profiles:", profilesError);
+      return [];
+    }
+    
     // Transform the data to UserProfile format
-    return data.map(match => {
-      const profile = match.user_profiles;
+    return profiles.map(profile => {
+      const match = data.find(m => m.matched_user_id === profile.id);
       return {
         id: profile.id,
-        name: profile.full_name,
+        name: profile.full_name || "Unknown",
         age: 25 + Math.floor(Math.random() * 15), // Estimate age
         gender: "unspecified",
         location: profile.location || "Unknown",
@@ -78,7 +89,7 @@ export const getUserMatches = async (userId: string): Promise<UserProfile[]> => 
         skills: profile.skills || [],
         language: "English",
         imageUrl: profile.image_url || "",
-        matchScore: match.match_score * 100,
+        matchScore: (match?.match_score || 0.7) * 100,
         industry: profile.industry || "",
         userType: profile.user_type || "",
         experienceLevel: profile.experience_level || "",
@@ -102,19 +113,7 @@ export const getSavedProfiles = async (userId: string): Promise<UserProfile[]> =
     const { data, error } = await supabase
       .from('user_matches')
       .select(`
-        matched_with,
-        user_profiles!user_matches_matched_with_fkey(
-          id,
-          full_name,
-          location,
-          industry,
-          user_type,
-          experience_level,
-          skills,
-          interests,
-          bio,
-          image_url
-        )
+        matched_user_id
       `)
       .eq('user_id', userId)
       .eq('status', 'saved');
@@ -128,12 +127,34 @@ export const getSavedProfiles = async (userId: string): Promise<UserProfile[]> =
       return [];
     }
     
+    // Get user profiles for matched users
+    const matchedUserIds = data.map(match => match.matched_user_id);
+    const { data: profiles, error: profilesError } = await supabase
+      .from('user_profiles')
+      .select(`
+        id,
+        full_name,
+        location,
+        industry,
+        user_type,
+        experience_level,
+        skills,
+        interests,
+        bio,
+        image_url
+      `)
+      .in('id', matchedUserIds);
+    
+    if (profilesError || !profiles) {
+      console.error("Error fetching matched user profiles:", profilesError);
+      return [];
+    }
+    
     // Transform the data to UserProfile format
-    return data.map(match => {
-      const profile = match.user_profiles;
+    return profiles.map(profile => {
       return {
         id: profile.id,
-        name: profile.full_name,
+        name: profile.full_name || "Unknown",
         age: 25 + Math.floor(Math.random() * 15), // Estimate age
         gender: "unspecified",
         location: profile.location || "Unknown",
@@ -188,7 +209,7 @@ export const recordSwipeAction = async (
       .from('user_matches')
       .upsert({
         user_id: userId,
-        matched_with: profileId,
+        matched_user_id: profileId,
         status: status,
         updated_at: new Date().toISOString()
       });
@@ -198,13 +219,22 @@ export const recordSwipeAction = async (
       return false;
     }
     
+    // Record in user_swipes table for analytics
+    await supabase
+      .from('user_swipes')
+      .insert({
+        user_id: userId,
+        target_id: profileId,
+        action: action
+      });
+    
     // If this was a like, check if there's a mutual match
     if (action === 'like') {
       const { data, error: matchError } = await supabase
         .from('user_matches')
         .select('*')
         .eq('user_id', profileId)
-        .eq('matched_with', userId)
+        .eq('matched_user_id', userId)
         .eq('status', 'pending')
         .single();
       
@@ -219,30 +249,18 @@ export const recordSwipeAction = async (
           .from('user_matches')
           .update({ status: 'confirmed' })
           .eq('user_id', profileId)
-          .eq('matched_with', userId);
+          .eq('matched_user_id', userId);
         
         // Update current user's record
         await supabase
           .from('user_matches')
           .update({ status: 'confirmed' })
           .eq('user_id', userId)
-          .eq('matched_with', profileId);
+          .eq('matched_user_id', profileId);
         
-        // Create a notification for both users
-        await supabase.from('notifications').insert([
-          {
-            user_id: userId,
-            type: 'match',
-            message: `You matched with a new connection!`,
-            related_user_id: profileId
-          },
-          {
-            user_id: profileId,
-            type: 'match',
-            message: `You matched with a new connection!`,
-            related_user_id: userId
-          }
-        ]);
+        // Create notifications for both users (would be implemented if notifications table exists)
+        // For now, we'll just log it
+        console.log(`Match created between ${userId} and ${profileId}`);
         
         return true; // Mutual match!
       }

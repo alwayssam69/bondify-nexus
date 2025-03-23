@@ -18,8 +18,9 @@ export interface ChatMessage {
   sender: string;
   receiver: string;
   content: string;
-  timestamp: string;
+  timestamp: Date;
   read: boolean;
+  text?: string; // Adding this for compatibility
 }
 
 /**
@@ -33,4 +34,17 @@ export interface ChatContact {
   unreadCount: number;
   online: boolean;
   imageUrl?: string;
+  avatar?: string; // Avatar background/color class
+  lastSeen?: Date; // Last seen time
+  unread?: number; // Alias for unreadCount for compatibility
+}
+
+/**
+ * Interface for city-based match data
+ */
+export interface CityMatchData {
+  city: string;
+  count: number;
+  lastMatched: string;
+  color: string;
 }

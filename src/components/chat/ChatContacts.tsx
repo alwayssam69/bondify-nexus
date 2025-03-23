@@ -48,7 +48,7 @@ const ChatContacts = ({ contacts, activeContact, setActiveContact, isLoading = f
             >
               <div className="flex items-start gap-3">
                 <div className="relative">
-                  <div className={`w-12 h-12 rounded-full ${contact.avatar} flex items-center justify-center flex-shrink-0`}>
+                  <div className={`w-12 h-12 rounded-full ${contact.avatar || 'bg-blue-100'} flex items-center justify-center flex-shrink-0`}>
                     <span className="text-lg font-light">{contact.name[0]}</span>
                   </div>
                   {contact.online && (
@@ -58,9 +58,9 @@ const ChatContacts = ({ contacts, activeContact, setActiveContact, isLoading = f
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start">
                     <p className="font-medium truncate">{contact.name}</p>
-                    {contact.unread > 0 && (
+                    {(contact.unreadCount > 0 || (contact.unread !== undefined && contact.unread > 0)) && (
                       <span className="ml-2 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
-                        {contact.unread}
+                        {contact.unreadCount || contact.unread}
                       </span>
                     )}
                   </div>

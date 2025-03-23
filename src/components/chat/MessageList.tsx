@@ -93,7 +93,7 @@ const MessageList = ({ messages, isLoading = false }: MessageListProps) => {
                         : 'bg-secondary text-secondary-foreground'
                     }`}
                   >
-                    <p>{message.text}</p>
+                    <p>{message.content}</p>
                     <p className={`text-xs ${message.sender === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'} text-right mt-1`}>
                       {formatTime(message.timestamp)}
                     </p>
