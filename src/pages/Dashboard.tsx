@@ -62,23 +62,23 @@ const Dashboard = () => {
   });
 
   const engagementData = {
-    activeMatches: 8,
-    connectionsTotal: 24,
-    ongoingChats: 3,
-    profileViews: 15,
-    messagesSent: 36,
-    messagesReceived: 42,
-    responseRate: 92,
+    activeMatches: 0,
+    connectionsTotal: 0,
+    ongoingChats: 0,
+    profileViews: 0,
+    messagesSent: 0,
+    messagesReceived: 0,
+    responseRate: 0,
   };
 
   const activityData = [
-    { day: 'Mon', matches: 2, messages: 5, views: 3 },
-    { day: 'Tue', matches: 1, messages: 3, views: 2 },
-    { day: 'Wed', matches: 3, messages: 7, views: 5 },
-    { day: 'Thu', matches: 2, messages: 6, views: 4 },
-    { day: 'Fri', matches: 5, messages: 10, views: 6 },
-    { day: 'Sat', matches: 4, messages: 8, views: 3 },
-    { day: 'Sun', matches: 2, messages: 4, views: 2 },
+    { day: 'Mon', matches: 0, messages: 0, views: 0 },
+    { day: 'Tue', matches: 0, messages: 0, views: 0 },
+    { day: 'Wed', matches: 0, messages: 0, views: 0 },
+    { day: 'Thu', matches: 0, messages: 0, views: 0 },
+    { day: 'Fri', matches: 0, messages: 0, views: 0 },
+    { day: 'Sat', matches: 0, messages: 0, views: 0 },
+    { day: 'Sun', matches: 0, messages: 0, views: 0 },
   ];
 
   useEffect(() => {
@@ -603,3 +603,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

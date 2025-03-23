@@ -30,50 +30,43 @@ const EngagementStats = ({ stats, className }: EngagementStatsProps) => {
       title: "Active Matches",
       value: stats.activeMatches || 0,
       icon: <Users className="h-4 w-4 text-blue-500" />,
-      description: "Recently connected",
-      emptyMessage: "No active matches. Start connecting!"
+      description: "Recently connected"
     },
     {
       title: "Total Connections",
       value: stats.connectionsTotal || 0,
       icon: <ActivitySquare className="h-4 w-4 text-green-500" />,
-      description: "Successful matches",
-      emptyMessage: "Make your first connection!"
+      description: "Successful matches"
     },
     {
       title: "Ongoing Chats",
       value: stats.ongoingChats || 0,
       icon: <MessageSquare className="h-4 w-4 text-violet-500" />,
-      description: "Active conversations",
-      emptyMessage: "No active chats. Start a conversation!"
+      description: "Active conversations"
     },
     {
       title: "Profile Views",
       value: stats.profileViews || 0,
       icon: <Eye className="h-4 w-4 text-amber-500" />,
-      description: "Who viewed you",
-      emptyMessage: "No profile views yet. Update your bio to get noticed!"
+      description: "Who viewed you"
     },
     {
       title: "Messages Sent",
       value: stats.messagesSent || 0,
       icon: <Send className="h-4 w-4 text-sky-500" />,
-      description: "Outgoing",
-      emptyMessage: "No messages sent. Break the ice!"
+      description: "Outgoing"
     },
     {
       title: "Messages Received",
       value: stats.messagesReceived || 0,
       icon: <MessagesSquare className="h-4 w-4 text-pink-500" />,
-      description: "Incoming",
-      emptyMessage: "No messages yet. Start networking!"
+      description: "Incoming"
     },
     {
       title: "Response Rate",
-      value: stats.responseRate ? `${stats.responseRate}%` : '0%',
+      value: stats.responseRate !== undefined ? `${stats.responseRate || 0}%` : '0%',
       icon: <BarChart4 className="h-4 w-4 text-indigo-500" />,
-      description: "Reply efficiency",
-      emptyMessage: "Send your first message to track response rate"
+      description: "Reply efficiency"
     }
   ];
 
@@ -90,14 +83,8 @@ const EngagementStats = ({ stats, className }: EngagementStatsProps) => {
                 {item.icon}
                 <span className="text-xs font-medium text-muted-foreground">{item.title}</span>
               </div>
-              {typeof item.value === 'number' && item.value === 0 ? (
-                <div className="text-sm text-muted-foreground">{item.emptyMessage}</div>
-              ) : (
-                <>
-                  <div className="text-2xl font-bold">{item.value}</div>
-                  <div className="text-xs text-muted-foreground">{item.description}</div>
-                </>
-              )}
+              <div className="text-2xl font-bold">{item.value}</div>
+              <div className="text-xs text-muted-foreground">{item.description}</div>
             </div>
           ))}
         </div>
