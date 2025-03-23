@@ -40,7 +40,6 @@ const Hero = ({ user, onGetStarted, onSignIn, onDashboard, actionButton }: HeroP
 
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col lg:flex-row items-center gap-12">
-          {/* Left Column - Text Content */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -103,7 +102,6 @@ const Hero = ({ user, onGetStarted, onSignIn, onDashboard, actionButton }: HeroP
                 </>
               )}
               
-              {/* Render the actionButton if provided */}
               {actionButton && (
                 <div className="mt-4 sm:mt-0">
                   {actionButton}
@@ -112,7 +110,6 @@ const Hero = ({ user, onGetStarted, onSignIn, onDashboard, actionButton }: HeroP
             </div>
           </motion.div>
           
-          {/* Right Column - Image */}
           <motion.div 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
