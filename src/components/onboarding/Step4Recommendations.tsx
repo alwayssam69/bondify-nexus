@@ -14,6 +14,7 @@ interface Step4RecommendationsProps {
   preferencesData: PreferencesData;
   onNextStep: () => void;
   onPrevStep: () => void;
+  isLoading?: boolean;  // Added this prop to fix the type error
 }
 
 const Step4Recommendations = ({
@@ -21,6 +22,7 @@ const Step4Recommendations = ({
   preferencesData,
   onNextStep,
   onPrevStep,
+  isLoading: isAccountCreating = false,  // Renamed to avoid conflict with internal isLoading state
 }: Step4RecommendationsProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -83,15 +85,15 @@ const Step4Recommendations = ({
               type="button"
               variant="outline"
               onClick={onPrevStep}
-              disabled={isProcessing}
+              disabled={isProcessing || isAccountCreating}
             >
               Back
             </Button>
             <Button 
               onClick={handleCompleteTour}
-              disabled={isProcessing}
+              disabled={isProcessing || isAccountCreating}
             >
-              {isProcessing ? (
+              {isProcessing || isAccountCreating ? (
                 <motion.div className="flex items-center">
                   <span className="mr-2">Setting up dashboard</span>
                   <span className="relative flex h-2 w-12">
