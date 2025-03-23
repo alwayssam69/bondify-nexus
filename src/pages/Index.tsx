@@ -5,10 +5,10 @@ import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import Hero from "@/components/Hero";
 import HowItWorks from "@/components/HowItWorks";
-import Features from "@/components/Features";
 import DynamicMatches from "@/components/DynamicMatches";
 import WhatWeOffer from "@/components/WhatWeOffer";
 import FloatingNavigation from "@/components/FloatingNavigation";
+import Testimonials from "@/components/Testimonials";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -25,7 +25,7 @@ const Index = () => {
         />
         <WhatWeOffer />
         <HowItWorks />
-        <Features />
+        <Testimonials />
         <DynamicMatches />
         <FloatingNavigation />
       </div>
