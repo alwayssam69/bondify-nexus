@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
+import { markAllNotificationsAsRead } from "@/utils/notificationHelpers";
 
 // Define our own notification type instead of relying on the database type
 interface Notification {
@@ -24,6 +24,7 @@ interface Notification {
   is_read: boolean;
   user_id: string;
   metadata?: Record<string, any>;
+  related_entity_id?: string | null;
 }
 
 const NotificationsDropdown = () => {
@@ -36,14 +37,18 @@ const NotificationsDropdown = () => {
     
     setIsLoading(true);
     try {
-      // Generate some demo notifications if user_notifications table doesn't exist yet
-      const { data, error } = await supabase.rpc('get_notifications', { user_id: user.id });
+      // Get notifications directly from the table instead of using RPC
+      const { data, error } = await supabase
+        .from('user_notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
       
       if (error) {
         console.error("Error fetching notifications:", error);
         
-        // Fallback to sample notifications if the table or function doesn't exist
-        // This is a workaround until the user runs the SQL script to create the table
+        // Fallback to sample notifications if the table doesn't exist
         const sampleData: Notification[] = [
           {
             id: '1',
@@ -74,7 +79,9 @@ const NotificationsDropdown = () => {
         setNotifications(sampleData);
         console.log("Using sample notifications because: ", error.message);
       } else {
-        setNotifications(data || []);
+        // Safely cast the data to our Notification type
+        const typedData = (data || []) as Notification[];
+        setNotifications(typedData);
       }
     } catch (error) {
       console.error("Error in fetchNotifications:", error);
@@ -117,10 +124,8 @@ const NotificationsDropdown = () => {
     if (!user || notifications.length === 0) return;
     
     try {
-      // Instead of direct database updates, use our helper function
-      const { error } = await supabase.rpc('mark_all_notifications_read', { 
-        user_id: user.id 
-      });
+      // Use our helper function instead of direct RPC call
+      const { error } = await markAllNotificationsAsRead(user.id);
       
       if (error) {
         console.error("Error marking notifications as read:", error);

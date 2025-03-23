@@ -20,18 +20,21 @@ export const createNotification = async (
   metadata?: Record<string, any>
 ) => {
   try {
-    // Use RPC function to create notifications instead of direct table access
-    const { data, error } = await supabase.rpc('create_notification', {
-      p_user_id: userId,
-      p_type: type,
-      p_message: message,
-      p_related_entity_id: relatedEntityId || null,
-      p_metadata: metadata || {}
-    });
+    // Create a notification directly in the database since rpc isn't supported in this type context
+    const { data, error } = await supabase
+      .from('user_notifications')
+      .insert({
+        user_id: userId,
+        type,
+        message,
+        related_entity_id: relatedEntityId || null,
+        metadata: metadata || {},
+        is_read: false
+      });
     
     if (error) {
       console.error("Error creating notification:", error);
-      // Fallback if the function doesn't exist yet
+      // Fallback if the table doesn't exist yet
       console.log("Notification would have been created with:", {
         userId,
         type,
@@ -56,10 +59,11 @@ export const createNotification = async (
  */
 export const markAllNotificationsAsRead = async (userId: string) => {
   try {
-    // Use RPC function to mark notifications as read
-    const { error } = await supabase.rpc('mark_all_notifications_read', {
-      user_id: userId
-    });
+    // Update notifications directly since rpc isn't supported in this type context
+    const { error } = await supabase
+      .from('user_notifications')
+      .update({ is_read: true })
+      .eq('user_id', userId);
     
     if (error) {
       console.error("Error marking notifications as read:", error);
