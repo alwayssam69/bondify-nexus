@@ -18,6 +18,7 @@ import { Check, ChevronsUpDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { industrySkills } from "@/data/formOptions";
+import { toast } from "sonner";
 
 interface DynamicSkillSelectProps {
   industry: string;
@@ -26,6 +27,7 @@ interface DynamicSkillSelectProps {
   onChange: (value: string[]) => void;
   placeholder?: string;
   className?: string;
+  maxSelections?: number;
 }
 
 const DynamicSkillSelect = ({
@@ -35,14 +37,26 @@ const DynamicSkillSelect = ({
   onChange,
   placeholder = "Select skills",
   className,
+  maxSelections = 15,
 }: DynamicSkillSelectProps) => {
   const [open, setOpen] = useState(false);
   const [availableSkills, setAvailableSkills] = useState<{ value: string; label: string; }[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     // Set available skills based on selected industry
     if (industry && industrySkills[industry]) {
       setAvailableSkills(industrySkills[industry]);
+      
+      // Filter out any selected skills that are no longer valid for this industry
+      const validSkills = value.filter(skill => 
+        industrySkills[industry].some(option => option.value === skill)
+      );
+      
+      // Only update if the valid skills differ from current value
+      if (JSON.stringify(validSkills) !== JSON.stringify(value)) {
+        onChange(validSkills);
+      }
     } else {
       // Fallback to empty array if industry not found
       setAvailableSkills([]);
@@ -52,19 +66,31 @@ const DynamicSkillSelect = ({
   const handleSelect = (skillValue: string) => {
     if (value.includes(skillValue)) {
       onChange(value.filter(v => v !== skillValue));
+      toast.info(`Removed ${getSkillLabel(skillValue)} from your skills`);
     } else {
+      if (value.length >= maxSelections) {
+        toast.warning(`You can select a maximum of ${maxSelections} skills`);
+        return;
+      }
       onChange([...value, skillValue]);
+      toast.success(`Added ${getSkillLabel(skillValue)} to your skills`);
     }
   };
 
   const removeSkill = (skillValue: string) => {
     onChange(value.filter(v => v !== skillValue));
+    toast.info(`Removed ${getSkillLabel(skillValue)} from your skills`);
   };
 
   const getSkillLabel = (skillValue: string) => {
     const skill = availableSkills.find(s => s.value === skillValue);
     return skill ? skill.label : skillValue;
   };
+
+  const filteredSkills = searchQuery
+    ? availableSkills.filter(skill =>
+        skill.label.toLowerCase().includes(searchQuery.toLowerCase()))
+    : availableSkills;
 
   return (
     <FormItem className={className}>
@@ -76,6 +102,7 @@ const DynamicSkillSelect = ({
               variant="outline"
               role="combobox"
               aria-expanded={open}
+              disabled={!industry || availableSkills.length === 0}
               className="w-full justify-between h-auto min-h-10"
             >
               <div className="flex flex-wrap gap-1 py-1">
@@ -96,7 +123,13 @@ const DynamicSkillSelect = ({
                     </Badge>
                   ))
                 ) : (
-                  <span className="text-muted-foreground">{placeholder}</span>
+                  <span className="text-muted-foreground">
+                    {!industry 
+                      ? "Select an industry first" 
+                      : availableSkills.length === 0 
+                        ? "No skills available for this industry" 
+                        : placeholder}
+                  </span>
                 )}
               </div>
               <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
@@ -104,10 +137,19 @@ const DynamicSkillSelect = ({
           </PopoverTrigger>
           <PopoverContent className="w-full p-0">
             <Command>
-              <CommandInput placeholder="Search skills..." className="h-9" />
-              <CommandEmpty>No skills found.</CommandEmpty>
+              <CommandInput 
+                placeholder="Search skills..." 
+                className="h-9"
+                value={searchQuery}
+                onValueChange={setSearchQuery}
+              />
+              <CommandEmpty>
+                {!industry 
+                  ? "Please select an industry first" 
+                  : "No skills found. Try a different search."}
+              </CommandEmpty>
               <CommandGroup className="max-h-[300px] overflow-auto">
-                {availableSkills.map((skill) => (
+                {filteredSkills.map((skill) => (
                   <CommandItem
                     key={skill.value}
                     onSelect={() => handleSelect(skill.value)}
@@ -123,6 +165,23 @@ const DynamicSkillSelect = ({
                   </CommandItem>
                 ))}
               </CommandGroup>
+              <div className="flex items-center justify-between p-2 border-t">
+                <div className="text-xs text-muted-foreground">
+                  {value.length} of {maxSelections} selected
+                </div>
+                {value.length > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      onChange([]);
+                      toast.info("All skills cleared");
+                    }}
+                  >
+                    Clear all
+                  </Button>
+                )}
+              </div>
             </Command>
           </PopoverContent>
         </Popover>

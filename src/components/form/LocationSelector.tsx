@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { indianStates, citiesByState } from "@/data/formOptions";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { MapPin } from "lucide-react";
+import { toast } from "sonner";
 
 interface LocationSelectorProps {
   stateValue: string;
@@ -44,12 +45,24 @@ const LocationSelector = ({
       const cityExists = citiesByState[stateValue].some(city => city.value === cityValue);
       if (!cityExists && citiesByState[stateValue].length > 0) {
         onCityChange(citiesByState[stateValue][0].value);
+        toast.info(`Selected ${citiesByState[stateValue][0].label} as your city`);
       }
     } else {
       setCities([]);
       onCityChange("");
     }
   }, [stateValue, cityValue, onCityChange]);
+
+  const handleLocationToggle = (checked: boolean) => {
+    onUseLocationChange(checked);
+    if (checked) {
+      if (geolocation.error) {
+        toast.error("Unable to access location. Please enable location services.");
+      } else if (!geolocation.loading) {
+        toast.success("Using your current location for better matching");
+      }
+    }
+  };
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -58,7 +71,7 @@ const LocationSelector = ({
           <FormControl>
             <Switch
               checked={useLocationValue}
-              onCheckedChange={onUseLocationChange}
+              onCheckedChange={handleLocationToggle}
             />
           </FormControl>
         </div>
@@ -72,7 +85,7 @@ const LocationSelector = ({
               {geolocation.error || "Unable to access location. Please enable location services."}
             </p>
           )}
-          {useLocationValue && geolocation.latitude && (
+          {useLocationValue && geolocation.latitude && geolocation.longitude && (
             <div className="flex items-center mt-1 text-sm text-muted-foreground">
               <MapPin className="w-3 h-3 mr-1" /> Location access granted
             </div>
@@ -85,7 +98,11 @@ const LocationSelector = ({
           <FormLabel>State</FormLabel>
           <Select
             value={stateValue}
-            onValueChange={onStateChange}
+            onValueChange={(value) => {
+              onStateChange(value);
+              const stateName = indianStates.find(state => state.value === value)?.label || value;
+              toast.info(`Selected ${stateName} as your state`);
+            }}
             disabled={useLocationValue}
           >
             <FormControl>
@@ -108,7 +125,11 @@ const LocationSelector = ({
           <FormLabel>City</FormLabel>
           <Select
             value={cityValue}
-            onValueChange={onCityChange}
+            onValueChange={(value) => {
+              onCityChange(value);
+              const cityName = cities.find(city => city.value === value)?.label || value;
+              toast.info(`Selected ${cityName} as your city`);
+            }}
             disabled={useLocationValue || !stateValue || cities.length === 0}
           >
             <FormControl>
