@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { 
@@ -27,6 +28,7 @@ interface DynamicSkillSelectProps {
   placeholder?: string;
   className?: string;
   maxSelections?: number;
+  error?: boolean;
 }
 
 const DynamicSkillSelect = ({
@@ -37,6 +39,7 @@ const DynamicSkillSelect = ({
   placeholder = "Select skills",
   className,
   maxSelections = 15,
+  error,
 }: DynamicSkillSelectProps) => {
   const [open, setOpen] = useState(false);
   const [availableSkills, setAvailableSkills] = useState<{ value: string; label: string; }[]>([]);
@@ -46,6 +49,7 @@ const DynamicSkillSelect = ({
     if (industry && industrySkills[industry]) {
       setAvailableSkills(industrySkills[industry]);
       
+      // Validate that all selected skills are valid for the current industry
       const validSkills = value.filter(skill => 
         industrySkills[industry].some(option => option.value === skill)
       );
@@ -61,20 +65,18 @@ const DynamicSkillSelect = ({
   const handleSelect = (skillValue: string) => {
     if (value.includes(skillValue)) {
       onChange(value.filter(v => v !== skillValue));
-      toast.info(`Removed ${getSkillLabel(skillValue)} from your skills`);
     } else {
       if (value.length >= maxSelections) {
         toast.warning(`You can select a maximum of ${maxSelections} skills`);
         return;
       }
       onChange([...value, skillValue]);
-      toast.success(`Added ${getSkillLabel(skillValue)} to your skills`);
     }
   };
 
-  const removeSkill = (skillValue: string) => {
+  const removeSkill = (skillValue: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     onChange(value.filter(v => v !== skillValue));
-    toast.info(`Removed ${getSkillLabel(skillValue)} from your skills`);
   };
 
   const getSkillLabel = (skillValue: string) => {
@@ -98,7 +100,11 @@ const DynamicSkillSelect = ({
               role="combobox"
               aria-expanded={open}
               disabled={!industry || availableSkills.length === 0}
-              className="w-full justify-between h-auto min-h-10"
+              className={cn(
+                "w-full justify-between h-auto min-h-10",
+                error && "border-red-500"
+              )}
+              onClick={() => setOpen(true)}
             >
               <div className="flex flex-wrap gap-1 py-1">
                 {value.length > 0 ? (
@@ -108,10 +114,7 @@ const DynamicSkillSelect = ({
                       <button
                         type="button"
                         className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeSkill(skill);
-                        }}
+                        onClick={(e) => removeSkill(skill, e)}
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -130,7 +133,7 @@ const DynamicSkillSelect = ({
               <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-full p-0 bg-white">
+          <PopoverContent className="w-full p-0 bg-white z-50">
             <Command>
               <CommandInput 
                 placeholder="Search skills..." 
@@ -160,23 +163,23 @@ const DynamicSkillSelect = ({
                   </CommandItem>
                 ))}
               </CommandGroup>
-              <div className="flex items-center justify-between p-2 border-t">
-                <div className="text-xs text-muted-foreground">
-                  {value.length} of {maxSelections} selected
-                </div>
-                {value.length > 0 && (
+              {value.length > 0 && (
+                <div className="flex items-center justify-between p-2 border-t">
+                  <div className="text-xs text-muted-foreground">
+                    {value.length} of {maxSelections} selected
+                  </div>
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={() => {
                       onChange([]);
-                      toast.info("All skills cleared");
+                      setOpen(false);
                     }}
                   >
                     Clear all
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
             </Command>
           </PopoverContent>
         </Popover>

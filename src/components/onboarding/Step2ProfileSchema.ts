@@ -32,4 +32,3 @@ export const step2FormSchema = z.object({
 });
 
 export type Step2FormValues = z.infer<typeof step2FormSchema>;
-

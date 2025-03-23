@@ -10,6 +10,8 @@ interface InterestsSectionProps {
 }
 
 const InterestsSection: React.FC<InterestsSectionProps> = ({ form }) => {
+  const { formState: { errors } } = form;
+  
   return (
     <>
       <FormField
@@ -22,6 +24,7 @@ const InterestsSection: React.FC<InterestsSectionProps> = ({ form }) => {
               value={field.value || []}
               onChange={field.onChange}
               placeholder="Select your personal interests"
+              error={!!errors.interests}
             />
             <FormMessage />
           </FormItem>
@@ -38,6 +41,7 @@ const InterestsSection: React.FC<InterestsSectionProps> = ({ form }) => {
               value={field.value || []}
               onChange={field.onChange}
               placeholder="Select your project interests"
+              error={!!errors.projectInterests}
             />
             <FormMessage />
           </FormItem>

@@ -19,6 +19,7 @@ interface ProfessionalDetailsSectionProps {
 
 const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({ form }) => {
   const selectedIndustry = form.watch("industry");
+  const { formState: { errors } } = form;
 
   return (
     <>
@@ -38,11 +39,11 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
                 value={field.value || ""}
               >
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className={errors.industry ? "border-red-500" : ""}>
                     <SelectValue placeholder="Select industry" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent>
+                <SelectContent position="popper">
                   {industryOptions.map((industry) => (
                     <SelectItem key={industry.value} value={industry.value}>
                       {industry.label}
@@ -63,11 +64,11 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
               <FormLabel>User Type</FormLabel>
               <Select onValueChange={field.onChange} value={field.value || ""}>
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className={errors.userType ? "border-red-500" : ""}>
                     <SelectValue placeholder="Select user type" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent>
+                <SelectContent position="popper">
                   <SelectItem value="professional">Professional</SelectItem>
                   <SelectItem value="student">Student</SelectItem>
                   <SelectItem value="mentor">Mentor</SelectItem>
@@ -92,11 +93,11 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
             <FormLabel>Experience Level</FormLabel>
             <Select onValueChange={field.onChange} value={field.value || ""}>
               <FormControl>
-                <SelectTrigger>
+                <SelectTrigger className={errors.experienceLevel ? "border-red-500" : ""}>
                   <SelectValue placeholder="Select experience level" />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent>
+              <SelectContent position="popper">
                 {experienceLevels.map((level) => (
                   <SelectItem key={level.value} value={level.value}>
                     {level.label}
@@ -120,6 +121,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
               value={field.value || []}
               onChange={field.onChange}
               placeholder="Select skills relevant to your industry"
+              error={!!errors.skills}
             />
             <FormMessage />
           </FormItem>

@@ -13,7 +13,6 @@ import { Step2FormValues } from "../Step2ProfileSchema";
 import DynamicSkillSelect from "@/components/form/DynamicSkillSelect";
 import MultiInterestSelect from "@/components/form/MultiInterestSelect";
 import { industryOptions, experienceLevels } from "@/data/formOptions";
-import { Briefcase } from "lucide-react";
 
 interface ProfessionalDetailsSectionProps {
   form: UseFormReturn<Step2FormValues>;
@@ -22,6 +21,7 @@ interface ProfessionalDetailsSectionProps {
 const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({ form }) => {
   // Watch the industry field to update skills
   const selectedIndustry = form.watch("industry");
+  const { formState: { errors } } = form;
 
   return (
     <>
@@ -41,11 +41,11 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
                 value={field.value}
               >
                 <FormControl>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className={`w-full ${errors.industry ? "border-red-500" : ""}`}>
                     <SelectValue placeholder="Select your industry" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent>
+                <SelectContent position="popper">
                   {industryOptions.map((industry) => (
                     <SelectItem key={industry.value} value={industry.value}>
                       {industry.label}
@@ -69,11 +69,11 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
                 value={field.value}
               >
                 <FormControl>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className={`w-full ${errors.experienceLevel ? "border-red-500" : ""}`}>
                     <SelectValue placeholder="Select your experience level" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent>
+                <SelectContent position="popper">
                   {experienceLevels.map((level) => (
                     <SelectItem key={level.value} value={level.value}>
                       {level.label}
@@ -97,6 +97,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
             value={field.value}
             onChange={field.onChange}
             placeholder="Select skills relevant to your industry"
+            error={!!errors.skills}
           />
         )}
       />
@@ -110,6 +111,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
             value={field.value}
             onChange={field.onChange}
             placeholder="Select your personal interests"
+            error={!!errors.interests}
           />
         )}
       />

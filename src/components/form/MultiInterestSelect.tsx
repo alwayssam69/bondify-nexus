@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { 
@@ -26,6 +27,7 @@ interface MultiInterestSelectProps {
   placeholder?: string;
   className?: string;
   maxSelections?: number;
+  error?: boolean;
 }
 
 const MultiInterestSelect = ({
@@ -35,6 +37,7 @@ const MultiInterestSelect = ({
   placeholder = "Select interests",
   className,
   maxSelections = 10,
+  error,
 }: MultiInterestSelectProps) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -42,20 +45,18 @@ const MultiInterestSelect = ({
   const handleSelect = (interestValue: string) => {
     if (value.includes(interestValue)) {
       onChange(value.filter(v => v !== interestValue));
-      toast.info(`Removed ${getInterestLabel(interestValue)} from your interests`);
     } else {
       if (value.length >= maxSelections) {
         toast.warning(`You can select a maximum of ${maxSelections} interests`);
         return;
       }
       onChange([...value, interestValue]);
-      toast.success(`Added ${getInterestLabel(interestValue)} to your interests`);
     }
   };
 
-  const removeInterest = (interestValue: string) => {
+  const removeInterest = (interestValue: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     onChange(value.filter(v => v !== interestValue));
-    toast.info(`Removed ${getInterestLabel(interestValue)} from your interests`);
   };
 
   const getInterestLabel = (interestValue: string) => {
@@ -68,6 +69,19 @@ const MultiInterestSelect = ({
         option.label.toLowerCase().includes(searchQuery.toLowerCase()))
     : interestOptions;
 
+  // Group interests by category for better organization
+  const groupedInterests = filteredOptions.reduce<Record<string, typeof filteredOptions>>(
+    (groups, interest) => {
+      const category = interest.category || 'General';
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(interest);
+      return groups;
+    },
+    {}
+  );
+
   return (
     <FormItem className={className}>
       {label && <FormLabel>{label}</FormLabel>}
@@ -78,7 +92,11 @@ const MultiInterestSelect = ({
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              className="w-full justify-between h-auto min-h-10"
+              className={cn(
+                "w-full justify-between h-auto min-h-10",
+                error && "border-red-500"
+              )}
+              onClick={() => setOpen(true)}
             >
               <div className="flex flex-wrap gap-1 py-1">
                 {value.length > 0 ? (
@@ -88,10 +106,7 @@ const MultiInterestSelect = ({
                       <button
                         type="button"
                         className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeInterest(interest);
-                        }}
+                        onClick={(e) => removeInterest(interest, e)}
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -104,7 +119,7 @@ const MultiInterestSelect = ({
               <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-full p-0 bg-white">
+          <PopoverContent className="w-full p-0 bg-white z-50">
             <Command>
               <CommandInput 
                 placeholder="Search interests..." 
@@ -113,40 +128,44 @@ const MultiInterestSelect = ({
                 onValueChange={setSearchQuery}
               />
               <CommandEmpty>No interests found. Try a different search.</CommandEmpty>
-              <CommandGroup className="max-h-[300px] overflow-auto">
-                {filteredOptions.map((interest) => (
-                  <CommandItem
-                    key={interest.value}
-                    onSelect={() => handleSelect(interest.value)}
-                    className="flex items-center gap-2"
-                  >
-                    <div className={cn(
-                      "flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                      value.includes(interest.value) ? "bg-primary text-primary-foreground" : "opacity-50"
-                    )}>
-                      {value.includes(interest.value) && <Check className="h-3 w-3" />}
-                    </div>
-                    <span>{interest.label}</span>
-                  </CommandItem>
+              <div className="max-h-[300px] overflow-auto">
+                {Object.entries(groupedInterests).map(([category, interests]) => (
+                  <CommandGroup key={category} heading={category}>
+                    {interests.map((interest) => (
+                      <CommandItem
+                        key={interest.value}
+                        onSelect={() => handleSelect(interest.value)}
+                        className="flex items-center gap-2"
+                      >
+                        <div className={cn(
+                          "flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                          value.includes(interest.value) ? "bg-primary text-primary-foreground" : "opacity-50"
+                        )}>
+                          {value.includes(interest.value) && <Check className="h-3 w-3" />}
+                        </div>
+                        <span>{interest.label}</span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
                 ))}
-              </CommandGroup>
-              <div className="flex items-center justify-between p-2 border-t">
-                <div className="text-xs text-muted-foreground">
-                  {value.length} of {maxSelections} selected
-                </div>
-                {value.length > 0 && (
+              </div>
+              {value.length > 0 && (
+                <div className="flex items-center justify-between p-2 border-t">
+                  <div className="text-xs text-muted-foreground">
+                    {value.length} of {maxSelections} selected
+                  </div>
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={() => {
                       onChange([]);
-                      toast.info("All interests cleared");
+                      setOpen(false);
                     }}
                   >
                     Clear all
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
             </Command>
           </PopoverContent>
         </Popover>
