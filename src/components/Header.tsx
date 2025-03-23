@@ -72,13 +72,11 @@ const Header = () => {
         )}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <HeaderLogo />
-
-          <Navigation isLoggedIn={isLoggedIn} />
-
-          <div className="hidden md:flex items-center gap-4">
-            {isLoggedIn ? (
-              <>
+          <div className="flex items-center gap-4">
+            <HeaderLogo />
+            
+            {isLoggedIn && (
+              <div className="hidden md:flex items-center gap-4 ml-6">
                 {/* Search Button */}
                 <button 
                   className="h-9 w-9 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
@@ -104,10 +102,15 @@ const Header = () => {
                 
                 {/* Notifications Dropdown */}
                 <NotificationsDropdown />
-                
-                {/* Profile Dropdown */}
-                <ProfileDropdown />
-              </>
+              </div>
+            )}
+          </div>
+
+          <Navigation isLoggedIn={isLoggedIn} />
+
+          <div className="hidden md:flex items-center gap-4">
+            {isLoggedIn ? (
+              <ProfileDropdown />
             ) : (
               <AuthButtons />
             )}
