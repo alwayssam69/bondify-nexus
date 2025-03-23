@@ -74,11 +74,11 @@ const MobileMenu = ({ isOpen, isLoggedIn, onClose }: MobileMenuProps) => {
           animate="open"
           exit="closed"
           variants={menuVariants}
-          className="md:hidden fixed inset-0 bg-black/80 backdrop-blur-xl z-40 pt-24 px-6"
+          className="md:hidden fixed inset-0 bg-black/90 z-40 pt-24 px-6"
         >
           <div className="h-full overflow-y-auto pb-20">
             <motion.div 
-              className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 border border-white/10 rounded-3xl backdrop-blur-md shadow-2xl p-6 max-w-md mx-auto"
+              className="bg-gray-900 border border-gray-800 rounded-2xl shadow-lg p-6 max-w-md mx-auto"
               variants={itemVariants}
             >
               <nav className="flex flex-col gap-4">
@@ -87,20 +87,14 @@ const MobileMenu = ({ isOpen, isLoggedIn, onClose }: MobileMenuProps) => {
                     <Link
                       to={link.path}
                       className={cn(
-                        "flex items-center text-base font-medium transition-all hover:text-blue-400 py-3 px-5 rounded-xl relative overflow-hidden group",
+                        "flex items-center text-base font-medium transition-all hover:text-white py-3 px-5 rounded-xl relative",
                         isActive(link.path)
-                          ? "bg-blue-500/10 text-blue-400 shadow-inner"
+                          ? "bg-blue-600 text-white"
                           : "text-gray-200"
                       )}
                       onClick={onClose}
                     >
                       <span className="z-10 relative">{link.name}</span>
-                      
-                      {/* Background glow effect */}
-                      <span className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></span>
-                      
-                      {/* Hover indicator */}
-                      <span className="absolute bottom-2 left-5 w-0 h-0.5 bg-blue-400 group-hover:w-10 transition-all duration-300"></span>
                     </Link>
                   </motion.div>
                 ))}
@@ -111,35 +105,23 @@ const MobileMenu = ({ isOpen, isLoggedIn, onClose }: MobileMenuProps) => {
                       <Link
                         to="/profile"
                         className={cn(
-                          "flex items-center text-base font-medium transition-all hover:text-blue-400 py-3 px-5 rounded-xl relative overflow-hidden group",
+                          "flex items-center text-base font-medium transition-all hover:text-white py-3 px-5 rounded-xl relative",
                           isActive("/profile") 
-                            ? "bg-blue-500/10 text-blue-400 shadow-inner"
+                            ? "bg-blue-600 text-white"
                             : "text-gray-200"
                         )}
                         onClick={onClose}
                       >
                         <span className="z-10 relative">Profile</span>
-                        
-                        {/* Background glow effect */}
-                        <span className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></span>
-                        
-                        {/* Hover indicator */}
-                        <span className="absolute bottom-2 left-5 w-0 h-0.5 bg-blue-400 group-hover:w-10 transition-all duration-300"></span>
                       </Link>
                     </motion.div>
                     
                     <motion.div variants={itemVariants}>
                       <button
-                        className="flex items-center w-full text-left text-base font-medium transition-all hover:text-red-400 py-3 px-5 rounded-xl relative overflow-hidden group text-gray-200"
+                        className="flex items-center w-full text-left text-base font-medium transition-all hover:text-white py-3 px-5 rounded-xl relative text-gray-200 hover:bg-red-600"
                         onClick={handleLogout}
                       >
                         <span className="z-10 relative">Logout</span>
-                        
-                        {/* Background glow effect */}
-                        <span className="absolute inset-0 bg-gradient-to-r from-red-600/20 to-pink-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></span>
-                        
-                        {/* Hover indicator */}
-                        <span className="absolute bottom-2 left-5 w-0 h-0.5 bg-red-400 group-hover:w-10 transition-all duration-300"></span>
                       </button>
                     </motion.div>
                   </>
@@ -148,22 +130,18 @@ const MobileMenu = ({ isOpen, isLoggedIn, onClose }: MobileMenuProps) => {
                 {!isLoggedIn && (
                   <motion.div variants={itemVariants} className="mt-4 space-y-4">
                     <Link to="/login" onClick={onClose} className="block">
-                      <Button variant="outline" className="w-full bg-white/5 border-gray-700 text-gray-200 hover:bg-gray-800 rounded-xl">
+                      <Button variant="outline" className="w-full bg-transparent border-gray-700 text-white hover:bg-gray-800 rounded-xl">
                         Sign In
                       </Button>
                     </Link>
                     <Link to="/register" onClick={onClose} className="block">
-                      <Button className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 rounded-xl">
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 rounded-xl">
                         Get Started
                       </Button>
                     </Link>
                   </motion.div>
                 )}
               </nav>
-              
-              {/* Decorative elements */}
-              <div className="absolute top-5 right-5 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl"></div>
-              <div className="absolute bottom-5 left-5 w-16 h-16 bg-indigo-500/10 rounded-full blur-xl"></div>
             </motion.div>
           </div>
         </motion.div>

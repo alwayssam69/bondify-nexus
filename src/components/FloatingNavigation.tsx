@@ -33,7 +33,7 @@ const FloatingNavigation = () => {
       transition={{ duration: 0.5 }}
       className="fixed left-6 top-1/2 transform -translate-y-1/2 z-40 hidden md:block"
     >
-      <div className="bg-gray-900/70 backdrop-blur-xl rounded-full py-6 px-3 border border-gray-800/50 shadow-lg flex flex-col items-center gap-5">
+      <div className="bg-gray-900 rounded-full py-6 px-3 border border-gray-800 shadow-md flex flex-col items-center gap-5">
         {navLinks.map((link) => (
           <Link
             key={link.name}
@@ -42,8 +42,8 @@ const FloatingNavigation = () => {
             className={cn(
               "relative p-2 transition-colors rounded-full group",
               isActive(link.path)
-                ? "text-white bg-blue-600/60"
-                : "text-gray-400 hover:text-white"
+                ? "text-white bg-blue-600"
+                : "text-gray-200 hover:text-white"
             )}
             title={link.name}
           >
