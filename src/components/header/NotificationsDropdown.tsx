@@ -8,8 +8,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuFooter,
 } from "@/components/ui/dropdown-menu";
-import { Bell } from "lucide-react";
+import { Bell, ArrowRight } from "lucide-react";
 import NotificationList from "./notifications/NotificationList";
 import { useNotifications } from "./notifications/useNotifications";
 import type { Notification } from "./notifications/types";
@@ -33,6 +34,10 @@ const NotificationsDropdown = () => {
       // Default fallback if we can't determine a specific route
       navigate('/dashboard');
     }
+  };
+
+  const viewAllNotifications = () => {
+    navigate('/notifications');
   };
 
   return (
@@ -70,6 +75,18 @@ const NotificationsDropdown = () => {
           isLoading={isLoading}
           onNotificationClick={handleNotificationClick}
         />
+        
+        <DropdownMenuFooter className="flex items-center justify-center p-2">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="w-full justify-between"
+            onClick={viewAllNotifications}
+          >
+            View all notifications
+            <ArrowRight size={16} />
+          </Button>
+        </DropdownMenuFooter>
       </DropdownMenuContent>
     </DropdownMenu>
   );

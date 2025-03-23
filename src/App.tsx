@@ -20,6 +20,7 @@ import Privacy from "./pages/Privacy";
 import Help from "./pages/Help";
 import QAForum from "./pages/QAForum";
 import NewsInsights from "./pages/NewsInsights";
+import Notifications from "./pages/Notifications";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -59,6 +60,11 @@ const App = () => (
               <Route path="/matches" element={
                 <ProtectedRoute>
                   <Matches />
+                </ProtectedRoute>
+              } />
+              <Route path="/notifications" element={
+                <ProtectedRoute>
+                  <Notifications />
                 </ProtectedRoute>
               } />
               <Route path="/chat" element={

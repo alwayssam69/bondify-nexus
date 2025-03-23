@@ -30,7 +30,7 @@ export const createNotification = async (
         related_entity_id: relatedEntityId || null,
         metadata: metadata || {},
         is_read: false
-      })
+      } as any)
       .select()
       .single();
     
@@ -65,7 +65,7 @@ export const markAllNotificationsAsRead = async (userId: string) => {
     // Try to update notifications in the real table
     const { error } = await supabase
       .from('user_notifications')
-      .update({ is_read: true })
+      .update({ is_read: true } as any)
       .eq('user_id', userId);
     
     if (error) {
@@ -92,7 +92,7 @@ export const markNotificationAsRead = async (notificationId: string) => {
   try {
     const { error } = await supabase
       .from('user_notifications')
-      .update({ is_read: true })
+      .update({ is_read: true } as any)
       .eq('id', notificationId);
     
     if (error) {

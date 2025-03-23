@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Notification, NotificationState } from "./types";
 
-export const useNotifications = () => {
+export const useNotifications = (limit = 5, offset = 0) => {
   const { user } = useAuth();
   const [state, setState] = useState<NotificationState>({
     notifications: [],
@@ -19,12 +19,22 @@ export const useNotifications = () => {
     setState(prev => ({ ...prev, isLoading: true }));
     try {
       // Try to fetch from the real table if it exists
-      const { data, error } = await supabase
+      const query = supabase
         .from('user_notifications')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
+        .order('created_at', { ascending: false });
+      
+      // Only add limit and offset if they are provided and valid
+      if (limit > 0) {
+        query.limit(limit);
+      }
+      
+      if (offset > 0) {
+        query.range(offset, offset + limit - 1);
+      }
+      
+      const { data, error } = await query;
       
       if (error) {
         // If there's an error (likely table doesn't exist yet), fall back to sample data
@@ -34,7 +44,7 @@ export const useNotifications = () => {
       }
       
       // Cast to our notification type and update state
-      const notifications = (data || []) as Notification[];
+      const notifications = (data || []) as unknown as Notification[];
       setState({
         notifications,
         isLoading: false,
@@ -151,11 +161,12 @@ export const useNotifications = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [user]);
+  }, [user, limit, offset]);
 
   return {
     ...state,
     handleMarkAllRead,
+    fetchNotifications,
     unreadCount: state.notifications.filter(n => !n.is_read).length
   };
 };
