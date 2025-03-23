@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 export type NotificationType = 'match' | 'message' | 'view';
 
 /**
- * Creates a new notification for a user using a custom function
+ * Creates a new notification for a user
  * @param userId The ID of the user to create the notification for
  * @param type The type of notification
  * @param message The notification message
@@ -20,7 +20,21 @@ export const createNotification = async (
   metadata?: Record<string, any>
 ) => {
   try {
-    // Create a notification directly in the database since rpc isn't supported in this type context
+    // This is a placeholder for when the user_notifications table is created
+    // For now, just log what would have been created
+    console.log("Notification would have been created with:", {
+      userId,
+      type,
+      message,
+      relatedEntityId,
+      metadata
+    });
+    
+    return { success: true };
+    
+    // Uncomment this after running the SQL script to create the table
+    /*
+    // Create a notification directly in the database
     const { data, error } = await supabase
       .from('user_notifications')
       .insert({
@@ -34,18 +48,11 @@ export const createNotification = async (
     
     if (error) {
       console.error("Error creating notification:", error);
-      // Fallback if the table doesn't exist yet
-      console.log("Notification would have been created with:", {
-        userId,
-        type,
-        message,
-        relatedEntityId,
-        metadata
-      });
       return { error };
     }
     
     return { data };
+    */
   } catch (error) {
     console.error("Unexpected error creating notification:", error);
     return { error };
@@ -59,7 +66,14 @@ export const createNotification = async (
  */
 export const markAllNotificationsAsRead = async (userId: string) => {
   try {
-    // Update notifications directly since rpc isn't supported in this type context
+    // This is a placeholder for when the user_notifications table is created
+    // For now, just return success
+    console.log(`Would mark all notifications as read for user ${userId}`);
+    return { success: true };
+    
+    // Uncomment this after running the SQL script to create the table
+    /*
+    // Update notifications directly
     const { error } = await supabase
       .from('user_notifications')
       .update({ is_read: true })
@@ -69,6 +83,7 @@ export const markAllNotificationsAsRead = async (userId: string) => {
       console.error("Error marking notifications as read:", error);
       return { error };
     }
+    */
     
     return { success: true };
   } catch (error) {
