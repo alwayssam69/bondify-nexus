@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -57,8 +58,8 @@ const RecentMatchesDropdown = () => {
             const isNew = new Date(item.created_at) > oneDayAgo;
             
             // Access properties correctly from the user_profiles object
-            // Fix: Properly type the user_profiles property using type assertion
-            const userProfile = item.user_profiles as {
+            // Fix: Properly access user_profiles as a nested object, not an array
+            const userProfile = item.user_profiles as unknown as {
               id: string;
               full_name: string | null;
               location: string | null;
