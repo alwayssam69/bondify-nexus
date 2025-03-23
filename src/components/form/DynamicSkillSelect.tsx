@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { 
+
+import React, { useState, useRef, useEffect } from "react";
+import { Check, ChevronsUpDown, Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command";
 import {
   Popover,
@@ -13,181 +16,183 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { Check, ChevronsUpDown, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { industrySkills } from "@/data/formOptions";
-import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { skillsByIndustry } from "@/data/formOptions";
 
 interface DynamicSkillSelectProps {
   industry: string;
-  label?: string;
   value: string[];
   onChange: (value: string[]) => void;
   placeholder?: string;
-  className?: string;
-  maxSelections?: number;
+  label?: string;
   error?: boolean;
 }
 
-const DynamicSkillSelect = ({
+const DynamicSkillSelect: React.FC<DynamicSkillSelectProps> = ({
   industry,
-  label,
-  value,
+  value = [],
   onChange,
   placeholder = "Select skills",
-  className,
-  maxSelections = 15,
-  error,
-}: DynamicSkillSelectProps) => {
+  label,
+  error = false,
+}) => {
   const [open, setOpen] = useState(false);
-  const [availableSkills, setAvailableSkills] = useState<{ value: string; label: string; }[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
+  // Get skills for the selected industry
+  const availableSkills = industry ? skillsByIndustry[industry] || [] : [];
+
+  const handleSelect = (selectedValue: string) => {
+    const newValue = value.includes(selectedValue)
+      ? value.filter((item) => item !== selectedValue)
+      : [...value, selectedValue];
+    
+    onChange(newValue);
+  };
+
+  const removeItem = (item: string) => {
+    onChange(value.filter((i) => i !== item));
+  };
+
+  // Close dropdown when clicking outside
   useEffect(() => {
-    if (industry && industrySkills[industry]) {
-      setAvailableSkills(industrySkills[industry]);
-      
-      // Validate that all selected skills are valid for the current industry
-      const validSkills = value.filter(skill => 
-        industrySkills[industry].some(option => option.value === skill)
-      );
-      
-      if (JSON.stringify(validSkills) !== JSON.stringify(value)) {
-        onChange(validSkills);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        triggerRef.current &&
+        !triggerRef.current.contains(event.target as Node) &&
+        open
+      ) {
+        setOpen(false);
       }
-    } else {
-      setAvailableSkills([]);
-    }
-  }, [industry, value, onChange]);
+    };
 
-  const handleSelect = (skillValue: string) => {
-    if (value.includes(skillValue)) {
-      onChange(value.filter(v => v !== skillValue));
-    } else {
-      if (value.length >= maxSelections) {
-        toast.warning(`You can select a maximum of ${maxSelections} skills`);
-        return;
-      }
-      onChange([...value, skillValue]);
-    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
+
+  // Get display labels for selected values
+  const getSelectedLabels = () => {
+    const allSkills = availableSkills.map(skill => ({
+      value: skill.value,
+      label: skill.label
+    }));
+    
+    return value.map((val) => {
+      const option = allSkills.find((opt) => opt.value === val);
+      return option ? option.label : val;
+    });
   };
 
-  const removeSkill = (skillValue: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    onChange(value.filter(v => v !== skillValue));
-  };
+  const selectedLabels = getSelectedLabels();
 
-  const getSkillLabel = (skillValue: string) => {
-    const skill = availableSkills.find(s => s.value === skillValue);
-    return skill ? skill.label : skillValue;
-  };
-
-  const filteredSkills = searchQuery
-    ? availableSkills.filter(skill =>
-        skill.label.toLowerCase().includes(searchQuery.toLowerCase()))
-    : availableSkills;
+  // Filter skills based on search query
+  const filteredSkills = availableSkills.filter((skill) =>
+    skill.label.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <FormItem className={className}>
-      {label && <FormLabel>{label}</FormLabel>}
-      <FormControl>
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              disabled={!industry || availableSkills.length === 0}
-              className={cn(
-                "w-full justify-between h-auto min-h-10",
-                error && "border-red-500"
-              )}
-              onClick={() => setOpen(true)}
-            >
-              <div className="flex flex-wrap gap-1 py-1">
-                {value.length > 0 ? (
-                  value.map(skill => (
-                    <Badge key={skill} variant="secondary" className="mr-1 mb-1">
-                      {getSkillLabel(skill)}
-                      <button
-                        type="button"
-                        className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                        onClick={(e) => removeSkill(skill, e)}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))
-                ) : (
-                  <span className="text-muted-foreground">
-                    {!industry 
-                      ? "Select an industry first" 
-                      : availableSkills.length === 0 
-                        ? "No skills available for this industry" 
-                        : placeholder}
-                  </span>
-                )}
+    <div className="w-full">
+      {label && (
+        <label className="block text-sm font-medium mb-2">{label}</label>
+      )}
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            ref={triggerRef}
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn(
+              "w-full justify-between h-auto min-h-10 text-left",
+              error ? "border-red-500" : "",
+              value.length > 0 ? "pl-3 pt-2 pb-1" : "px-3 py-2"
+            )}
+            onClick={() => setOpen(!open)}
+          >
+            {value.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {selectedLabels.map((label, index) => (
+                  <Badge 
+                    key={index} 
+                    variant="secondary"
+                    className="mr-1 mb-1 hover:bg-secondary"
+                  >
+                    {label}
+                    <button
+                      className="ml-1 rounded-full outline-none focus:ring-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeItem(value[index]);
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
               </div>
-              <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-full p-0 bg-white z-50">
-            <Command>
+            ) : (
+              <span className="text-muted-foreground">{placeholder}</span>
+            )}
+            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent 
+          className="w-full p-0 z-50" 
+          style={{ width: triggerRef.current ? `${triggerRef.current.offsetWidth}px` : "300px" }}
+        >
+          <Command>
+            <div className="flex items-center border-b px-3">
+              <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
               <CommandInput 
                 placeholder="Search skills..." 
-                className="h-9"
+                className="h-9 flex-1 border-0 outline-none focus:ring-0"
                 value={searchQuery}
                 onValueChange={setSearchQuery}
               />
-              <CommandEmpty>
-                {!industry 
-                  ? "Please select an industry first" 
-                  : "No skills found. Try a different search."}
-              </CommandEmpty>
-              <CommandGroup className="max-h-[300px] overflow-auto">
-                {filteredSkills.map((skill) => (
-                  <CommandItem
-                    key={skill.value}
-                    onSelect={() => {
-                      handleSelect(skill.value);
-                      // Keep dropdown open after selection for multi-select
-                    }}
-                    className="flex items-center gap-2"
-                  >
-                    <div className={cn(
-                      "flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                      value.includes(skill.value) ? "bg-primary text-primary-foreground" : "opacity-50"
-                    )}>
-                      {value.includes(skill.value) && <Check className="h-3 w-3" />}
-                    </div>
-                    <span>{skill.label}</span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-              {value.length > 0 && (
-                <div className="flex items-center justify-between p-2 border-t">
-                  <div className="text-xs text-muted-foreground">
-                    {value.length} of {maxSelections} selected
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => {
-                      onChange([]);
-                      setOpen(false);
-                    }}
-                  >
-                    Clear all
-                  </Button>
+            </div>
+            <CommandList>
+              {!industry && (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  Please select an industry first
                 </div>
               )}
-            </Command>
-          </PopoverContent>
-        </Popover>
-      </FormControl>
-      <FormMessage />
-    </FormItem>
+              {industry && filteredSkills.length === 0 && (
+                <CommandEmpty>No skills found.</CommandEmpty>
+              )}
+              {industry && (
+                <ScrollArea className="max-h-[300px]">
+                  <CommandGroup>
+                    {filteredSkills.map((skill) => (
+                      <CommandItem
+                        key={skill.value}
+                        value={skill.value}
+                        onSelect={() => handleSelect(skill.value)}
+                      >
+                        <div className="flex items-center w-full">
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              value.includes(skill.value)
+                                ? "opacity-100"
+                                : "opacity-0"
+                            )}
+                          />
+                          <span>{skill.label}</span>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </ScrollArea>
+              )}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 };
 

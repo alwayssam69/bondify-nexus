@@ -45,7 +45,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
                     <SelectValue placeholder="Select your industry" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent position="popper" className="bg-white z-50">
+                <SelectContent className="z-[100]">
                   {industryOptions.map((industry) => (
                     <SelectItem key={industry.value} value={industry.value}>
                       {industry.label}
@@ -73,7 +73,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
                     <SelectValue placeholder="Select your experience level" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent position="popper" className="bg-white z-50">
+                <SelectContent className="z-[100]">
                   {experienceLevels.map((level) => (
                     <SelectItem key={level.value} value={level.value}>
                       {level.label}
@@ -93,13 +93,15 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
         render={({ field }) => (
           <FormItem>
             <FormLabel>Skills</FormLabel>
-            <DynamicSkillSelect
-              industry={selectedIndustry}
-              value={field.value || []}
-              onChange={field.onChange}
-              placeholder="Select skills relevant to your industry"
-              error={!!errors.skills}
-            />
+            <FormControl>
+              <DynamicSkillSelect
+                industry={selectedIndustry}
+                value={field.value || []}
+                onChange={field.onChange}
+                placeholder="Select skills relevant to your industry"
+                error={!!errors.skills}
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}
@@ -111,12 +113,14 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
         render={({ field }) => (
           <FormItem>
             <FormLabel>Interests</FormLabel>
-            <MultiInterestSelect
-              value={field.value || []}
-              onChange={field.onChange}
-              placeholder="Select your personal interests"
-              error={!!errors.interests}
-            />
+            <FormControl>
+              <MultiInterestSelect
+                value={field.value || []}
+                onChange={field.onChange}
+                placeholder="Select your personal interests"
+                error={!!errors.interests}
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}
