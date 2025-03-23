@@ -23,6 +23,7 @@ export async function getMatchRecommendations(userId: string, limit = 20): Promi
       id: match.id,
       name: match.full_name || 'Anonymous User',
       age: getAgeFromExperienceLevel(match.experience_level),
+      gender: "unspecified", // Add default gender
       location: match.location || 'Unknown location',
       interests: match.interests || [],
       bio: match.bio || '',
@@ -68,6 +69,7 @@ export async function getProximityMatches(
       id: match.id,
       name: match.full_name || 'Anonymous User',
       age: getAgeFromExperienceLevel(match.experience_level),
+      gender: "unspecified", // Add default gender
       location: match.location || 'Unknown location',
       interests: match.interests || [],
       bio: match.bio || '',
@@ -215,6 +217,7 @@ export async function getConfirmedMatches(userId: string): Promise<UserProfile[]
       id: profile.id,
       name: profile.full_name || 'Anonymous User',
       age: getAgeFromExperienceLevel(profile.experience_level),
+      gender: "unspecified", // Add default gender
       location: profile.location || 'Unknown location',
       interests: profile.interests || [],
       bio: profile.bio || '',

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +14,7 @@ import { fetchUserNotifications } from "@/services/DataService";
 import { toast } from "sonner";
 
 interface Notification {
-  id: number;
+  id: string;
   type: 'match' | 'message' | 'view';
   message: string;
   time: string;
@@ -33,12 +32,7 @@ const NotificationsDropdown = () => {
       setIsLoading(true);
       try {
         const notificationsData = await fetchUserNotifications(user.id);
-        // Ensure the data matches the expected type
-        const typedNotifications = notificationsData.map(n => ({
-          ...n,
-          type: n.type as 'match' | 'message' | 'view'
-        }));
-        setNotifications(typedNotifications);
+        setNotifications(notificationsData as Notification[]);
       } catch (error) {
         console.error("Error loading notifications:", error);
       } finally {
@@ -49,14 +43,12 @@ const NotificationsDropdown = () => {
     if (user) {
       loadNotifications();
       
-      // Refresh notifications every 2 minutes
       const interval = setInterval(loadNotifications, 2 * 60 * 1000);
       return () => clearInterval(interval);
     }
   }, [user]);
 
   const handleMarkAllRead = () => {
-    // This would update the database in a real implementation
     toast.success("All notifications marked as read");
   };
 

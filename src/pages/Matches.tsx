@@ -63,7 +63,12 @@ const Matches = () => {
           matchResults = await getMatchRecommendations(user.id, 50);
         }
         
-        setMatches(matchResults);
+        const profilesWithGender = matchResults.map(profile => ({
+          ...profile,
+          gender: profile.gender || "unspecified"
+        }));
+        
+        setMatches(profilesWithGender);
       } catch (error) {
         console.error("Error loading matches:", error);
         toast.error("Failed to load matches");
@@ -408,9 +413,7 @@ const Matches = () => {
                 <MatchCardConnectable
                   key={profile.id}
                   profile={profile}
-                  onLike={() => handleMatchAction(profile.id, "like")}
-                  onPass={() => handleMatchAction(profile.id, "pass")}
-                  onSave={() => handleMatchAction(profile.id, "save")}
+                  onAction={(action) => handleMatchAction(profile.id, action)}
                 />
               ))}
             </div>

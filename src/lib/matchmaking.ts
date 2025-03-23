@@ -1,8 +1,9 @@
+
 export type UserProfile = {
   id: string;
   name: string;
   age: number;
-  gender: string;
+  gender?: string; // Changed to optional
   interests: string[];
   location: string;
   country?: string;
