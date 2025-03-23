@@ -57,13 +57,16 @@ const RecentMatchesDropdown = () => {
             oneDayAgo.setHours(oneDayAgo.getHours() - 24);
             const isNew = new Date(item.created_at) > oneDayAgo;
             
+            // Fix: Access properties correctly from the user_profiles object
+            const userProfile = item.user_profiles;
+            
             return {
               id: item.id,
-              name: item.user_profiles?.full_name || 'Unknown User',
-              location: item.user_profiles?.location || 'Unknown Location',
+              name: userProfile?.full_name || 'Unknown User',
+              location: userProfile?.location || 'Unknown Location',
               matchPercentage: Math.round((item.match_score || 0) * 100),
               isNew: isNew,
-              imageUrl: item.user_profiles?.image_url || ''
+              imageUrl: userProfile?.image_url || ''
             };
           });
           setRecentMatches(matchesData);

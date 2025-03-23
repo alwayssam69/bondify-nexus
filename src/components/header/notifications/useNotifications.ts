@@ -152,7 +152,8 @@ export const useNotifications = (limit = 5, offset = 0) => {
         .subscribe((status) => {
           console.log('Realtime subscription status:', status);
           
-          if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIPTION_ERROR) {
+          // Fix: Use the correct enum value
+          if (status === 'SUBSCRIPTION_ERROR') {
             console.warn('Could not set up realtime subscription, falling back to sample data');
             fallbackToSampleData();
           }
