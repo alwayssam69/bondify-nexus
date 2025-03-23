@@ -10,8 +10,8 @@ const EmptyChat = () => {
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
         </div>
-        <h3 className="text-lg font-semibold mb-2">No Conversation Selected</h3>
-        <p className="text-muted-foreground">Select a conversation from the sidebar to start chatting</p>
+        <h3 className="text-lg font-semibold mb-2">Start a Conversation</h3>
+        <p className="text-muted-foreground">Select a connection from the sidebar or match with someone new to start chatting</p>
       </div>
     </div>
   );

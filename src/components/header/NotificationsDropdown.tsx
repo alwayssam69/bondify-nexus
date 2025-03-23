@@ -33,7 +33,12 @@ const NotificationsDropdown = () => {
       setIsLoading(true);
       try {
         const notificationsData = await fetchUserNotifications(user.id);
-        setNotifications(notificationsData);
+        // Ensure the data matches the expected type
+        const typedNotifications = notificationsData.map(n => ({
+          ...n,
+          type: n.type as 'match' | 'message' | 'view'
+        }));
+        setNotifications(typedNotifications);
       } catch (error) {
         console.error("Error loading notifications:", error);
       } finally {
@@ -71,14 +76,16 @@ const NotificationsDropdown = () => {
         <DropdownMenuLabel className="font-normal">
           <div className="flex justify-between items-center">
             <span className="font-semibold">Notifications</span>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 px-2 text-xs"
-              onClick={handleMarkAllRead}
-            >
-              Mark All Read
-            </Button>
+            {notifications.length > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 px-2 text-xs"
+                onClick={handleMarkAllRead}
+              >
+                Mark All Read
+              </Button>
+            )}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -89,7 +96,7 @@ const NotificationsDropdown = () => {
           </div>
         ) : notifications.length === 0 ? (
           <div className="p-4 text-center text-muted-foreground">
-            No notifications yet
+            No new updates yet
           </div>
         ) : (
           notifications.map((notification) => (

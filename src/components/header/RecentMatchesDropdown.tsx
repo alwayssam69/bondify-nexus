@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import { Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchRecentMatchesForUser } from "@/services/DataService";
 import { RecentMatch } from "@/types/chat";
+import { supabase } from "@/lib/supabase";
 
 const RecentMatchesDropdown = () => {
   const navigate = useNavigate();
@@ -39,9 +39,26 @@ const RecentMatchesDropdown = () => {
     if (user) {
       loadRecentMatches();
       
-      // Refresh matches every 5 minutes
-      const interval = setInterval(loadRecentMatches, 5 * 60 * 1000);
-      return () => clearInterval(interval);
+      // Set up real-time listener for new matches
+      const channel = supabase
+        .channel('public:user_matches')
+        .on('postgres_changes', 
+          { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'user_matches',
+            filter: `user_id=eq.${user.id}`
+          }, 
+          () => {
+            // Reload matches when a new one is created
+            loadRecentMatches();
+          }
+        )
+        .subscribe();
+      
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 

@@ -1,696 +1,521 @@
-
 import React, { useState, useEffect } from "react";
-import { 
-  findMatches,
-  UserProfile, 
-  calculateDistance 
-} from '@/lib/matchmaking';
-import MatchCardConnectable from '@/components/MatchCardConnectable';
-import SwipeContainer from '@/components/SwipeContainer';
-import InstantChat from '@/components/InstantChat';
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Users, MessageSquareText, BookmarkPlus, MapPin, Trophy, Calendar, Bell, Building, GraduationCap } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import MatchFilter, { FilterOptions } from "@/components/MatchFilter";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { getMatches, getUserMatches, getSavedProfiles, recordSwipeAction } from "@/services/MatchmakingService";
+import { UserProfile } from "@/lib/matchmaking";
+import { getMatchRecommendations, getProximityMatches, getConfirmedMatches, getSavedProfiles } from "@/services/MatchmakingService";
+import MatchCardConnectable from "@/components/MatchCardConnectable";
+import MatchCardSimple from "@/components/MatchCardSimple";
+import { supabase } from "@/integrations/supabase/client";
 
 const Matches = () => {
+  const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
-  const [matches, setMatches] = useState<UserProfile[]>([]);
-  const [savedProfiles, setSavedProfiles] = useState<UserProfile[]>([]);
   const [activeTab, setActiveTab] = useState("discover");
-  const [filterApplied, setFilterApplied] = useState(false);
-  const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  
-  const [connections, setConnections] = useState<UserProfile[]>([]);
-  const [userStreak, setUserStreak] = useState(3);
-  const [weeklyGoal, setWeeklyGoal] = useState({
-    target: 5,
-    achieved: 2
-  });
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const [showUniversityLeaderboard, setShowUniversityLeaderboard] = useState(false);
+  const [matches, setMatches] = useState<UserProfile[]>([]);
+  const [confirmedMatches, setConfirmedMatches] = useState<UserProfile[]>([]);
+  const [savedProfiles, setSavedProfiles] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingConfirmed, setIsLoadingConfirmed] = useState(false);
+  const [isLoadingSaved, setIsLoadingSaved] = useState(false);
+  const [filterExpanded, setFilterExpanded] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
+  const [experienceLevel, setExperienceLevel] = useState<string>("any");
+  const [locationFilter, setLocationFilter] = useState<string>("");
+  const [locationEnabled, setLocationEnabled] = useState(false);
+  const [userCoordinates, setUserCoordinates] = useState<{lat: number, lng: number} | null>(null);
+  const [radiusInKm, setRadiusInKm] = useState<number>(50);
+  
+  // Available industries for filtering
+  const industries = [
+    "technology", "finance", "healthcare", "education", 
+    "marketing", "design", "legal", "business", "engineering"
+  ];
+  
+  // Experience levels for filtering
+  const experienceLevels = [
+    { value: "any", label: "Any Level" },
+    { value: "beginner", label: "Beginner" },
+    { value: "intermediate", label: "Intermediate" },
+    { value: "expert", label: "Expert" }
+  ];
   
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-        }
-      );
-    }
-  }, []);
-  
-  useEffect(() => {
-    if (profile && user) {
-      // Create current user profile from auth data
-      const userProfile: UserProfile = {
-        id: user.id,
-        name: profile.full_name || user.email?.split('@')[0] || "User",
-        age: 25, // Default
-        gender: "unspecified",
-        interests: profile.interests || ["networking", "professional development"],
-        location: profile.location || "Unknown",
-        bio: profile.bio || "Looking to connect with professionals",
-        relationshipGoal: "networking",
-        skills: profile.skills || ["networking"],
-        language: "English",
-        industry: profile.industry || "",
-        userType: profile.user_type || "",
-        experienceLevel: profile.experience_level || "",
-        university: profile.university || "",
-        courseYear: profile.course_year || "",
-        projectInterests: profile.project_interests || [],
-        activityScore: profile.activity_score || 70,
-        profileCompleteness: profile.profile_completeness || 50,
-      };
+    const loadMatches = async () => {
+      if (!user) return;
       
-      setCurrentUser(userProfile);
-      
-      // Load matches and connections
-      loadMatches();
-      loadConnections();
-      loadSavedProfiles();
-    }
-  }, [user, profile, userLocation]);
-  
-  const loadMatches = async () => {
-    setIsLoading(true);
-    if (user) {
+      setIsLoading(true);
       try {
-        const matchList = await getMatches(user.id);
+        let matchResults;
         
-        // Add distance if we have location
-        if (userLocation) {
-          const matchesWithDistance = matchList.map(match => {
-            const userCoords = getUserMockCoordinates(match.location);
-            
-            if (userCoords) {
-              const distance = calculateDistance(
-                userLocation.latitude,
-                userLocation.longitude,
-                userCoords.latitude,
-                userCoords.longitude
-              );
-              
-              return { ...match, distance };
-            }
-            
-            return match;
-          });
-          
-          setMatches(matchesWithDistance);
+        if (locationEnabled && userCoordinates) {
+          // Get matches by proximity if location is enabled
+          matchResults = await getProximityMatches(
+            user.id,
+            radiusInKm,
+            50 // Limit
+          );
         } else {
-          setMatches(matchList);
+          // Otherwise get regular matches
+          matchResults = await getMatchRecommendations(user.id, 50);
         }
+        
+        setMatches(matchResults);
       } catch (error) {
         console.error("Error loading matches:", error);
         toast.error("Failed to load matches");
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
-  };
-  
-  const loadConnections = async () => {
+    };
+
+    // Load matches when user logs in or filters change
     if (user) {
-      try {
-        const connectionsList = await getUserMatches(user.id);
-        setConnections(connectionsList);
-      } catch (error) {
-        console.error("Error loading connections:", error);
-      }
+      loadMatches();
+      
+      // Set up real-time listener for new matches
+      const channel = supabase
+        .channel('public:user_profiles')
+        .on('postgres_changes', 
+          { event: 'INSERT', schema: 'public', table: 'user_profiles' }, 
+          () => {
+            // Reload matches when a new user is created
+            loadMatches();
+          }
+        )
+        .subscribe();
+      
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
-  };
+  }, [user, locationEnabled, userCoordinates, radiusInKm]);
   
-  const loadSavedProfiles = async () => {
-    if (user) {
+  // Load confirmed matches when tab changes
+  useEffect(() => {
+    const loadConfirmedMatches = async () => {
+      if (!user || activeTab !== "matches") return;
+      
+      setIsLoadingConfirmed(true);
       try {
-        const savedList = await getSavedProfiles(user.id);
-        setSavedProfiles(savedList);
+        const matchResults = await getConfirmedMatches(user.id);
+        setConfirmedMatches(matchResults);
       } catch (error) {
-        console.error("Error loading saved profiles:", error);
+        console.error("Error loading confirmed matches:", error);
+      } finally {
+        setIsLoadingConfirmed(false);
       }
-    }
-  };
-  
-  const getUserMockCoordinates = (location: string) => {
-    const locationMap: Record<string, {latitude: number, longitude: number}> = {
-      "New York": { latitude: 40.7128, longitude: -74.0060 },
-      "San Francisco": { latitude: 37.7749, longitude: -122.4194 },
-      "Los Angeles": { latitude: 34.0522, longitude: -118.2437 },
-      "Chicago": { latitude: 41.8781, longitude: -87.6298 },
-      "Miami": { latitude: 25.7617, longitude: -80.1918 },
-      "Austin": { latitude: 30.2672, longitude: -97.7431 },
-      "Portland": { latitude: 45.5051, longitude: -122.6750 },
-      "Seattle": { latitude: 47.6062, longitude: -122.3321 },
-      "London": { latitude: 51.5074, longitude: -0.1278 },
-      "Mumbai": { latitude: 19.0760, longitude: 72.8777 },
-      "Bangalore": { latitude: 12.9716, longitude: 77.5946 },
-      "Sydney": { latitude: -33.8688, longitude: 151.2093 },
-      "Berlin": { latitude: 52.5200, longitude: 13.4050 },
     };
     
-    return locationMap[location] || null;
-  };
+    loadConfirmedMatches();
+  }, [user, activeTab]);
   
-  const handleSendIntro = (profileId: string, message: string) => {
-    const profile = matches.find(p => p.id === profileId);
-    if (profile) {
-      toast.success(`Message sent to ${profile.name}`);
-    }
-  };
-  
-  const handleNewMatch = (profile: UserProfile) => {
-    setConnections(prev => {
-      if (prev.some(p => p.id === profile.id)) return prev;
-      return [...prev, profile];
-    });
-    
-    setTimeout(() => {
-      setActiveTab("connections");
-    }, 1500);
-  };
-  
-  const handleRefreshMatches = async () => {
-    await loadMatches();
-    toast.success("Found new matches!");
-  };
-  
-  const handleConnect = async (profileId: string) => {
-    if (!user) {
-      toast.error("You must be logged in to connect");
-      return;
-    }
-    
-    try {
-      const success = await recordSwipeAction(user.id, profileId, 'like');
+  // Load saved profiles when tab changes
+  useEffect(() => {
+    const loadSavedProfiles = async () => {
+      if (!user || activeTab !== "saved") return;
       
-      const profile = matches.find(p => p.id === profileId) || 
-                    savedProfiles.find(p => p.id === profileId);
-                    
-      if (profile) {
-        if (success) {
-          // It's a match!
-          setConnections(prev => {
-            if (prev.some(p => p.id === profileId)) return prev;
-            return [...prev, profile];
-          });
-          
-          setSavedProfiles(prev => prev.filter(p => p.id !== profileId));
-          setMatches(prev => prev.filter(p => p.id !== profileId));
-          
-          toast.success(`You matched with ${profile.name}!`, {
-            description: "You can now start messaging each other",
-          });
-        } else {
-          toast.success(`Connection request sent to ${profile.name}`);
-          setMatches(prev => prev.filter(p => p.id !== profileId));
-        }
-      }
-    } catch (error) {
-      console.error("Error connecting:", error);
-      toast.error("Failed to send connection request");
-    }
-  };
-  
-  const handleViewProfile = (profileId: string) => {
-    const profile = matches.find(p => p.id === profileId) || 
-                    connections.find(p => p.id === profileId) ||
-                    savedProfiles.find(p => p.id === profileId);
-    
-    if (profile) {
-      toast.info(`Viewing ${profile.name}'s profile`);
-    }
-  };
-  
-  const handleStartMatching = () => {
-    setActiveTab("discover");
-  };
-  
-  const handleSaveForLater = async (profileId: string) => {
-    if (!user) {
-      toast.error("You must be logged in to save profiles");
-      return;
-    }
-    
-    try {
-      await recordSwipeAction(user.id, profileId, 'save');
-      
-      const profile = matches.find(p => p.id === profileId);
-      if (profile && !savedProfiles.some(p => p.id === profileId)) {
-        setSavedProfiles(prev => [...prev, profile]);
+      setIsLoadingSaved(true);
+      try {
+        // Get saved profile IDs
+        const savedIds = await getSavedProfiles(user.id);
         
-        const profileIndex = matches.findIndex(p => p.id === profileId);
-        if (profileIndex !== -1) {
-          setMatches(prev => {
-            const newMatches = [...prev];
-            newMatches.splice(profileIndex, 1);
-            return newMatches;
-          });
+        if (savedIds.length === 0) {
+          setSavedProfiles([]);
+          return;
         }
         
-        toast.success(`Saved ${profile.name} for later`);
+        // Get full profiles for saved IDs
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .in('id', savedIds);
+          
+        if (error) {
+          console.error("Error fetching saved profiles:", error);
+          return;
+        }
+        
+        // Transform to UserProfile format
+        const savedProfilesData = data.map(profile => ({
+          id: profile.id,
+          name: profile.full_name,
+          age: estimateAgeFromExperienceLevel(profile.experience_level),
+          gender: profile.gender || "unspecified",
+          location: profile.location || "",
+          interests: profile.interests || [],
+          bio: profile.bio || "",
+          relationshipGoal: "networking",
+          skills: profile.skills || [],
+          language: "English",
+          imageUrl: profile.image_url || "",
+          industry: profile.industry || "",
+          userType: profile.user_type || "",
+          experienceLevel: profile.experience_level || "",
+          activityScore: profile.activity_score || 75,
+          profileCompleteness: profile.profile_completeness || 80,
+        }));
+        
+        setSavedProfiles(savedProfilesData);
+      } catch (error) {
+        console.error("Error loading saved profiles:", error);
+      } finally {
+        setIsLoadingSaved(false);
       }
-    } catch (error) {
-      console.error("Error saving profile:", error);
-      toast.error("Failed to save profile");
+    };
+    
+    loadSavedProfiles();
+  }, [user, activeTab]);
+  
+  // Request user location
+  const requestLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserCoordinates({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+          setLocationEnabled(true);
+          toast.success("Location enabled for better matches");
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          toast.error("Could not access your location");
+          setLocationEnabled(false);
+        }
+      );
+    } else {
+      toast.error("Geolocation is not supported by your browser");
     }
   };
-
-  const handleApplyFilters = async (filters: FilterOptions) => {
-    if (!user || !currentUser) {
-      toast.error("You must be logged in to apply filters");
-      return;
-    }
-    
-    setCurrentUser(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        userType: filters.userType || prev.userType,
-        industry: filters.industry.length > 0 ? filters.industry[0] : prev.industry,
-        skills: filters.skills.length > 0 ? filters.skills : prev.skills,
-        experienceLevel: filters.experienceLevel || prev.experienceLevel,
-        relationshipGoal: filters.relationshipGoal || prev.relationshipGoal,
-        location: filters.locationPreference === "local" ? prev.location : prev.location,
-      };
-    });
-    
-    // Load matches with filters
-    setIsLoading(true);
-    try {
-      const matchList = await getMatches(user.id);
-      
-      let filteredMatches = matchList;
-      
-      if (filters.userType) {
-        filteredMatches = filteredMatches.filter(m => m.userType === filters.userType);
-      }
-      
-      if (filters.industry.length > 0) {
-        filteredMatches = filteredMatches.filter(m => 
-          m.industry && filters.industry.includes(m.industry)
-        );
-      }
-      
-      if (filters.skills.length > 0) {
-        filteredMatches = filteredMatches.filter(m => 
-          m.skills && m.skills.some(skill => filters.skills.includes(skill))
-        );
-      }
-      
-      if (filters.experienceLevel) {
-        filteredMatches = filteredMatches.filter(m => 
-          m.experienceLevel === filters.experienceLevel
-        );
-      }
-      
-      if (userLocation) {
-        filteredMatches = filteredMatches.map(match => {
-          const userCoords = getUserMockCoordinates(match.location);
-          
-          if (userCoords) {
-            const distance = calculateDistance(
-              userLocation.latitude,
-              userLocation.longitude,
-              userCoords.latitude,
-              userCoords.longitude
-            );
-            
-            return { ...match, distance };
-          }
-          
-          return match;
-        });
-      }
-      
-      setMatches(filteredMatches);
-      setFilterApplied(true);
-      toast.success("Filters applied successfully!");
-    } catch (error) {
-      console.error("Error applying filters:", error);
-      toast.error("Failed to apply filters");
-    } finally {
-      setIsLoading(false);
+  
+  // Helper function to estimate age based on experience level
+  const estimateAgeFromExperienceLevel = (experienceLevel: string | null): number => {
+    switch (experienceLevel) {
+      case 'beginner':
+        return 20 + Math.floor(Math.random() * 5);
+      case 'intermediate':
+        return 25 + Math.floor(Math.random() * 5);
+      case 'expert':
+        return 30 + Math.floor(Math.random() * 10);
+      default:
+        return 25 + Math.floor(Math.random() * 10);
     }
   };
-
-  // Leaderboard data (could be fetched from the database in a real app)
-  const leaderboardData = [
-    { id: "leader1", name: "Alex Johnson", points: 356, connectionsThisWeek: 12 },
-    { id: "leader2", name: "Taylor Swift", points: 298, connectionsThisWeek: 10 },
-    { id: "leader3", name: "Jordan Peterson", points: 245, connectionsThisWeek: 8 },
-    { id: "leader4", name: "Chris Evans", points: 212, connectionsThisWeek: 7 },
-    { id: "leader5", name: "Serena Williams", points: 187, connectionsThisWeek: 6 },
-  ];
-
-  const universityLeaderboardData = [
-    { id: "uni1", name: "Rahul Verma", university: "IIT Delhi", points: 428, connections: 15, projectsJoined: 3 },
-    { id: "uni2", name: "Ananya Patel", university: "NIT Trichy", points: 375, connections: 12, projectsJoined: 2 },
-    { id: "uni3", name: "Vikram Singh", university: "BITS Pilani", points: 342, connections: 11, projectsJoined: 4 },
-    { id: "uni4", name: "Priya Sharma", university: "IIT Bombay", points: 310, connections: 9, projectsJoined: 2 },
-    { id: "uni5", name: "Ravi Kumar", university: "Delhi University", points: 285, connections: 8, projectsJoined: 1 },
-    { id: "uni6", name: "Neha Gupta", university: "VIT Vellore", points: 248, connections: 7, projectsJoined: 2 },
-    { id: "uni7", name: "Arjun Reddy", university: "IIT Madras", points: 215, connections: 6, projectsJoined: 1 },
-  ];
-
-  if (!user || !currentUser) {
-    return (
-      <div className="container mx-auto py-32 px-4 text-center">
-        <h1 className="text-2xl font-bold mb-4">Please sign in to view matches</h1>
-        <Button onClick={() => window.location.href = "/login"}>
-          Sign In
-        </Button>
-      </div>
-    );
-  }
-
+  
+  // Handle match actions (like, pass, save)
+  const handleMatchAction = (profileId: string, action: "like" | "pass" | "save") => {
+    // This would be handled by the MatchCardConnectable component
+    // which would call the appropriate API
+    
+    if (action === "like") {
+      toast.success("You liked this profile!");
+    } else if (action === "pass") {
+      toast.info("Profile skipped");
+    } else if (action === "save") {
+      toast.success("Profile saved for later");
+    }
+    
+    // Remove the profile from the current list
+    setMatches(prev => prev.filter(p => p.id !== profileId));
+  };
+  
+  // Filter matches based on search and filters
+  const filteredMatches = matches.filter(profile => {
+    // Search term filter
+    if (searchTerm && !profile.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
+        !profile.industry?.toLowerCase().includes(searchTerm.toLowerCase())) {
+      return false;
+    }
+    
+    // Industry filter
+    if (selectedIndustries.length > 0 && 
+        !selectedIndustries.includes(profile.industry?.toLowerCase() || '')) {
+      return false;
+    }
+    
+    // Experience level filter
+    if (experienceLevel !== "any" && profile.experienceLevel !== experienceLevel) {
+      return false;
+    }
+    
+    // Location filter
+    if (locationFilter && !profile.location.toLowerCase().includes(locationFilter.toLowerCase())) {
+      return false;
+    }
+    
+    return true;
+  });
+  
+  // Toggle industry selection
+  const toggleIndustry = (industry: string) => {
+    if (selectedIndustries.includes(industry)) {
+      setSelectedIndustries(prev => prev.filter(i => i !== industry));
+    } else {
+      setSelectedIndustries(prev => [...prev, industry]);
+    }
+  };
+  
   return (
-    <div className="container mx-auto py-8 px-4 min-h-screen bg-gradient-to-b from-background to-background/70">
-      <h1 className="text-3xl font-bold mb-8 text-center text-black">Find Your Perfect Match</h1>
-      
-      <div className="flex flex-wrap gap-4 justify-center mb-8">
-        <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 shadow-sm p-3 flex items-center gap-3 w-auto">
-          <div className="bg-amber-500/10 p-2 rounded-full">
-            <Trophy className="h-5 w-5 text-amber-500" />
-          </div>
-          <div>
-            <p className="text-xs text-amber-700/70">Current Streak</p>
-            <p className="font-semibold text-amber-900">{userStreak} Days</p>
-          </div>
-        </Card>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Connections</h1>
+          <p className="text-muted-foreground mt-1">
+            Discover and connect with professionals in your network
+          </p>
+        </div>
         
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm p-3 flex items-center gap-3 w-auto">
-          <div className="bg-blue-500/10 p-2 rounded-full">
-            <Calendar className="h-5 w-5 text-blue-500" />
-          </div>
-          <div>
-            <p className="text-xs text-blue-700/70">Weekly Goal</p>
-            <p className="font-semibold text-blue-900">{weeklyGoal.achieved}/{weeklyGoal.target} Connections</p>
-          </div>
-        </Card>
-        
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 shadow-sm p-3 flex items-center gap-3 w-auto cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowLeaderboard(!showLeaderboard)}>
-          <div className="bg-purple-500/10 p-2 rounded-full">
-            <Users className="h-5 w-5 text-purple-500" />
-          </div>
-          <div>
-            <p className="text-xs text-purple-700/70">Networking Rank</p>
-            <p className="font-semibold text-purple-900">#42 in Your Industry</p>
-          </div>
-        </Card>
-        
-        <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 shadow-sm p-3 flex items-center gap-3 w-auto cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowUniversityLeaderboard(!showUniversityLeaderboard)}>
-          <div className="bg-emerald-500/10 p-2 rounded-full">
-            <GraduationCap className="h-5 w-5 text-emerald-500" />
-          </div>
-          <div>
-            <p className="text-xs text-emerald-700/70">University Rank</p>
-            <p className="font-semibold text-emerald-900">Top Students</p>
-          </div>
-        </Card>
-      </div>
-      
-      {showLeaderboard && (
-        <Card className="mb-8 max-w-2xl mx-auto bg-white/80 backdrop-blur border border-border/30 shadow-sm">
-          <CardContent className="pt-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-amber-500" />
-              Top Networkers This Week
-            </h3>
-            <div className="space-y-3">
-              {leaderboardData.map((user, index) => (
-                <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-border/20">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-blue-100 font-semibold text-blue-800">
-                      {index + 1}
-                    </div>
-                    <div>
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-xs text-muted-foreground">{user.connectionsThisWeek} connections this week</p>
-                    </div>
-                  </div>
-                  <div className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
-                    {user.points} pts
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 text-center">
-              <Button variant="outline" size="sm" onClick={() => setShowLeaderboard(false)}>
-                Close Leaderboard
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      {showUniversityLeaderboard && (
-        <Card className="mb-8 max-w-2xl mx-auto bg-white/80 backdrop-blur border border-border/30 shadow-sm">
-          <CardContent className="pt-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <GraduationCap className="h-5 w-5 text-emerald-500" />
-              University Student Leaderboard
-            </h3>
-            <div className="space-y-3">
-              {universityLeaderboardData.map((user, index) => (
-                <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-border/20">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-100 to-green-100 font-semibold text-emerald-800">
-                      {index + 1}
-                    </div>
-                    <div>
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-xs text-muted-foreground">{user.university}</p>
-                      <div className="flex gap-2 mt-1">
-                        <span className="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">
-                          {user.connections} connections
-                        </span>
-                        <span className="text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">
-                          {user.projectsJoined} projects
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full text-xs font-medium">
-                    {user.points} pts
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 text-center">
-              <Button variant="outline" size="sm" onClick={() => setShowUniversityLeaderboard(false)}>
-                Close University Leaderboard
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      <div className="mb-8 max-w-lg mx-auto">
-        <Tabs 
-          defaultValue="discover" 
-          value={activeTab} 
-          onValueChange={setActiveTab}
-          className="w-full"
-        >
-          <TabsList className="grid w-full grid-cols-4 mb-8 bg-background/60 backdrop-blur p-1 rounded-lg border border-border/40">
-            <TabsTrigger value="discover" className="flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Search className="h-4 w-4" />
-              Discover
-            </TabsTrigger>
-            <TabsTrigger value="saved" className="flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <BookmarkPlus className="h-4 w-4" />
-              Saved
-              {savedProfiles.length > 0 && (
-                <span className="ml-1 bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {savedProfiles.length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="connections" className="flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Users className="h-4 w-4" />
-              Connections
-              {connections.length > 0 && (
-                <span className="ml-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {connections.length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="chat" className="flex items-center gap-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <MessageSquareText className="h-4 w-4" />
-              Chat
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="discover">
-            {isLoading ? (
-              <div className="flex justify-center items-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              </div>
-            ) : (
-              <>
-                {!filterApplied && <MatchFilter onApplyFilters={handleApplyFilters} />}
-                
-                {filterApplied && matches.length === 0 ? (
-                  <Card className="text-center p-6 mb-6 bg-background/60 backdrop-blur border border-border/40 shadow-sm">
-                    <CardContent className="pt-6">
-                      <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold mb-2">No matches found with these filters</h3>
-                      <p className="text-muted-foreground mb-6">
-                        Try adjusting your filters to find more matches
-                      </p>
-                      <Button onClick={() => setFilterApplied(false)} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">Adjust Filters</Button>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  filterApplied && (
-                    <>
-                      <div className="flex items-center justify-between mb-4">
-                        <p className="text-sm text-muted-foreground">
-                          Found {matches.length} matches with your filters
-                        </p>
-                        <Button variant="outline" size="sm" onClick={() => setFilterApplied(false)}>
-                          Adjust Filters
-                        </Button>
-                      </div>
-                      <SwipeContainer 
-                        profiles={matches}
-                        onNewMatch={handleNewMatch}
-                        onRefresh={handleRefreshMatches}
-                        onSendIntro={handleSendIntro}
-                        onSaveForLater={handleSaveForLater}
-                        userId={user.id}
-                      />
-                      <div className="text-center text-sm text-muted-foreground mt-4">
-                        Connect, pass, or save profiles for later
-                      </div>
-                    </>
-                  )
-                )}
-                
-                {filterApplied && matches.length > 0 && (
-                  <>
-                    <SwipeContainer 
-                      profiles={matches}
-                      onNewMatch={handleNewMatch}
-                      onRefresh={handleRefreshMatches}
-                      onSendIntro={handleSendIntro}
-                      onSaveForLater={handleSaveForLater}
-                      userId={user.id}
-                    />
-                    <div className="text-center text-sm text-muted-foreground mt-4">
-                      Connect, pass, or save profiles for later
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="saved">
-            {isLoading ? (
-              <div className="flex justify-center items-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              </div>
-            ) : (
-              savedProfiles.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {savedProfiles.map((profile, index) => (
-                    <MatchCardConnectable
-                      key={profile.id}
-                      profile={profile}
-                      delay={index * 100}
-                      onViewProfile={handleViewProfile}
-                      onConnect={() => handleConnect(profile.id)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <Card className="text-center p-6 bg-background/60 backdrop-blur border border-border/40 shadow-sm">
-                  <CardContent className="pt-6">
-                    <BookmarkPlus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">No saved profiles yet</h3>
-                    <p className="text-muted-foreground mb-6">
-                      Save interesting profiles while browsing to review them later.
-                    </p>
-                    <Button onClick={handleStartMatching} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">Start Discovering</Button>
-                  </CardContent>
-                </Card>
-              )
-            )}
-          </TabsContent>
-          
-          <TabsContent value="connections">
-            {isLoading ? (
-              <div className="flex justify-center items-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              </div>
-            ) : (
-              connections.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {connections.map((connection, index) => (
-                    <MatchCardConnectable
-                      key={connection.id}
-                      profile={connection}
-                      delay={index * 100}
-                      onViewProfile={handleViewProfile}
-                      onConnect={() => {
-                        toast.info(`You're already connected with ${connection.name}`);
-                      }}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <Card className="text-center p-6 bg-background/60 backdrop-blur border border-border/40 shadow-sm">
-                  <CardContent className="pt-6">
-                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">No connections yet</h3>
-                    <p className="text-muted-foreground mb-6">
-                      Start discovering people and make connections to see them here.
-                    </p>
-                    <Button onClick={handleStartMatching} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">Start Matching</Button>
-                  </CardContent>
-                </Card>
-              )
-            )}
-          </TabsContent>
-          
-          <TabsContent value="chat">
-            <InstantChat currentUser={currentUser} connections={connections} />
-          </TabsContent>
-        </Tabs>
-      </div>
-      
-      <div className="max-w-3xl mx-auto mt-12">
-        <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
-          <Bell className="h-5 w-5 text-amber-500" />
-          <span className="bg-gradient-to-r from-amber-500 to-orange-600 text-transparent bg-clip-text">Recently Active</span>
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {matches.slice(0, 6).map((match, index) => (
-            <MatchCardConnectable
-              key={match.id}
-              profile={match}
-              delay={index * 100}
-              onViewProfile={handleViewProfile}
-              onConnect={() => handleConnect(match.id)}
-            />
-          ))}
+        <div className="mt-4 md:mt-0">
+          <Button onClick={() => navigate("/chat")}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            Messages
+          </Button>
         </div>
       </div>
+      
+      <Tabs defaultValue="discover" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="discover">Discover</TabsTrigger>
+          <TabsTrigger value="matches">My Connections</TabsTrigger>
+          <TabsTrigger value="saved">Saved</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="discover">
+          <div className="mb-6">
+            <div className="flex flex-col md:flex-row gap-4 mb-4">
+              <div className="flex-1">
+                <Input
+                  placeholder="Search by name, industry, or skills..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              
+              <Button 
+                variant={filterExpanded ? "default" : "outline"} 
+                onClick={() => setFilterExpanded(!filterExpanded)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                </svg>
+                Filters
+                {selectedIndustries.length > 0 || experienceLevel !== "any" || locationFilter ? (
+                  <Badge variant="secondary" className="ml-2">
+                    {selectedIndustries.length + (experienceLevel !== "any" ? 1 : 0) + (locationFilter ? 1 : 0)}
+                  </Badge>
+                ) : null}
+              </Button>
+              
+              <div className="flex items-center gap-2">
+                <Switch 
+                  checked={locationEnabled} 
+                  onCheckedChange={(checked) => {
+                    if (checked && !userCoordinates) {
+                      requestLocation();
+                    } else {
+                      setLocationEnabled(checked);
+                    }
+                  }}
+                />
+                <span className="text-sm">Nearby</span>
+              </div>
+            </div>
+            
+            {filterExpanded && (
+              <div className="bg-muted/50 p-4 rounded-lg mb-4">
+                <div className="mb-4">
+                  <h3 className="font-medium mb-2">Industry</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {industries.map(industry => (
+                      <Badge 
+                        key={industry}
+                        variant={selectedIndustries.includes(industry) ? "default" : "outline"}
+                        className="cursor-pointer capitalize"
+                        onClick={() => toggleIndustry(industry)}
+                      >
+                        {industry}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <h3 className="font-medium mb-2">Experience Level</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {experienceLevels.map(level => (
+                      <Badge 
+                        key={level.value}
+                        variant={experienceLevel === level.value ? "default" : "outline"}
+                        className="cursor-pointer"
+                        onClick={() => setExperienceLevel(level.value)}
+                      >
+                        {level.label}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <h3 className="font-medium mb-2">Location</h3>
+                  <Input
+                    placeholder="Filter by city or region..."
+                    value={locationFilter}
+                    onChange={(e) => setLocationFilter(e.target.value)}
+                    className="max-w-md"
+                  />
+                </div>
+                
+                {locationEnabled && (
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <h3 className="font-medium">Distance (km)</h3>
+                      <span>{radiusInKm} km</span>
+                    </div>
+                    <Slider
+                      value={[radiusInKm]}
+                      min={5}
+                      max={100}
+                      step={5}
+                      onValueChange={(value) => setRadiusInKm(value[0])}
+                      className="max-w-md"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-72 bg-muted rounded-lg animate-pulse"></div>
+              ))}
+            </div>
+          ) : filteredMatches.length === 0 ? (
+            <div className="text-center py-16 border border-dashed rounded-lg mt-6">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium mb-2">No Matches Found Yet</h3>
+              <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                We couldn't find any matches based on your current filters. Try adjusting your search criteria or check back later.
+              </p>
+              <Button 
+                onClick={() => {
+                  setFilterExpanded(true);
+                  setSelectedIndustries([]);
+                  setExperienceLevel('any');
+                  setLocationFilter('');
+                }} 
+                variant="outline"
+              >
+                Reset Filters
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+              {filteredMatches.map(profile => (
+                <MatchCardConnectable
+                  key={profile.id}
+                  profile={profile}
+                  onAction={handleMatchAction}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="matches">
+          {isLoadingConfirmed ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-72 bg-muted rounded-lg animate-pulse"></div>
+              ))}
+            </div>
+          ) : confirmedMatches.length === 0 ? (
+            <div className="text-center py-16 border border-dashed rounded-lg">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium mb-2">No Connections Yet</h3>
+              <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                You haven't connected with anyone yet. Discover and match with professionals to build your network.
+              </p>
+              <Button onClick={() => setActiveTab("discover")}>
+                Find Connections
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {confirmedMatches.map(profile => (
+                <MatchCardSimple
+                  key={profile.id}
+                  profile={profile}
+                  onViewProfile={() => navigate(`/profile/${profile.id}`)}
+                  onMessage={() => navigate(`/chat?contact=${profile.id}`)}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="saved">
+          {isLoadingSaved ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-72 bg-muted rounded-lg animate-pulse"></div>
+              ))}
+            </div>
+          ) : savedProfiles.length === 0 ? (
+            <div className="text-center py-16 border border-dashed rounded-lg">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium mb-2">No Saved Profiles</h3>
+              <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                You haven't saved any profiles yet. Save profiles you're interested in to review them later.
+              </p>
+              <Button onClick={() => setActiveTab("discover")}>
+                Discover Profiles
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {savedProfiles.map(profile => (
+                <MatchCardSimple
+                  key={profile.id}
+                  profile={profile}
+                  onViewProfile={() => navigate(`/profile/${profile.id}`)}
+                  onMessage={() => navigate(`/chat?contact=${profile.id}`)}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
