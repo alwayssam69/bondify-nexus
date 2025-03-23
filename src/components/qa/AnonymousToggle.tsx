@@ -6,12 +6,13 @@ import { User } from "lucide-react";
 
 interface AnonymousToggleProps {
   isAnonymous: boolean;
-  onChange: (isAnonymous: boolean) => void;
+  onToggle: (isAnonymous: boolean) => void;
+  className?: string;
 }
 
-const AnonymousToggle = ({ isAnonymous, onChange }: AnonymousToggleProps) => {
+const AnonymousToggle = ({ isAnonymous, onToggle, className }: AnonymousToggleProps) => {
   return (
-    <div className="flex items-center justify-between space-x-2 p-2 rounded-lg bg-muted/50">
+    <div className={`flex items-center justify-between space-x-2 p-2 rounded-lg bg-muted/50 ${className || ""}`}>
       <div className="flex items-center space-x-2">
         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isAnonymous ? 'bg-gray-700' : 'bg-blue-500'}`}>
           {isAnonymous ? (
@@ -27,7 +28,7 @@ const AnonymousToggle = ({ isAnonymous, onChange }: AnonymousToggleProps) => {
       <Switch
         id="anonymous-mode"
         checked={isAnonymous}
-        onCheckedChange={onChange}
+        onCheckedChange={onToggle}
       />
     </div>
   );

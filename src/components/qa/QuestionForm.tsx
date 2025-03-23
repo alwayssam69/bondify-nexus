@@ -1,157 +1,177 @@
 
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import AnonymousToggle from "./AnonymousToggle";
-import { Question } from "@/types/custom";
+import { X } from "lucide-react";
 
 interface QuestionFormProps {
-  onQuestionAdded: (question: Question) => void;
+  onClose: () => void;
+  onSubmit: (title: string, body: string, tags: string[]) => void;
+  isAnonymous: boolean;
 }
 
-const industries = [
-  "Technology",
-  "Finance",
-  "Healthcare",
-  "Education",
-  "Marketing",
-  "Design",
-  "Other"
-];
-
-const QuestionForm: React.FC<QuestionFormProps> = ({ onQuestionAdded }) => {
-  const { user, profile } = useAuth();
-  const [content, setContent] = useState("");
-  const [industry, setIndustry] = useState(profile?.industry || industries[0]);
-  const [isAnonymous, setIsAnonymous] = useState(false);
+const QuestionForm: React.FC<QuestionFormProps> = ({ onClose, onSubmit, isAnonymous }) => {
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [tagInput, setTagInput] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addTag();
+    }
+  };
+
+  const addTag = () => {
+    const trimmedTag = tagInput.trim().toLowerCase();
+    if (trimmedTag && !tags.includes(trimmedTag) && tags.length < 5) {
+      setTags([...tags, trimmedTag]);
+      setTagInput("");
+    } else if (tags.length >= 5) {
+      toast.error("Maximum 5 tags allowed");
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user) {
-      toast.error("You must be logged in to post a question");
+    if (!title.trim()) {
+      toast.error("Please enter a title");
       return;
     }
     
-    if (!content.trim()) {
-      toast.error("Please enter your question");
+    if (!body.trim()) {
+      toast.error("Please enter question details");
       return;
     }
     
     setIsSubmitting(true);
+    onSubmit(title, body, tags);
     
-    try {
-      // Create the new question object for immediate UI feedback
-      const newQuestion: Question = {
-        id: Date.now().toString(), // temporary ID until refresh
-        user_id: user.id,
-        content: content.trim(),
-        industry,
-        anonymous: isAnonymous,
-        timestamp: new Date().toISOString(),
-        user: isAnonymous 
-          ? { full_name: "Anonymous User" }
-          : { 
-              full_name: profile?.full_name || "User",
-              image_url: profile?.image_url,
-              expert_verified: false
-            },
-        answers_count: 0
-      };
-      
-      // This code would be used with actual database tables:
-      // const { error } = await supabase
-      //   .from('questions')
-      //   .insert({
-      //     user_id: user.id,
-      //     content: content.trim(),
-      //     industry,
-      //     anonymous: isAnonymous,
-      //   });
-      // 
-      // if (error) throw error;
-      
-      onQuestionAdded(newQuestion);
-      setContent("");
-      setIndustry(profile?.industry || industries[0]);
-      setIsAnonymous(false);
-    } catch (error) {
-      console.error("Error submitting question:", error);
-      toast.error("Failed to submit question");
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Reset form
+    setTitle("");
+    setBody("");
+    setTags([]);
+    setTagInput("");
+    setIsSubmitting(false);
   };
 
-  if (!user) {
-    return (
-      <div className="text-center py-6">
-        <p className="mb-4">You need to be logged in to ask questions</p>
-        <Button>Log In</Button>
-      </div>
-    );
-  }
-
   return (
-    <form onSubmit={handleSubmit}>
-      <h3 className="text-lg font-medium mb-4">Ask the Community</h3>
-      
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Your Question
-          </label>
-          <Textarea
-            placeholder="Type your question here..."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            required
-            rows={3}
-            className="w-full"
-          />
-        </div>
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Ask a Question</DialogTitle>
+        </DialogHeader>
         
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Industry
-          </label>
-          <Select value={industry} onValueChange={setIndustry}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select an industry" />
-            </SelectTrigger>
-            <SelectContent>
-              {industries.map((ind) => (
-                <SelectItem key={ind} value={ind}>
-                  {ind}
-                </SelectItem>
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              placeholder="What's your question?"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={100}
+            />
+            <div className="text-xs text-muted-foreground text-right">
+              {title.length}/100
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="body">Details</Label>
+            <Textarea
+              id="body"
+              placeholder="Provide more details about your question..."
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              rows={6}
+              maxLength={1000}
+            />
+            <div className="text-xs text-muted-foreground text-right">
+              {body.length}/1000
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="tags">Tags</Label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {tags.map(tag => (
+                <div 
+                  key={tag} 
+                  className="bg-muted text-sm px-2 py-1 rounded-full flex items-center gap-1"
+                >
+                  {tag}
+                  <button 
+                    type="button" 
+                    onClick={() => removeTag(tag)}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <AnonymousToggle 
-          isAnonymous={isAnonymous} 
-          onChange={setIsAnonymous} 
-        />
-        
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting || !content.trim()}>
-            {isSubmitting ? "Posting..." : "Post Question"}
-          </Button>
-        </div>
-      </div>
-    </form>
+            </div>
+            <div className="flex">
+              <Input
+                id="tags"
+                placeholder="Add tags (e.g., career, technology)"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                onBlur={addTag}
+              />
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="ml-2"
+                onClick={addTag}
+              >
+                Add
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Press Enter or comma to add a tag. Max 5 tags.
+            </p>
+          </div>
+          
+          <div className="bg-muted/50 p-3 rounded-lg text-sm">
+            <p className="font-medium mb-1">Posting as: {isAnonymous ? "Anonymous" : "Public"}</p>
+            <p className="text-muted-foreground text-xs">
+              {isAnonymous 
+                ? "Your identity will be hidden from other users." 
+                : "Your name will be visible to other users."}
+            </p>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={isSubmitting || !title.trim() || !body.trim()}
+            >
+              {isSubmitting ? "Posting..." : "Post Question"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
 

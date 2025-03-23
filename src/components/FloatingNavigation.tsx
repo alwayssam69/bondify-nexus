@@ -32,7 +32,6 @@ const FloatingNavigation = () => {
           <Link
             key={link.name}
             to={link.path}
-            prefetch="intent"
             className={cn(
               "relative p-2 transition-colors rounded-full group",
               isActive(link.path)

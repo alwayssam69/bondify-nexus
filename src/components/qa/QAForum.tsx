@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PlusCircle, Search, RefreshCw } from "lucide-react";
@@ -12,6 +11,20 @@ import QuestionCard from "./QuestionCard";
 import QuestionForm from "./QuestionForm";
 import AnonymousToggle from "./AnonymousToggle";
 import { useAuth } from "@/contexts/AuthContext";
+
+// Define local Question type for mock data
+interface MockQuestion {
+  id: string;
+  title: string;
+  body: string;
+  tags: string[];
+  authorName: string;
+  authorAvatar: string | null;
+  createdAt: string;
+  votes: number;
+  commentsCount: number;
+  isAnonymous: boolean;
+}
 
 // Mock data for questions
 const generateMockQuestions = () => {
@@ -82,23 +95,10 @@ const generateMockQuestions = () => {
   ];
 };
 
-type Question = {
-  id: string;
-  title: string;
-  body: string;
-  tags: string[];
-  authorName: string;
-  authorAvatar: string | null;
-  createdAt: string;
-  votes: number;
-  commentsCount: number;
-  isAnonymous: boolean;
-};
-
 const QAForum = () => {
-  const { user } = useAuth();
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
+  const { user, profile } = useAuth();
+  const [questions, setQuestions] = useState<MockQuestion[]>([]);
+  const [filteredQuestions, setFilteredQuestions] = useState<MockQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -151,7 +151,7 @@ const QAForum = () => {
   };
 
   const filterQuestions = (
-    questionsData: Question[], 
+    questionsData: MockQuestion[], 
     tab: string, 
     query: string
   ) => {
@@ -159,7 +159,7 @@ const QAForum = () => {
     
     // Filter by tab
     if (tab === "my-questions") {
-      filtered = filtered.filter(q => !q.isAnonymous && q.authorName === user?.displayName);
+      filtered = filtered.filter(q => !q.isAnonymous && q.authorName === profile?.full_name);
     } else if (tab === "unanswered") {
       filtered = filtered.filter(q => q.commentsCount === 0);
     }
@@ -189,13 +189,13 @@ const QAForum = () => {
   };
 
   const handleSubmitQuestion = (title: string, body: string, tags: string[]) => {
-    const newQuestion: Question = {
+    const newQuestion: MockQuestion = {
       id: `new-${Date.now()}`,
       title,
       body,
       tags,
-      authorName: isAnonymous ? "Anonymous" : user?.displayName || "User",
-      authorAvatar: isAnonymous ? null : user?.photoURL || null,
+      authorName: isAnonymous ? "Anonymous" : profile?.full_name || "User",
+      authorAvatar: isAnonymous ? null : profile?.image_url || null,
       createdAt: new Date().toISOString(),
       votes: 0,
       commentsCount: 0,
@@ -295,7 +295,20 @@ const QAForum = () => {
                 {filteredQuestions.map((question) => (
                   <QuestionCard 
                     key={question.id} 
-                    question={question} 
+                    question={{
+                      id: question.id,
+                      user_id: "",
+                      content: question.body,
+                      industry: question.tags[0] || "General",
+                      anonymous: question.isAnonymous,
+                      timestamp: question.createdAt,
+                      user: {
+                        full_name: question.authorName,
+                        image_url: question.authorAvatar || undefined,
+                        expert_verified: false
+                      },
+                      answers_count: question.commentsCount
+                    }} 
                   />
                 ))}
               </div>
@@ -322,7 +335,6 @@ const QAForum = () => {
       {/* Question Form Dialog */}
       {isFormOpen && (
         <QuestionForm 
-          isOpen={isFormOpen}
           onClose={() => setIsFormOpen(false)}
           onSubmit={handleSubmitQuestion}
           isAnonymous={isAnonymous}
