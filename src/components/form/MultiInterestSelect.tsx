@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { 
@@ -21,7 +20,7 @@ import { interestOptions } from "@/data/formOptions";
 import { toast } from "sonner";
 
 interface MultiInterestSelectProps {
-  label: string;
+  label?: string;
   value: string[];
   onChange: (value: string[]) => void;
   placeholder?: string;
@@ -71,7 +70,7 @@ const MultiInterestSelect = ({
 
   return (
     <FormItem className={className}>
-      <FormLabel>{label}</FormLabel>
+      {label && <FormLabel>{label}</FormLabel>}
       <FormControl>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>

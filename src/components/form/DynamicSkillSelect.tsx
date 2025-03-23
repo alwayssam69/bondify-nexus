@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { 
@@ -22,7 +21,7 @@ import { toast } from "sonner";
 
 interface DynamicSkillSelectProps {
   industry: string;
-  label: string;
+  label?: string;
   value: string[];
   onChange: (value: string[]) => void;
   placeholder?: string;
@@ -44,21 +43,17 @@ const DynamicSkillSelect = ({
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    // Set available skills based on selected industry
     if (industry && industrySkills[industry]) {
       setAvailableSkills(industrySkills[industry]);
       
-      // Filter out any selected skills that are no longer valid for this industry
       const validSkills = value.filter(skill => 
         industrySkills[industry].some(option => option.value === skill)
       );
       
-      // Only update if the valid skills differ from current value
       if (JSON.stringify(validSkills) !== JSON.stringify(value)) {
         onChange(validSkills);
       }
     } else {
-      // Fallback to empty array if industry not found
       setAvailableSkills([]);
     }
   }, [industry, value, onChange]);
@@ -94,7 +89,7 @@ const DynamicSkillSelect = ({
 
   return (
     <FormItem className={className}>
-      <FormLabel>{label}</FormLabel>
+      {label && <FormLabel>{label}</FormLabel>}
       <FormControl>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
