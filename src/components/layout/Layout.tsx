@@ -13,14 +13,14 @@ interface LayoutProps {
 }
 
 const Layout = ({ children, className }: LayoutProps) => {
-  const { isAuthenticated } = useAuth();
+  const { user } = useAuth();
 
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex flex-col w-full">
         <Header />
         <div className="flex flex-1">
-          {isAuthenticated && <LeftSidebar />}
+          {user && <LeftSidebar />}
           {/* Add padding top to account for fixed header */}
           <main className={cn("flex-1 pt-20", className)}>
             {children}

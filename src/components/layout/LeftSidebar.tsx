@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 const LeftSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
   
   const navLinks = [
@@ -40,7 +40,7 @@ const LeftSidebar = () => {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await signOut();
       navigate("/");
       toast({
         title: "Logged out successfully",
@@ -56,7 +56,7 @@ const LeftSidebar = () => {
     }
   };
 
-  if (!isAuthenticated) {
+  if (!user) {
     return null;
   }
 
