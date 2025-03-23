@@ -1,4 +1,3 @@
-
 export type UserProfile = {
   id: string;
   name: string;
@@ -32,6 +31,10 @@ export type UserProfile = {
   courseYear?: string;
   projectInterests?: string[];
   profilePhotos?: string[];
+  // New fields for enhanced matching
+  state?: string;
+  city?: string;
+  useCurrentLocation?: boolean;
 };
 
 export type MatchScore = {
@@ -123,6 +126,8 @@ export function findMatches(currentUser: UserProfile, maxResults: number = 20): 
   const industryKey = currentUser.industry || 'general';
   const expLevel = currentUser.experienceLevel || 'intermediate';
   const userType = currentUser.userType || 'general';
+  const state = currentUser.state || '';
+  const city = currentUser.city || '';
   
   const bucketKeys = [
     // Original keys
@@ -133,7 +138,11 @@ export function findMatches(currentUser: UserProfile, maxResults: number = 20): 
     `${industryKey}-${expLevel}-${currentUser.location}`,
     `${userType}-${industryKey}`,
     `${industryKey}-${currentUser.location}`,
-    `${userType}-${currentUser.location}`
+    `${userType}-${currentUser.location}`,
+    // Location-based keys (new)
+    `${state}-${city}`,
+    `${state}`,
+    `${industryKey}-${state}`,
   ];
   
   let potentialMatches: UserProfile[] = [];
@@ -172,7 +181,11 @@ export function calculateMatchScore(user1: UserProfile, user2: UserProfile): num
   }
   
   // Location matching
-  if (user2.location === user1.location) score += 15;
+  if (user2.location === user1.location) score += 10;
+  
+  // Enhanced location matching - state and city
+  if (user1.state && user2.state && user1.state === user2.state) score += 8;
+  if (user1.city && user2.city && user1.city === user2.city) score += 7;
   
   // Proximity bonus if distance is available
   if (user1.latitude && user1.longitude && user2.latitude && user2.longitude) {
@@ -212,14 +225,24 @@ export function calculateMatchScore(user1: UserProfile, user2: UserProfile): num
     score += 20;
   }
   
-  // Experience level matching
+  // Experience level matching - new logic based on experience time ranges
   if (user1.experienceLevel && user2.experienceLevel) {
-    if (user1.experienceLevel === user2.experienceLevel) {
-      score += 10;
-    } else {
-      // Some value for adjacent experience levels
-      score += 5;
-    }
+    const expLevelMap = {
+      'beginner': 1,
+      'intermediate': 2,
+      'advanced': 3,
+      'expert': 4,
+    };
+    
+    const user1ExpLevel = expLevelMap[user1.experienceLevel as keyof typeof expLevelMap] || 0;
+    const user2ExpLevel = expLevelMap[user2.experienceLevel as keyof typeof expLevelMap] || 0;
+    
+    const expDifference = Math.abs(user1ExpLevel - user2ExpLevel);
+    
+    if (expDifference === 0) score += 15; // Same experience level
+    else if (expDifference === 1) score += 10; // One level difference (potential mentor-mentee)
+    else if (expDifference === 2) score += 5;  // Two levels difference
+    else score += 2; // Greater difference
   }
   
   // User type complementary matching
@@ -248,6 +271,12 @@ export function calculateMatchScore(user1: UserProfile, user2: UserProfile): num
     score += commonGoals.length * 10;
   }
   
+  // Project interests matching - new weighted scoring
+  if (user1.projectInterests && user2.projectInterests) {
+    const commonProjects = user2.projectInterests.filter(p => user1.projectInterests?.includes(p));
+    score += commonProjects.length * 12; // Higher weight than regular interests
+  }
+  
   // Communication preference matching
   if (user1.communicationPreference && user2.communicationPreference && 
       user1.communicationPreference === user2.communicationPreference) {
@@ -257,6 +286,32 @@ export function calculateMatchScore(user1: UserProfile, user2: UserProfile): num
   // Verified user bonus
   if (user2.verified) {
     score += 10;
+  }
+  
+  // University matching for students
+  if (user1.userType === 'student' && user2.userType === 'student' && 
+      user1.university && user2.university && user1.university === user2.university) {
+    score += 15;
+    
+    // Course year matching - prefer same or adjacent years
+    if (user1.courseYear && user2.courseYear) {
+      if (user1.courseYear === user2.courseYear) {
+        score += 8;
+      } else {
+        // Simple algorithm to check if years are adjacent (1st Year, 2nd Year, etc.)
+        const extractYear = (yearStr: string) => {
+          const match = yearStr.match(/(\d+)/);
+          return match ? parseInt(match[1]) : 0;
+        };
+        
+        const year1 = extractYear(user1.courseYear);
+        const year2 = extractYear(user2.courseYear);
+        
+        if (Math.abs(year1 - year2) === 1) {
+          score += 5; // Adjacent years
+        }
+      }
+    }
   }
   
   // Cap at 100%

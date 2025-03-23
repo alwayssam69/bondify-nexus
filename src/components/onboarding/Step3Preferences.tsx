@@ -23,6 +23,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import MultiInterestSelect from "@/components/form/MultiInterestSelect";
 
 interface Step3PreferencesProps {
   onNextStep: (preferencesData: PreferencesData) => void;
@@ -35,6 +36,7 @@ export interface PreferencesData {
   experienceLevel: string;
   locationPreference: string;
   interests: string[];
+  projectInterests: string[];
 }
 
 const formSchema = z.object({
@@ -43,6 +45,7 @@ const formSchema = z.object({
   experienceLevel: z.string().min(1, "Please select your preferred connection experience level"),
   locationPreference: z.string().min(1, "Please select your location preference"),
   interests: z.array(z.string()).min(1, "Please select at least one interest"),
+  projectInterests: z.array(z.string()).min(1, "Please select at least one project interest"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -56,17 +59,23 @@ const networkingGoals = [
   { id: "entrepreneurship", label: "Entrepreneurship" },
 ];
 
-const interests = [
-  { id: "technology", label: "Technology" },
-  { id: "business", label: "Business & Finance" },
-  { id: "creative", label: "Creative Arts" },
-  { id: "healthcare", label: "Healthcare" },
-  { id: "education", label: "Education" },
+const projectInterests = [
+  { id: "web-development", label: "Web Development" },
+  { id: "mobile-app", label: "Mobile App Development" },
+  { id: "machine-learning", label: "Machine Learning" },
+  { id: "data-science", label: "Data Science" },
+  { id: "blockchain", label: "Blockchain" },
+  { id: "iot", label: "Internet of Things" },
+  { id: "cloud-computing", label: "Cloud Computing" },
+  { id: "ui-ux", label: "UI/UX Design" },
+  { id: "cybersecurity", label: "Cybersecurity" },
+  { id: "digital-marketing", label: "Digital Marketing" },
+  { id: "content-creation", label: "Content Creation" },
+  { id: "e-commerce", label: "E-Commerce" },
+  { id: "saas", label: "SaaS Development" },
+  { id: "research", label: "Research Projects" },
   { id: "social-impact", label: "Social Impact" },
-  { id: "research", label: "Research & Development" },
-  { id: "leadership", label: "Leadership" },
-  { id: "marketing", label: "Marketing & Sales" },
-  { id: "sustainable", label: "Sustainability" },
+  { id: "startup", label: "Startup" },
 ];
 
 const Step3Preferences = ({ onNextStep, onPrevStep }: Step3PreferencesProps) => {
@@ -80,6 +89,7 @@ const Step3Preferences = ({ onNextStep, onPrevStep }: Step3PreferencesProps) => 
       experienceLevel: "",
       locationPreference: "",
       interests: [],
+      projectInterests: [],
     },
   });
 
@@ -94,6 +104,7 @@ const Step3Preferences = ({ onNextStep, onPrevStep }: Step3PreferencesProps) => 
         experienceLevel: values.experienceLevel,
         locationPreference: values.locationPreference,
         interests: values.interests,
+        projectInterests: values.projectInterests,
       };
       
       // Simulate processing
@@ -169,7 +180,7 @@ const Step3Preferences = ({ onNextStep, onPrevStep }: Step3PreferencesProps) => 
                   <FormLabel>Who would you like to connect with?</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -197,7 +208,7 @@ const Step3Preferences = ({ onNextStep, onPrevStep }: Step3PreferencesProps) => 
                   <FormLabel>Preferred experience level</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -205,9 +216,10 @@ const Step3Preferences = ({ onNextStep, onPrevStep }: Step3PreferencesProps) => 
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="entry">Entry-level</SelectItem>
-                      <SelectItem value="mid">Mid-level</SelectItem>
-                      <SelectItem value="senior">Senior/Executive</SelectItem>
+                      <SelectItem value="beginner">Beginner (0-1 year)</SelectItem>
+                      <SelectItem value="intermediate">Intermediate (1-3 years)</SelectItem>
+                      <SelectItem value="advanced">Advanced (3-5 years)</SelectItem>
+                      <SelectItem value="expert">Expert (5+ years)</SelectItem>
                       <SelectItem value="all">All levels</SelectItem>
                     </SelectContent>
                   </Select>
@@ -226,7 +238,7 @@ const Step3Preferences = ({ onNextStep, onPrevStep }: Step3PreferencesProps) => 
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                     className="flex flex-col space-y-1"
                   >
                     <FormItem className="flex items-center space-x-3 space-y-0">
@@ -234,6 +246,12 @@ const Step3Preferences = ({ onNextStep, onPrevStep }: Step3PreferencesProps) => 
                         <RadioGroupItem value="local" />
                       </FormControl>
                       <FormLabel className="font-normal">Local connections (same city/area)</FormLabel>
+                    </FormItem>
+                    <FormItem className="flex items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <RadioGroupItem value="state" />
+                      </FormControl>
+                      <FormLabel className="font-normal">State connections (same state)</FormLabel>
                     </FormItem>
                     <FormItem className="flex items-center space-x-3 space-y-0">
                       <FormControl>
@@ -254,19 +272,32 @@ const Step3Preferences = ({ onNextStep, onPrevStep }: Step3PreferencesProps) => 
             )}
           />
           
+          <FormField
+            control={form.control}
+            name="interests"
+            render={({ field }) => (
+              <MultiInterestSelect
+                label="Professional Interests"
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="Select your professional interests"
+              />
+            )}
+          />
+          
           <div>
-            <h3 className="text-lg font-medium mb-4">What are your professional interests?</h3>
+            <h3 className="text-lg font-medium mb-4">What projects are you interested in?</h3>
             <FormField
               control={form.control}
-              name="interests"
+              name="projectInterests"
               render={() => (
                 <FormItem>
                   <div className="grid grid-cols-2 gap-4">
-                    {interests.map((interest) => (
+                    {projectInterests.map((interest) => (
                       <FormField
                         key={interest.id}
                         control={form.control}
-                        name="interests"
+                        name="projectInterests"
                         render={({ field }) => {
                           return (
                             <FormItem

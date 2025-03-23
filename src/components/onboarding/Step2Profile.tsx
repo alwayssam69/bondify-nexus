@@ -24,6 +24,10 @@ import {
 import { motion } from "framer-motion";
 import { UserCheck, MapPin, Briefcase, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
+import DynamicSkillSelect from "@/components/form/DynamicSkillSelect";
+import MultiInterestSelect from "@/components/form/MultiInterestSelect";
+import LocationSelector from "@/components/form/LocationSelector";
+import { industryOptions, experienceLevels } from "@/data/formOptions";
 
 interface Step2ProfileProps {
   email: string;
@@ -39,37 +43,29 @@ export interface ProfileData {
   university?: string;
   skills: string[];
   bio: string;
+  experienceLevel: string;
+  interests: string[];
+  state: string;
+  city: string;
+  useCurrentLocation: boolean;
 }
 
 const formSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
   profession: z.string().min(2, "Please enter your profession"),
   industry: z.string().min(1, "Please select your industry"),
+  state: z.string().min(1, "Please select your state"),
+  city: z.string().optional(),
   location: z.string().min(2, "Please enter your location"),
   university: z.string().optional(),
   bio: z.string().min(10, "Please tell us a bit about yourself"),
-  skills: z.string().min(2, "Please enter some skills"),
+  skills: z.array(z.string()).min(1, "Please select at least one skill"),
+  interests: z.array(z.string()).min(1, "Please select at least one interest"),
+  experienceLevel: z.string().min(1, "Please select your experience level"),
+  useCurrentLocation: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
-
-const industries = [
-  "Technology", 
-  "Finance", 
-  "Healthcare", 
-  "Education", 
-  "Marketing",
-  "Design",
-  "Engineering",
-  "Legal",
-  "Entertainment",
-  "Manufacturing",
-  "Retail",
-  "Consulting",
-  "Real Estate",
-  "Nonprofit",
-  "Other"
-];
 
 const Step2Profile = ({ email, onNextStep, onPrevStep }: Step2ProfileProps) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -81,22 +77,26 @@ const Step2Profile = ({ email, onNextStep, onPrevStep }: Step2ProfileProps) => {
       profession: "",
       industry: "",
       location: "",
+      state: "",
+      city: "",
       university: "",
       bio: "",
-      skills: "",
+      skills: [],
+      interests: [],
+      experienceLevel: "",
+      useCurrentLocation: false,
     },
   });
+
+  // Watch the industry field to update skills
+  const selectedIndustry = form.watch("industry");
+  const selectedState = form.watch("state");
+  const useCurrentLocation = form.watch("useCurrentLocation");
 
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
     
     try {
-      // Convert comma-separated skills to array
-      const skillsArray = values.skills
-        .split(",")
-        .map(skill => skill.trim())
-        .filter(skill => skill.length > 0);
-      
       // Prepare profile data
       const profileData: ProfileData = {
         fullName: values.fullName,
@@ -104,8 +104,13 @@ const Step2Profile = ({ email, onNextStep, onPrevStep }: Step2ProfileProps) => {
         industry: values.industry,
         location: values.location,
         university: values.university,
-        skills: skillsArray,
+        skills: values.skills,
         bio: values.bio,
+        experienceLevel: values.experienceLevel,
+        interests: values.interests,
+        state: values.state,
+        city: values.city || "",
+        useCurrentLocation: values.useCurrentLocation,
       };
       
       // Simulate processing
@@ -168,8 +173,12 @@ const Step2Profile = ({ email, onNextStep, onPrevStep }: Step2ProfileProps) => {
                 <FormItem>
                   <FormLabel>Industry</FormLabel>
                   <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Reset skills when industry changes
+                      form.setValue("skills", []);
+                    }}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
@@ -177,9 +186,9 @@ const Step2Profile = ({ email, onNextStep, onPrevStep }: Step2ProfileProps) => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {industries.map((industry) => (
-                        <SelectItem key={industry} value={industry}>
-                          {industry}
+                      {industryOptions.map((industry) => (
+                        <SelectItem key={industry.value} value={industry.value}>
+                          {industry.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -191,20 +200,122 @@ const Step2Profile = ({ email, onNextStep, onPrevStep }: Step2ProfileProps) => {
             
             <FormField
               control={form.control}
-              name="location"
+              name="experienceLevel"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Location</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input placeholder="San Francisco, CA" className="pl-10" {...field} />
-                    </div>
-                  </FormControl>
+                  <FormLabel>Experience Level</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select your experience level" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {experienceLevels.map((level) => (
+                        <SelectItem key={level.value} value={level.value}>
+                          {level.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
+          </div>
+          
+          <FormField
+            control={form.control}
+            name="skills"
+            render={({ field }) => (
+              <DynamicSkillSelect
+                industry={selectedIndustry}
+                label="Skills"
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="Select skills relevant to your industry"
+              />
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="interests"
+            render={({ field }) => (
+              <MultiInterestSelect
+                label="Interests"
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="Select your personal interests"
+              />
+            )}
+          />
+          
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="useCurrentLocation"
+                render={({ field }) => (
+                  <FormField
+                    control={form.control}
+                    name="state"
+                    render={({ field: stateField }) => (
+                      <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field: cityField }) => (
+                          <LocationSelector
+                            stateValue={stateField.value}
+                            cityValue={cityField.value}
+                            useLocationValue={field.value}
+                            onStateChange={stateField.onChange}
+                            onCityChange={cityField.onChange}
+                            onUseLocationChange={(checked) => {
+                              field.onChange(checked);
+                              if (checked) {
+                                // If using current location, store the location in the location field
+                                // You could also get and store coordinates here if needed
+                                form.setValue("location", "Current Location");
+                              } else if (form.getValues("location") === "Current Location") {
+                                // Clear the location field if it was set to "Current Location"
+                                form.setValue("location", "");
+                              }
+                            }}
+                          />
+                        )}
+                      />
+                    )}
+                  />
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Detailed Location</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          placeholder={useCurrentLocation ? "Using current location" : "e.g., Area, Landmark"} 
+                          className="pl-10" 
+                          {...field} 
+                          disabled={useCurrentLocation}
+                          value={useCurrentLocation ? "Current Location" : field.value}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
           
           <FormField
@@ -218,20 +329,6 @@ const Step2Profile = ({ email, onNextStep, onPrevStep }: Step2ProfileProps) => {
                     <GraduationCap className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input placeholder="Stanford University" className="pl-10" {...field} />
                   </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="skills"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Skills <span className="text-xs text-muted-foreground">(comma-separated)</span></FormLabel>
-                <FormControl>
-                  <Input placeholder="JavaScript, React, UI/UX, Project Management" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -31,6 +31,9 @@ import { supabase } from "@/integrations/supabase/client";
 import SocialLogin from "@/components/onboarding/SocialLogin";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { MapPin, User, Briefcase, GraduationCap } from "lucide-react";
+import { industryOptions, experienceLevels } from "@/data/formOptions";
+import DynamicSkillSelect from "@/components/form/DynamicSkillSelect";
+import LocationSelector from "@/components/form/LocationSelector";
 
 const formSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
@@ -40,9 +43,11 @@ const formSchema = z.object({
   profession: z.string().min(1, "Please select your profession"),
   industry: z.string().min(1, "Please select your industry"),
   location: z.string().min(2, "Location is required"),
-  skills: z.string().min(1, "Please enter at least one skill"),
+  skills: z.array(z.string()).min(1, "Please enter at least one skill"),
   experienceLevel: z.string().min(1, "Please select your experience level"),
-  shareLocation: z.boolean().default(false),
+  state: z.string().min(1, "Please select your state"),
+  city: z.string().optional(),
+  useCurrentLocation: z.boolean().default(false),
   agreeTerms: z.boolean().refine(val => val === true, {
     message: "You must agree to the terms and conditions",
   }),
@@ -60,30 +65,6 @@ const professions = [
   "Freelancer", 
   "Collaborator",
   "Other"
-];
-
-const industries = [
-  "Technology", 
-  "Finance", 
-  "Healthcare", 
-  "Education", 
-  "Marketing",
-  "Design",
-  "Engineering",
-  "Legal",
-  "Entertainment",
-  "Manufacturing",
-  "Retail",
-  "Consulting",
-  "Real Estate",
-  "Nonprofit",
-  "Other"
-];
-
-const experienceLevels = [
-  "Beginner",
-  "Intermediate",
-  "Expert"
 ];
 
 const Register = () => {
@@ -113,46 +94,18 @@ const Register = () => {
       profession: "",
       industry: "",
       location: "",
-      skills: "",
+      skills: [],
       experienceLevel: "",
-      shareLocation: false,
+      state: "",
+      city: "",
+      useCurrentLocation: false,
       agreeTerms: false,
     },
   });
 
-  // If geolocation is available, pre-fill location
-  useEffect(() => {
-    if (geolocation.latitude && geolocation.longitude && !geolocation.error) {
-      // Use reverse geocoding to get location name
-      const getLocationName = async () => {
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${geolocation.latitude}&lon=${geolocation.longitude}&zoom=10`
-          );
-          const data = await response.json();
-          
-          if (data && data.address) {
-            const city = data.address.city || data.address.town || data.address.village || '';
-            const state = data.address.state || '';
-            const country = data.address.country || '';
-            
-            let locationString = '';
-            if (city) locationString += city;
-            if (state && state !== city) locationString += locationString ? `, ${state}` : state;
-            if (country) locationString += locationString ? `, ${country}` : country;
-            
-            if (locationString && !form.getValues('location')) {
-              form.setValue('location', locationString);
-            }
-          }
-        } catch (error) {
-          console.error("Error getting location name:", error);
-        }
-      };
-      
-      getLocationName();
-    }
-  }, [geolocation.latitude, geolocation.longitude, form]);
+  // Watch the industry field to update skills
+  const selectedIndustry = form.watch("industry");
+  const useCurrentLocation = form.watch("useCurrentLocation");
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
@@ -176,26 +129,23 @@ const Register = () => {
       
       if (data.user) {
         // Create user profile with additional information
-        const skillsArray = values.skills.split(',').map(skill => skill.trim());
+        const locationData = values.useCurrentLocation && geolocation.latitude && geolocation.longitude 
+          ? { latitude: geolocation.latitude, longitude: geolocation.longitude }
+          : {};
         
         const profileData = {
           full_name: values.fullName,
           user_type: values.profession,
           industry: values.industry,
           location: values.location,
-          skills: skillsArray,
-          experience_level: values.experienceLevel.toLowerCase(),
+          state: values.state,
+          city: values.city,
+          skills: values.skills,
+          experience_level: values.experienceLevel,
           profile_completeness: 60, // Give higher score for more complete profile
           activity_score: 50, // Initial activity score
+          ...locationData,
         };
-        
-        // Add location coordinates if permission granted
-        if (values.shareLocation && geolocation.latitude && geolocation.longitude) {
-          Object.assign(profileData, {
-            latitude: geolocation.latitude,
-            longitude: geolocation.longitude,
-          });
-        }
         
         // Update user profile in database
         const { error: profileError } = await supabase
@@ -302,7 +252,7 @@ const Register = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Profession</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger className="w-full">
                               <SelectValue placeholder="Select your profession" />
@@ -327,60 +277,23 @@ const Register = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Industry</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            // Reset skills when industry changes
+                            form.setValue("skills", []);
+                          }} 
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger className="w-full">
                               <SelectValue placeholder="Select your industry" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {industries.map((industry) => (
-                              <SelectItem key={industry} value={industry.toLowerCase()}>
-                                {industry}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </FormGroup>
-                
-                <FormGroup>
-                  <FormField
-                    control={form.control}
-                    name="location"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Location</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="City, Country" className="pl-10" {...field} />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="experienceLevel"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Experience Level</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select your experience level" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {experienceLevels.map((level) => (
-                              <SelectItem key={level} value={level.toLowerCase()}>
-                                {level}
+                            {industryOptions.map((industry) => (
+                              <SelectItem key={industry.value} value={industry.value}>
+                                {industry.label}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -395,37 +308,100 @@ const Register = () => {
                   control={form.control}
                   name="skills"
                   render={({ field }) => (
+                    <DynamicSkillSelect
+                      industry={selectedIndustry}
+                      label="Skills"
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select skills relevant to your industry"
+                    />
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="experienceLevel"
+                  render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Skills</FormLabel>
+                      <FormLabel>Experience Level</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select your experience level" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {experienceLevels.map((level) => (
+                            <SelectItem key={level.value} value={level.value}>
+                              {level.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="useCurrentLocation"
+                  render={({ field }) => (
+                    <FormField
+                      control={form.control}
+                      name="state"
+                      render={({ field: stateField }) => (
+                        <FormField
+                          control={form.control}
+                          name="city"
+                          render={({ field: cityField }) => (
+                            <LocationSelector
+                              stateValue={stateField.value}
+                              cityValue={cityField.value}
+                              useLocationValue={field.value}
+                              onStateChange={stateField.onChange}
+                              onCityChange={cityField.onChange}
+                              onUseLocationChange={(checked) => {
+                                field.onChange(checked);
+                                if (checked) {
+                                  // If using current location, store the location in the location field
+                                  form.setValue("location", "Current Location");
+                                } else if (form.getValues("location") === "Current Location") {
+                                  // Clear the location field if it was set to "Current Location"
+                                  form.setValue("location", "");
+                                }
+                              }}
+                            />
+                          )}
+                        />
+                      )}
+                    />
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Detailed Location</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. JavaScript, React, Project Management (comma-separated)" {...field} />
+                        <div className="relative">
+                          <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            placeholder={useCurrentLocation ? "Using current location" : "e.g., Area, Landmark"} 
+                            className="pl-10" 
+                            {...field} 
+                            disabled={useCurrentLocation}
+                            value={useCurrentLocation ? "Current Location" : field.value}
+                          />
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </FormSection>
-              
-              <FormField
-                control={form.control}
-                name="shareLocation"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Share my location</FormLabel>
-                      <p className="text-sm text-muted-foreground">
-                        Enable location-based matching to find professionals near you
-                      </p>
-                    </div>
-                  </FormItem>
-                )}
-              />
               
               <FormField
                 control={form.control}
