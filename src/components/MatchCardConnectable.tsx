@@ -18,6 +18,7 @@ interface MatchCardConnectableProps {
   delay?: number;
   onViewProfile?: (id: string) => void;
   onConnect?: (id: string) => void;
+  onAction?: (action: "like" | "pass" | "save") => void;
 }
 
 const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
@@ -25,6 +26,7 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
   delay = 0,
   onViewProfile,
   onConnect,
+  onAction,
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -65,6 +67,8 @@ const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({
   const handleConnect = () => {
     if (onConnect) {
       onConnect(profile.id);
+    } else if (onAction) {
+      onAction("like");
     } else {
       toast.success(`Connection request sent to ${profile.name}!`);
     }
