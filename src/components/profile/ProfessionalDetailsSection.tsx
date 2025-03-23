@@ -43,7 +43,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
                     <SelectValue placeholder="Select industry" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent position="popper">
+                <SelectContent position="popper" className="bg-white z-50">
                   {industryOptions.map((industry) => (
                     <SelectItem key={industry.value} value={industry.value}>
                       {industry.label}
@@ -68,7 +68,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
                     <SelectValue placeholder="Select user type" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent position="popper">
+                <SelectContent position="popper" className="bg-white z-50">
                   <SelectItem value="professional">Professional</SelectItem>
                   <SelectItem value="student">Student</SelectItem>
                   <SelectItem value="mentor">Mentor</SelectItem>
@@ -97,7 +97,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
                   <SelectValue placeholder="Select experience level" />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent position="popper">
+              <SelectContent position="popper" className="bg-white z-50">
                 {experienceLevels.map((level) => (
                   <SelectItem key={level.value} value={level.value}>
                     {level.label}

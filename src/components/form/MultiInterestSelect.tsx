@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { 
@@ -134,7 +133,10 @@ const MultiInterestSelect = ({
                     {interests.map((interest) => (
                       <CommandItem
                         key={interest.value}
-                        onSelect={() => handleSelect(interest.value)}
+                        onSelect={() => {
+                          handleSelect(interest.value);
+                          // Keep dropdown open after selection for multi-select
+                        }}
                         className="flex items-center gap-2"
                       >
                         <div className={cn(

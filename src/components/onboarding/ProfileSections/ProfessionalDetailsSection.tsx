@@ -38,14 +38,14 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
                   // Reset skills when industry changes
                   form.setValue("skills", []);
                 }}
-                value={field.value}
+                value={field.value || ""}
               >
                 <FormControl>
                   <SelectTrigger className={`w-full ${errors.industry ? "border-red-500" : ""}`}>
                     <SelectValue placeholder="Select your industry" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent position="popper">
+                <SelectContent position="popper" className="bg-white z-50">
                   {industryOptions.map((industry) => (
                     <SelectItem key={industry.value} value={industry.value}>
                       {industry.label}
@@ -66,14 +66,14 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
               <FormLabel>Experience Level</FormLabel>
               <Select
                 onValueChange={field.onChange}
-                value={field.value}
+                value={field.value || ""}
               >
                 <FormControl>
                   <SelectTrigger className={`w-full ${errors.experienceLevel ? "border-red-500" : ""}`}>
                     <SelectValue placeholder="Select your experience level" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent position="popper">
+                <SelectContent position="popper" className="bg-white z-50">
                   {experienceLevels.map((level) => (
                     <SelectItem key={level.value} value={level.value}>
                       {level.label}
@@ -91,14 +91,17 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
         control={form.control}
         name="skills"
         render={({ field }) => (
-          <DynamicSkillSelect
-            industry={selectedIndustry}
-            label="Skills"
-            value={field.value}
-            onChange={field.onChange}
-            placeholder="Select skills relevant to your industry"
-            error={!!errors.skills}
-          />
+          <FormItem>
+            <FormLabel>Skills</FormLabel>
+            <DynamicSkillSelect
+              industry={selectedIndustry}
+              value={field.value || []}
+              onChange={field.onChange}
+              placeholder="Select skills relevant to your industry"
+              error={!!errors.skills}
+            />
+            <FormMessage />
+          </FormItem>
         )}
       />
       
@@ -106,13 +109,16 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
         control={form.control}
         name="interests"
         render={({ field }) => (
-          <MultiInterestSelect
-            label="Interests"
-            value={field.value}
-            onChange={field.onChange}
-            placeholder="Select your personal interests"
-            error={!!errors.interests}
-          />
+          <FormItem>
+            <FormLabel>Interests</FormLabel>
+            <MultiInterestSelect
+              value={field.value || []}
+              onChange={field.onChange}
+              placeholder="Select your personal interests"
+              error={!!errors.interests}
+            />
+            <FormMessage />
+          </FormItem>
         )}
       />
     </>

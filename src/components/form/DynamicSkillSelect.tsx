@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { 
@@ -150,7 +149,10 @@ const DynamicSkillSelect = ({
                 {filteredSkills.map((skill) => (
                   <CommandItem
                     key={skill.value}
-                    onSelect={() => handleSelect(skill.value)}
+                    onSelect={() => {
+                      handleSelect(skill.value);
+                      // Keep dropdown open after selection for multi-select
+                    }}
                     className="flex items-center gap-2"
                   >
                     <div className={cn(
