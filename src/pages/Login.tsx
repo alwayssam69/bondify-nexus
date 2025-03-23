@@ -98,15 +98,6 @@ const Login = () => {
             <ThemeToggle />
           </div>
           
-          <SocialLogin />
-          
-          <div className="relative w-full my-6">
-            <Separator className="my-4" />
-            <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-background px-4 text-xs text-muted-foreground">
-              or continue with email
-            </span>
-          </div>
-          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -189,11 +180,20 @@ const Login = () => {
                     </span>
                   </motion.div>
                 ) : (
-                  "Sign In"
+                  "Sign In with Email"
                 )}
               </Button>
             </form>
           </Form>
+          
+          <div className="relative w-full my-6">
+            <Separator className="my-4" />
+            <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-background px-4 text-xs text-muted-foreground">
+              or continue with
+            </span>
+          </div>
+          
+          <SocialLogin />
           
           <div className="text-center mt-6">
             <p className="text-sm text-muted-foreground">

@@ -100,17 +100,6 @@ const Step1Email = ({ onNextStep }: Step1EmailProps) => {
         </p>
       </div>
       
-      <div className="flex flex-col items-center mb-8">
-        <SocialLogin />
-        
-        <div className="relative w-full my-6">
-          <Separator className="my-4" />
-          <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-background px-4 text-xs text-muted-foreground">
-            or continue with email
-          </span>
-        </div>
-      </div>
-      
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
@@ -151,10 +140,19 @@ const Step1Email = ({ onNextStep }: Step1EmailProps) => {
             className="w-full" 
             disabled={isLoading || isValidating}
           >
-            {isLoading ? "Please wait..." : "Continue"}
+            {isLoading ? "Please wait..." : "Continue with Email"}
           </Button>
           
-          <p className="text-center text-sm text-muted-foreground">
+          <div className="relative w-full my-6">
+            <Separator className="my-4" />
+            <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-background px-4 text-xs text-muted-foreground">
+              or continue with
+            </span>
+          </div>
+          
+          <SocialLogin />
+          
+          <p className="text-center text-sm text-muted-foreground mt-4">
             Already have an account?{" "}
             <Button 
               variant="link" 
