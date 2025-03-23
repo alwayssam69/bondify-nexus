@@ -4,7 +4,6 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import LeftSidebar from "./LeftSidebar";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface LayoutProps {
@@ -20,9 +19,9 @@ const Layout = ({ children, className }: LayoutProps) => {
       <div className="min-h-screen flex flex-col w-full">
         <Header />
         <div className="flex flex-1">
-          {user && <LeftSidebar />}
+          {/* LeftSidebar component removed as requested */}
           {/* Add padding top to account for fixed header */}
-          <main className={cn("flex-1 pt-20", className)}>
+          <main className={cn("flex-1 pt-16", className)}>
             {children}
           </main>
         </div>
