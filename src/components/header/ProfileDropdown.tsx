@@ -28,8 +28,7 @@ const ProfileDropdown = () => {
   };
   
   const handleProfileClick = (path: string) => {
-    // Using navigate with replace: true to force a full navigation
-    // This helps fix navigation issues when the app gets stuck on certain routes
+    // Force a full navigation with replace: true
     navigate(path, { replace: true });
   };
   
@@ -37,6 +36,7 @@ const ProfileDropdown = () => {
     try {
       await signOut();
       navigate('/', { replace: true });
+      toast.success("You have been signed out");
     } catch (error) {
       console.error("Error signing out:", error);
       toast.error("Failed to sign out. Please try again.");

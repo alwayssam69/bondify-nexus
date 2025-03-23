@@ -24,7 +24,16 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
-const queryClient = new QueryClient();
+// Create a new query client with retry disabled for faster feedback
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -35,7 +44,13 @@ const App = () => (
         <AuthProvider>
           <BrowserRouter>
             <Routes>
+              {/* Public routes */}
               <Route path="/" element={<Index />} />
+              <Route path="/register" element={<Navigate to="/onboarding" replace />} />
+              <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/login" element={<Login />} />
+              
+              {/* Protected routes */}
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <Dashboard />
@@ -46,9 +61,6 @@ const App = () => (
                   <Matches />
                 </ProtectedRoute>
               } />
-              <Route path="/register" element={<Navigate to="/onboarding" replace />} />
-              <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/login" element={<Login />} />
               <Route path="/chat" element={
                 <ProtectedRoute>
                   <Chat />
@@ -59,8 +71,6 @@ const App = () => (
                   <Profile />
                 </ProtectedRoute>
               } />
-              
-              {/* New Feature Routes */}
               <Route path="/qa-forum" element={
                 <ProtectedRoute>
                   <QAForum />
@@ -89,7 +99,7 @@ const App = () => (
               <Route path="/accessibility" element={<Terms />} />
               <Route path="/sitemap" element={<Help />} />
               
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              {/* Catch-all route for 404s */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

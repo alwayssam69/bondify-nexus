@@ -1,12 +1,13 @@
 
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Home, Users, MessageCircle, HelpCircle, Newspaper } from "lucide-react";
 
 const FloatingNavigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   
   const navLinks = [
     { name: "Home", path: "/dashboard", icon: Home },
@@ -18,6 +19,11 @@ const FloatingNavigation = () => {
   
   const isActive = (path: string) => {
     return location.pathname === path;
+  };
+
+  const handleNavClick = (path: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate(path, { replace: true });
   };
 
   return (
@@ -32,6 +38,7 @@ const FloatingNavigation = () => {
           <Link
             key={link.name}
             to={link.path}
+            onClick={(e) => handleNavClick(link.path, e)}
             className={cn(
               "relative p-2 transition-colors rounded-full group",
               isActive(link.path)

@@ -15,10 +15,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   useEffect(() => {
     if (!isLoading && !user) {
       toast.error("Please sign in to access this page");
+      navigate('/login', { replace: true });
     }
-  }, [isLoading, user]);
+  }, [isLoading, user, navigate]);
 
   if (isLoading) {
+    // Show loading indicator for a maximum of 2 seconds
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -27,7 +29,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;

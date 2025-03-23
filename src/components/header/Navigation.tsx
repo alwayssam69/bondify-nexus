@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -11,6 +11,7 @@ interface NavigationProps {
 
 const Navigation = ({ isLoggedIn }: NavigationProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   
   const loggedOutNavLinks = [
@@ -36,6 +37,13 @@ const Navigation = ({ isLoggedIn }: NavigationProps) => {
       return location.hash === path.substring(path.indexOf('#'));
     }
     return location.pathname === path;
+  };
+
+  const handleNavClick = (path: string, e: React.MouseEvent) => {
+    if (path.includes('#')) return; // Let hash links work normally
+    
+    e.preventDefault();
+    navigate(path, { replace: true });
   };
 
   return (
@@ -73,6 +81,7 @@ const Navigation = ({ isLoggedIn }: NavigationProps) => {
             <Link
               key={link.name}
               to={link.path}
+              onClick={(e) => handleNavClick(link.path, e)}
               className={cn(
                 "relative px-2 md:px-4 py-2 text-xs md:text-sm font-medium transition-colors rounded-full hover:text-white group",
                 isActive(link.path)
