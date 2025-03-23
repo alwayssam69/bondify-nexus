@@ -12,9 +12,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchRecentMatchesForUser } from "@/services/DataService";
 import { RecentMatch } from "@/types/chat";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const RecentMatchesDropdown = () => {
   const { user } = useAuth();
@@ -27,8 +27,42 @@ const RecentMatchesDropdown = () => {
       
       setIsLoading(true);
       try {
-        const matchesData = await fetchRecentMatchesForUser(user.id);
-        setRecentMatches(matchesData);
+        // Try to get real data from Supabase
+        const { data, error } = await supabase
+          .from('user_matches')
+          .select(`
+            id,
+            created_at,
+            is_new,
+            match_percentage,
+            user_profiles!user_matches_matched_user_id_fkey (
+              id,
+              full_name,
+              location,
+              image_url
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+          
+        if (error) {
+          console.error("Error fetching matches:", error);
+          setRecentMatches([]);
+        } else if (data && data.length > 0) {
+          // Transform database data to component format
+          const matchesData: RecentMatch[] = data.map(item => ({
+            id: item.id,
+            name: item.user_profiles?.full_name || 'Unknown User',
+            location: item.user_profiles?.location || 'Unknown Location',
+            matchPercentage: item.match_percentage || 0,
+            isNew: item.is_new || false,
+            avatar: item.user_profiles?.image_url || ''
+          }));
+          setRecentMatches(matchesData);
+        } else {
+          setRecentMatches([]);
+        }
       } catch (error) {
         console.error("Error loading recent matches:", error);
         setRecentMatches([]);
@@ -40,7 +74,7 @@ const RecentMatchesDropdown = () => {
     if (user) {
       loadRecentMatches();
       
-      // Set up real-time listener for new matches with error handling
+      // Set up real-time listener for new matches
       try {
         const channel = supabase
           .channel('public:user_matches')
@@ -52,8 +86,8 @@ const RecentMatchesDropdown = () => {
               filter: `user_id=eq.${user.id}`
             }, 
             () => {
-              // Reload matches when a new one is created
               loadRecentMatches();
+              toast.success("You have a new match!");
             }
           )
           .subscribe();
@@ -98,16 +132,21 @@ const RecentMatchesDropdown = () => {
           </div>
         ) : recentMatches.length === 0 ? (
           <div className="p-4 text-center text-muted-foreground">
-            No matches yet
+            No matches yet. Start connecting!
           </div>
         ) : (
           recentMatches.map((match) => (
             <DropdownMenuItem key={match.id} className="p-3 cursor-pointer" asChild>
-              <Link to={`/matches/${match.id}`} className="w-full">
+              <Link to={`/matches?highlight=${match.id}`} className="w-full">
                 <div className="flex gap-3 w-full">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <span className="text-base">{match.name[0]}</span>
-                  </div>
+                  {match.avatar ? (
+                    <div className="w-10 h-10 rounded-full bg-cover bg-center flex-shrink-0" 
+                         style={{ backgroundImage: `url(${match.avatar})` }} />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <span className="text-base text-blue-600">{match.name[0]}</span>
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between">
                       <p className="font-medium text-sm">{match.name}</p>

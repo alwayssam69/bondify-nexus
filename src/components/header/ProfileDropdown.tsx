@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const ProfileDropdown = () => {
   const navigate = useNavigate();
@@ -26,6 +27,22 @@ const ProfileDropdown = () => {
     return "U";
   };
   
+  const handleProfileClick = (path: string) => {
+    // Using navigate with replace: true to force a full navigation
+    // This helps fix navigation issues when the app gets stuck on certain routes
+    navigate(path, { replace: true });
+  };
+  
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Failed to sign out. Please try again.");
+    }
+  };
+  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -39,20 +56,20 @@ const ProfileDropdown = () => {
           {profile?.full_name || user?.email}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => navigate("/profile")}>
+        <DropdownMenuItem onClick={() => handleProfileClick("/profile")}>
           Profile
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+        <DropdownMenuItem onClick={() => handleProfileClick("/dashboard")}>
           Dashboard
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate("/matches")}>
+        <DropdownMenuItem onClick={() => handleProfileClick("/matches")}>
           Matches
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate("/chat")}>
+        <DropdownMenuItem onClick={() => handleProfileClick("/chat")}>
           Messages
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={signOut}>
+        <DropdownMenuItem onClick={handleSignOut}>
           Logout
         </DropdownMenuItem>
       </DropdownMenuContent>

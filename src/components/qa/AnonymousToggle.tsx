@@ -6,7 +6,7 @@ import { User } from "lucide-react";
 
 interface AnonymousToggleProps {
   isAnonymous: boolean;
-  onToggle: (isAnonymous: boolean) => void;
+  onToggle: (value: boolean) => void;
   className?: string;
 }
 
