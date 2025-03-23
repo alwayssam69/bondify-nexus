@@ -7,6 +7,7 @@ import { toast } from "sonner";
 const SocialLogin = () => {
   const handleGoogleLogin = async () => {
     try {
+      toast.info("Please note: You need to enable Google provider in your Supabase dashboard");
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
@@ -16,7 +17,11 @@ const SocialLogin = () => {
       
       if (error) {
         console.error("Google login error:", error);
-        toast.error(`Login failed: ${error.message}`);
+        if (error.message.includes("provider is not enabled")) {
+          toast.error("Google login is not enabled in Supabase dashboard");
+        } else {
+          toast.error(`Login failed: ${error.message}`);
+        }
       } else {
         toast.success("Redirecting to Google login...");
       }
@@ -28,8 +33,10 @@ const SocialLogin = () => {
 
   const handleLinkedInLogin = async () => {
     try {
+      toast.info("Please note: You need to enable LinkedIn provider in your Supabase dashboard");
+      // Use linkedin_oidc instead of linkedin (the deprecated provider)
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: "linkedin",
+        provider: "linkedin_oidc",
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
         },
@@ -37,7 +44,11 @@ const SocialLogin = () => {
       
       if (error) {
         console.error("LinkedIn login error:", error);
-        toast.error(`Login failed: ${error.message}`);
+        if (error.message.includes("provider is not enabled")) {
+          toast.error("LinkedIn login is not enabled in Supabase dashboard");
+        } else {
+          toast.error(`Login failed: ${error.message}`);
+        }
       } else {
         toast.success("Redirecting to LinkedIn login...");
       }

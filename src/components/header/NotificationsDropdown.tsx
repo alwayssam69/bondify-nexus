@@ -11,14 +11,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Bell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchUserNotifications } from "@/services/DataService";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { format, formatDistanceToNow } from "date-fns";
 
 interface Notification {
   id: string;
   type: 'match' | 'message' | 'view';
   message: string;
-  time: string;
+  created_at: string;
+  is_read: boolean;
+  user_id: string;
 }
 
 const NotificationsDropdown = () => {
@@ -26,48 +29,147 @@ const NotificationsDropdown = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const loadNotifications = async () => {
-      if (!user) return;
+  const fetchNotifications = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      // Check if user_notifications table exists
+      const { error: tableCheckError } = await supabase
+        .from('user_notifications')
+        .select('id')
+        .limit(1);
       
-      setIsLoading(true);
-      try {
-        // Since we don't have a notifications table yet, use the service which returns mock data
-        const notificationsData = await fetchUserNotifications(user.id);
-        setNotifications(notificationsData);
-      } catch (error) {
-        console.error("Error loading notifications:", error);
+      if (tableCheckError) {
+        console.log("No user_notifications table found, returning empty array");
         setNotifications([]);
-      } finally {
         setIsLoading(false);
+        return;
       }
-    };
-
-    if (user) {
-      loadNotifications();
       
-      // Set up real-time listener for future notifications implementation
-      // We'll simulate this with a timer for now
-      const interval = setInterval(() => {
-        loadNotifications();
-      }, 60000); // Refresh every minute
+      // If table exists, get notifications
+      const { data, error } = await supabase
+        .from('user_notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      if (error) {
+        console.error("Error fetching notifications:", error);
+        setNotifications([]);
+      } else {
+        setNotifications(data || []);
+      }
+    } catch (error) {
+      console.error("Error in fetchNotifications:", error);
+      setNotifications([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+      
+      // Set up subscription for real-time updates
+      const channel = supabase
+        .channel('user_notifications_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'user_notifications',
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            fetchNotifications();
+          }
+        )
+        .subscribe();
       
       return () => {
-        clearInterval(interval);
+        supabase.removeChannel(channel);
       };
     }
   }, [user]);
 
   const handleMarkAllRead = async () => {
-    if (!user) return;
+    if (!user || notifications.length === 0) return;
     
     try {
-      // For now, just clear the notifications array since we're using mock data
-      toast.success("All notifications marked as read");
-      setNotifications([]);
+      // Check if user_notifications table exists
+      const { error: tableCheckError } = await supabase
+        .from('user_notifications')
+        .select('id')
+        .limit(1);
+      
+      if (tableCheckError) {
+        console.log("No user_notifications table found");
+        return;
+      }
+      
+      const { error } = await supabase
+        .from('user_notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error("Error marking notifications as read:", error);
+        toast.error("Failed to mark notifications as read");
+      } else {
+        setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+        toast.success("All notifications marked as read");
+      }
     } catch (error) {
       console.error("Error:", error);
       toast.error("An error occurred");
+    }
+  };
+
+  const formatNotificationTime = (timestamp: string) => {
+    try {
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) return "Invalid date";
+      
+      const now = new Date();
+      const diffHours = Math.abs(now.getTime() - date.getTime()) / 36e5;
+      
+      if (diffHours < 24) {
+        return formatDistanceToNow(date, { addSuffix: true });
+      } else {
+        return format(date, "MMM d, yyyy");
+      }
+    } catch (error) {
+      console.error("Date formatting error:", error);
+      return "Unknown";
+    }
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'match':
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </svg>
+        );
+      case 'message':
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        );
+      case 'view':
+      default:
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        );
     }
   };
 
@@ -76,9 +178,9 @@ const NotificationsDropdown = () => {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell size={20} />
-          {notifications.length > 0 && (
+          {notifications.filter(n => !n.is_read).length > 0 && (
             <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-              {notifications.length}
+              {notifications.filter(n => !n.is_read).length}
             </span>
           )}
         </Button>
@@ -87,7 +189,7 @@ const NotificationsDropdown = () => {
         <DropdownMenuLabel className="font-normal">
           <div className="flex justify-between items-center">
             <span className="font-semibold">Notifications</span>
-            {notifications.length > 0 && (
+            {notifications.filter(n => !n.is_read).length > 0 && (
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -107,7 +209,7 @@ const NotificationsDropdown = () => {
           </div>
         ) : notifications.length === 0 ? (
           <div className="p-4 text-center text-muted-foreground">
-            No new notifications yet
+            You don't have any notifications yet
           </div>
         ) : (
           notifications.map((notification) => (
@@ -118,27 +220,17 @@ const NotificationsDropdown = () => {
                   notification.type === 'message' ? 'bg-blue-100 text-blue-600' : 
                   'bg-green-100 text-green-600'
                 }`}>
-                  {notification.type === 'match' && (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                    </svg>
-                  )}
-                  {notification.type === 'message' && (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
-                  )}
-                  {notification.type === 'view' && (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
+                  {getNotificationIcon(notification.type)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm">{notification.message}</p>
-                  <p className="text-xs text-muted-foreground">{notification.time}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatNotificationTime(notification.created_at)}
+                  </p>
                 </div>
+                {!notification.is_read && (
+                  <div className="w-2 h-2 bg-blue-500 rounded-full self-start mt-2"></div>
+                )}
               </div>
             </DropdownMenuItem>
           ))
