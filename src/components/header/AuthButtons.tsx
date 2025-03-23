@@ -3,11 +3,12 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Tag } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 const AuthButtons = () => {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   
   const handleSignOut = async () => {
     try {
@@ -15,10 +16,6 @@ const AuthButtons = () => {
       await signOut();
       console.log("Sign out successful");
       toast.success("You have been signed out successfully");
-      // Force a full page navigation to login page after slight delay
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 300);
     } catch (error) {
       console.error("Error signing out:", error);
       toast.error("Failed to sign out. Please try again.");
@@ -27,15 +24,25 @@ const AuthButtons = () => {
   
   // If user is authenticated, show logout button instead of login/signup
   if (user) {
+    const userTag = profile?.user_tag || user?.user_metadata?.user_tag || null;
+    
     return (
-      <Button 
-        variant="ghost" 
-        className="text-sm flex items-center gap-1" 
-        onClick={handleSignOut}
-      >
-        <LogOut className="h-4 w-4 mr-1" />
-        Sign Out
-      </Button>
+      <div className="flex items-center gap-2">
+        {userTag && (
+          <Badge className="bg-primary/20 text-primary hover:bg-primary/30 flex items-center gap-1">
+            <Tag className="h-3 w-3" />
+            <span>{userTag}</span>
+          </Badge>
+        )}
+        <Button 
+          variant="ghost" 
+          className="text-sm flex items-center gap-1" 
+          onClick={handleSignOut}
+        >
+          <LogOut className="h-4 w-4 mr-1" />
+          Sign Out
+        </Button>
+      </div>
     );
   }
   

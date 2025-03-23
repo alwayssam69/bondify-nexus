@@ -47,6 +47,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (result.error) {
           console.error("Error fetching profile from profiles table:", result.error);
+          // Create a basic profile if none exists
+          if (!result.data) {
+            const userData = await supabase.auth.getUser();
+            if (userData.data?.user) {
+              const newProfile = {
+                id: userId,
+                full_name: userData.data.user.user_metadata?.full_name || "User",
+                email: userData.data.user.email,
+                user_tag: userData.data.user.user_metadata?.user_tag || "",
+              };
+              
+              // Insert basic profile
+              await supabase.from('profiles').insert(newProfile);
+              await supabase.from('user_profiles').insert({
+                ...newProfile,
+                activity_score: 0,
+                experience_level: '',
+                interests: [] as string[],
+                industry: '',
+                course_year: '',
+                user_type: '',
+                image_url: '',
+                profile_completeness: 20,
+                skills: [],
+                last_active: new Date().toISOString(),
+              });
+              
+              data = newProfile;
+            }
+          }
           return;
         }
         
@@ -59,6 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             location: result.data?.location,
             bio: result.data?.bio,
             skills: result.data?.skills ? [result.data.skills] : [],
+            user_tag: result.data?.user_tag || "",
             // Set defaults for required fields in the new structure
             activity_score: 0,
             experience_level: '',
@@ -170,6 +201,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
         setSession(null);
         setProfile(null);
+        
+        // Use window.location for a complete refresh after sign out
+        window.location.href = "/login";
         return; // Return successfully
       }
     } catch (error) {

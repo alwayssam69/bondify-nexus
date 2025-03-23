@@ -30,7 +30,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import SocialLogin from "@/components/onboarding/SocialLogin";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { MapPin, User, Briefcase, GraduationCap } from "lucide-react";
+import { MapPin, User, Briefcase, GraduationCap, Tag } from "lucide-react";
 import { industryOptions, experienceLevels } from "@/data/formOptions";
 import DynamicSkillSelect from "@/components/form/DynamicSkillSelect";
 import LocationSelector from "@/components/form/LocationSelector";
@@ -47,6 +47,7 @@ const formSchema = z.object({
   experienceLevel: z.string().min(1, "Please select your experience level"),
   state: z.string().min(1, "Please select your state"),
   city: z.string().optional(),
+  userTag: z.string().min(1, "Please enter a personal tag").max(20, "Tag must be 20 characters or less"),
   useCurrentLocation: z.boolean().default(false),
   agreeTerms: z.boolean().refine(val => val === true, {
     message: "You must agree to the terms and conditions",
@@ -98,6 +99,7 @@ const Register = () => {
       experienceLevel: "",
       state: "",
       city: "",
+      userTag: "",
       useCurrentLocation: false,
       agreeTerms: false,
     },
@@ -111,18 +113,22 @@ const Register = () => {
     setIsLoading(true);
     
     try {
+      console.log("Creating user account with email:", values.email);
+      
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
           data: {
             full_name: values.fullName,
+            user_tag: values.userTag,
           },
         },
       });
       
       if (error) {
-        toast.error(error.message);
+        console.error("Registration error:", error);
+        toast.error(error.message || "Registration failed");
         setIsLoading(false);
         return;
       }
@@ -134,7 +140,9 @@ const Register = () => {
           : {};
         
         const profileData = {
+          id: data.user.id,
           full_name: values.fullName,
+          email: values.email,
           user_type: values.profession,
           industry: values.industry,
           location: values.location,
@@ -142,23 +150,51 @@ const Register = () => {
           city: values.city,
           skills: values.skills,
           experience_level: values.experienceLevel,
+          user_tag: values.userTag,
           profile_completeness: 60, // Give higher score for more complete profile
           activity_score: 50, // Initial activity score
           ...locationData,
         };
         
-        // Update user profile in database
+        // Create user profile in database
         const { error: profileError } = await supabase
           .from('user_profiles')
-          .update(profileData)
-          .eq('id', data.user.id);
+          .insert(profileData);
         
         if (profileError) {
-          console.error("Error updating profile:", profileError);
+          console.error("Error creating profile:", profileError);
+          // Continue despite error to ensure user creation completes
+        }
+        
+        // Insert into profiles table for legacy support
+        const { error: legacyProfileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            full_name: values.fullName,
+            email: values.email,
+            location: values.location || null,
+            user_tag: values.userTag,
+          });
+          
+        if (legacyProfileError) {
+          console.error("Error creating legacy profile:", legacyProfileError);
         }
         
         toast.success("Registration successful! Please check your email to verify your account.");
-        navigate("/login");
+        
+        // Login automatically after successful registration
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: values.email,
+          password: values.password,
+        });
+        
+        if (signInError) {
+          console.error("Error signing in after registration:", signInError);
+          navigate("/login", { state: { email: values.email } });
+        } else {
+          navigate("/dashboard");
+        }
       }
     } catch (error) {
       console.error("Registration error:", error);
@@ -242,6 +278,27 @@ const Register = () => {
                     )}
                   />
                 </FormGroup>
+                
+                <FormField
+                  control={form.control}
+                  name="userTag"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Personal Tag</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Tag className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            placeholder="Your unique tag (e.g. CodeWhiz)" 
+                            className="pl-10" 
+                            {...field} 
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </FormSection>
               
               <FormSection title="Professional Profile">
