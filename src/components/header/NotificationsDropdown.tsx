@@ -8,7 +8,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuFooter,
 } from "@/components/ui/dropdown-menu";
 import { Bell, ArrowRight } from "lucide-react";
 import NotificationList from "./notifications/NotificationList";
@@ -76,7 +75,7 @@ const NotificationsDropdown = () => {
           onNotificationClick={handleNotificationClick}
         />
         
-        <DropdownMenuFooter className="flex items-center justify-center p-2">
+        <div className="flex items-center justify-center p-2">
           <Button 
             variant="ghost" 
             size="sm"
@@ -86,7 +85,7 @@ const NotificationsDropdown = () => {
             View all notifications
             <ArrowRight size={16} />
           </Button>
-        </DropdownMenuFooter>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

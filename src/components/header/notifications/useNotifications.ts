@@ -20,7 +20,7 @@ export const useNotifications = (limit = 5, offset = 0) => {
     try {
       // Try to fetch from the real table if it exists
       const query = supabase
-        .from('user_notifications')
+        .from('user_notifications' as any)
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -98,7 +98,7 @@ export const useNotifications = (limit = 5, offset = 0) => {
     try {
       // Update the notifications in the database
       const { error } = await supabase
-        .from('user_notifications')
+        .from('user_notifications' as any)
         .update({ is_read: true })
         .eq('user_id', user.id);
       
@@ -151,7 +151,7 @@ export const useNotifications = (limit = 5, offset = 0) => {
         .subscribe((status) => {
           console.log('Realtime subscription status:', status);
           
-          if (status === 'SUBSCRIPTION_ERROR') {
+          if (status === 'SUBSCRIPTION_ERROR' as any) {
             console.warn('Could not set up realtime subscription, falling back to sample data');
             fallbackToSampleData();
           }
