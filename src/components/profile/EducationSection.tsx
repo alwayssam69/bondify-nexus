@@ -24,7 +24,7 @@ const EducationSection: React.FC<EducationSectionProps> = ({ form }) => {
         render={({ field }) => (
           <FormItem>
             <FormLabel>University / College</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
+            <Select onValueChange={field.onChange} value={field.value || "none"}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select university" />
@@ -56,7 +56,7 @@ const EducationSection: React.FC<EducationSectionProps> = ({ form }) => {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Course Year</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
+            <Select onValueChange={field.onChange} value={field.value || "none"}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select year" />

@@ -20,3 +20,9 @@ export interface MatchmakingResult {
   bio?: string;
   distance?: number;
 }
+
+export interface MatchCardConnectableProps {
+  profile: any;
+  key: string;
+  onAction?: (action: any) => void;
+}

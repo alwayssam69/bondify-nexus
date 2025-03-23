@@ -129,13 +129,19 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
           <div className="space-y-2">
             <Label htmlFor="industry" className="text-sm font-medium">Industry</Label>
             <Select 
-              value={industry} 
-              onValueChange={setIndustry}
+              value={industry || "select-industry"} 
+              onValueChange={(value) => {
+                if (value === "select-industry") return;
+                setIndustry(value);
+              }}
             >
               <SelectTrigger id="industry" className="w-full">
                 <SelectValue placeholder="Select your industry" />
               </SelectTrigger>
               <SelectContent>
+                {industry === "" && (
+                  <SelectItem value="select-industry">Select your industry</SelectItem>
+                )}
                 {industryOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}

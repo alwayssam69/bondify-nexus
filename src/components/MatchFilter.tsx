@@ -355,8 +355,11 @@ const MatchFilter: React.FC<MatchFilterProps> = ({ onApplyFilters }) => {
                   I am looking for:
                 </label>
                 <Select 
-                  value={filters.userType} 
-                  onValueChange={(value) => setFilters(prev => ({ ...prev, userType: value }))}
+                  value={filters.userType || "select-type"} 
+                  onValueChange={(value) => {
+                    if (value === "select-type") return;
+                    setFilters(prev => ({ ...prev, userType: value }));
+                  }}
                 >
                   <SelectTrigger className="bg-background/80 border-border/50 hover:border-primary/50 transition-colors">
                     <SelectValue placeholder="Select user type" />
@@ -364,6 +367,9 @@ const MatchFilter: React.FC<MatchFilterProps> = ({ onApplyFilters }) => {
                   <SelectContent className="bg-background/95 backdrop-blur border-border/50">
                     <SelectGroup>
                       <SelectLabel>User Types</SelectLabel>
+                      {filters.userType === "" && (
+                        <SelectItem value="select-type">Select user type</SelectItem>
+                      )}
                       {userTypes.map(type => (
                         <SelectItem key={type.value} value={type.value} className="cursor-pointer hover:bg-accent/50">
                           {type.label}
@@ -381,8 +387,11 @@ const MatchFilter: React.FC<MatchFilterProps> = ({ onApplyFilters }) => {
                   Experience Level:
                 </label>
                 <Select 
-                  value={filters.experienceLevel} 
-                  onValueChange={(value) => setFilters(prev => ({ ...prev, experienceLevel: value }))}
+                  value={filters.experienceLevel || "select-level"} 
+                  onValueChange={(value) => {
+                    if (value === "select-level") return;
+                    setFilters(prev => ({ ...prev, experienceLevel: value }));
+                  }}
                 >
                   <SelectTrigger className="bg-background/80 border-border/50 hover:border-primary/50 transition-colors">
                     <SelectValue placeholder="Select experience" />
@@ -390,6 +399,9 @@ const MatchFilter: React.FC<MatchFilterProps> = ({ onApplyFilters }) => {
                   <SelectContent className="bg-background/95 backdrop-blur border-border/50">
                     <SelectGroup>
                       <SelectLabel>Experience Levels</SelectLabel>
+                      {filters.experienceLevel === "" && (
+                        <SelectItem value="select-level">Select experience level</SelectItem>
+                      )}
                       {experienceLevels.map(level => (
                         <SelectItem key={level.value} value={level.value} className="cursor-pointer hover:bg-accent/50">
                           {level.label}

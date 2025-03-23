@@ -49,7 +49,9 @@ const LocationSelector = ({
       }
     } else {
       setCities([]);
-      onCityChange("");
+      if (cityValue) {
+        onCityChange(""); // Reset city when no state is selected
+      }
     }
   }, [stateValue, cityValue, onCityChange]);
 
@@ -97,8 +99,9 @@ const LocationSelector = ({
         <FormItem>
           <FormLabel>State</FormLabel>
           <Select
-            value={stateValue}
+            value={stateValue || "select-state"}
             onValueChange={(value) => {
+              if (value === "select-state") return;
               onStateChange(value);
               const stateName = indianStates.find(state => state.value === value)?.label || value;
               toast.info(`Selected ${stateName} as your state`);
@@ -111,6 +114,9 @@ const LocationSelector = ({
               </SelectTrigger>
             </FormControl>
             <SelectContent>
+              {stateValue === "" && (
+                <SelectItem value="select-state">Select state</SelectItem>
+              )}
               {indianStates.map((state) => (
                 <SelectItem key={state.value} value={state.value}>
                   {state.label}
@@ -124,8 +130,9 @@ const LocationSelector = ({
         <FormItem>
           <FormLabel>City</FormLabel>
           <Select
-            value={cityValue}
+            value={cityValue || "select-city"}
             onValueChange={(value) => {
+              if (value === "select-city") return;
               onCityChange(value);
               const cityName = cities.find(city => city.value === value)?.label || value;
               toast.info(`Selected ${cityName} as your city`);
@@ -138,6 +145,9 @@ const LocationSelector = ({
               </SelectTrigger>
             </FormControl>
             <SelectContent>
+              {cityValue === "" && cities.length > 0 && (
+                <SelectItem value="select-city">Select city</SelectItem>
+              )}
               {cities.map((city) => (
                 <SelectItem key={city.value} value={city.value}>
                   {city.label}
