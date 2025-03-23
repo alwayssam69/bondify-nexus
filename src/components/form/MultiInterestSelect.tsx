@@ -26,6 +26,7 @@ interface MultiInterestSelectProps {
   placeholder?: string;
   label?: string;
   error?: boolean;
+  maxSelections?: number;
 }
 
 const MultiInterestSelect: React.FC<MultiInterestSelectProps> = ({
@@ -34,6 +35,7 @@ const MultiInterestSelect: React.FC<MultiInterestSelectProps> = ({
   placeholder = "Select interests",
   label,
   error = false,
+  maxSelections,
 }) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -46,11 +48,16 @@ const MultiInterestSelect: React.FC<MultiInterestSelectProps> = ({
   };
 
   const handleSelect = (selectedValue: string) => {
-    const newValue = value.includes(selectedValue)
-      ? value.filter((item) => item !== selectedValue)
-      : [...value, selectedValue];
-    
-    onChange(newValue);
+    if (value.includes(selectedValue)) {
+      // If already selected, remove it
+      onChange(value.filter((item) => item !== selectedValue));
+    } else if (maxSelections && value.length >= maxSelections) {
+      // If max selections reached, don't add
+      return;
+    } else {
+      // Add the value
+      onChange([...value, selectedValue]);
+    }
   };
 
   const removeItem = (item: string) => {
@@ -139,7 +146,7 @@ const MultiInterestSelect: React.FC<MultiInterestSelectProps> = ({
           </Button>
         </PopoverTrigger>
         <PopoverContent 
-          className="w-full p-0 z-50" 
+          className="w-full p-0 z-[200]" 
           style={{ width: triggerRef.current ? `${triggerRef.current.offsetWidth}px` : "300px" }}
         >
           <Command>
@@ -157,11 +164,20 @@ const MultiInterestSelect: React.FC<MultiInterestSelectProps> = ({
               <ScrollArea className="max-h-[300px]">
                 {filteredGroups.map(({ category, options }) => (
                   <CommandGroup key={category} heading={category}>
+                    {maxSelections && value.length >= maxSelections && (
+                      <div className="p-2 text-xs text-amber-600 text-center">
+                        Maximum of {maxSelections} interests can be selected
+                      </div>
+                    )}
                     {options.map((option) => (
                       <CommandItem
                         key={option.value}
                         value={option.value}
                         onSelect={() => handleSelect(option.value)}
+                        disabled={maxSelections ? value.length >= maxSelections && !value.includes(option.value) : false}
+                        className={cn(
+                          maxSelections && value.length >= maxSelections && !value.includes(option.value) ? "opacity-50 cursor-not-allowed" : ""
+                        )}
                       >
                         <div className="flex items-center w-full">
                           <Check
@@ -183,6 +199,11 @@ const MultiInterestSelect: React.FC<MultiInterestSelectProps> = ({
           </Command>
         </PopoverContent>
       </Popover>
+      {maxSelections && (
+        <p className="text-xs text-gray-500 mt-1">
+          Select up to {maxSelections} interests
+        </p>
+      )}
     </div>
   );
 };
