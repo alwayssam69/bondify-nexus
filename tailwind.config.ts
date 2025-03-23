@@ -28,6 +28,17 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        sidebar: {
+          DEFAULT: "hsl(var(--sidebar, var(--background)))",
+          foreground: "hsl(var(--sidebar-foreground, var(--foreground)))",
+          border: "hsl(var(--sidebar-border, var(--border)))",
+          ring: "hsl(var(--sidebar-ring, var(--ring)))",
+          accent: {
+            DEFAULT: "hsl(var(--sidebar-accent, var(--accent)))",
+            foreground:
+              "hsl(var(--sidebar-accent-foreground, var(--accent-foreground)))",
+          },
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))"

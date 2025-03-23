@@ -4,10 +4,17 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Home, Users, MessageCircle, HelpCircle, Newspaper } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const FloatingNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  
+  // We'll only show floating navigation on mobile devices now
+  if (!isMobile) {
+    return null;
+  }
   
   const navLinks = [
     { name: "Home", path: "/dashboard", icon: Home },
@@ -28,12 +35,12 @@ const FloatingNavigation = () => {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="fixed left-6 top-1/2 transform -translate-y-1/2 z-40 hidden md:block"
+      className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 md:hidden"
     >
-      <div className="bg-gray-900 rounded-full py-6 px-3 border border-gray-800 shadow-md flex flex-col items-center gap-5">
+      <div className="bg-gray-900 rounded-full py-2 px-4 border border-gray-800 shadow-md flex items-center gap-6">
         {navLinks.map((link) => (
           <Link
             key={link.name}
@@ -45,14 +52,9 @@ const FloatingNavigation = () => {
                 ? "text-white bg-blue-600"
                 : "text-gray-200 hover:text-white"
             )}
-            title={link.name}
+            aria-label={link.name}
           >
             <link.icon className="w-5 h-5" />
-            
-            {/* Tooltip */}
-            <span className="absolute left-full ml-2 px-2 py-1 text-xs font-medium bg-gray-900 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-              {link.name}
-            </span>
           </Link>
         ))}
       </div>
