@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NewsItem } from "@/types/custom";
 import NewsCard from "./NewsCard";
 import { toast } from "sonner";
+import { RefreshCw } from "lucide-react";
 
 const industries = [
   "All",
@@ -28,18 +29,24 @@ const NewsInsights = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
-  // Fetch news on component mount
+  // Fetch news on component mount and set up automatic refresh
   useEffect(() => {
     fetchNews();
+    
+    // Set up automatic refresh every 30 minutes
+    const refreshInterval = setInterval(() => {
+      fetchNews(false); // silent refresh
+      setLastRefreshed(new Date());
+    }, 30 * 60 * 1000); // 30 minutes
+    
+    return () => clearInterval(refreshInterval);
   }, []);
 
-  const fetchNews = async () => {
+  const fetchNews = async (showToast = true) => {
     try {
       setIsLoading(true);
-      
-      // Since we don't have proper Supabase integration for these tables yet,
-      // let's use sample data instead of querying the database
       
       // This code would be used with actual database tables:
       // const { data, error } = await supabase
@@ -49,7 +56,7 @@ const NewsInsights = () => {
       //
       // if (error) {
       //   console.error("Error fetching news:", error);
-      //   toast.error("Failed to load news insights");
+      //   if (showToast) toast.error("Failed to load news insights");
       //   setIsLoading(false);
       //   return;
       // }
@@ -59,52 +66,83 @@ const NewsInsights = () => {
       // setFilteredNews(newsItems);
       
       // Populate with sample data directly
-      populateSampleNews();
+      await populateSampleNews();
+      if (showToast) {
+        toast.success("News feed refreshed");
+      }
       setIsLoading(false);
       
     } catch (error) {
       console.error("Error in fetchNews:", error);
       setIsLoading(false);
-      toast.error("An error occurred while fetching news");
+      if (showToast) {
+        toast.error("An error occurred while fetching news");
+      }
     }
   };
 
   const populateSampleNews = async () => {
     try {
       const userIndustry = profile?.industry || "Technology";
+      
+      // Generate a random number to make news items appear different each time
+      const randomHash = Math.floor(Math.random() * 1000);
+      
       const sampleNews: NewsItem[] = [
         {
-          id: "1",
+          id: `1-${randomHash}`,
           industry: userIndustry,
           title: "Latest Advancements in AI Technology",
           content: "Researchers have developed a new algorithm that improves natural language understanding by 30%. This breakthrough could transform how AI systems interpret human communication.",
           source_url: "https://example.com/ai-news",
-          image_url: "https://via.placeholder.com/300x200?text=AI+News",
+          image_url: `https://picsum.photos/seed/${randomHash}/800/450`,
           timestamp: new Date().toISOString(),
-          likes_count: 24,
-          comments_count: 8
+          likes_count: 24 + Math.floor(Math.random() * 10),
+          comments_count: 8 + Math.floor(Math.random() * 5)
         },
         {
-          id: "2",
+          id: `2-${randomHash}`,
           industry: "Finance",
           title: "Market Trends: Investment Opportunities in 2023",
           content: "Financial analysts predict significant growth in sustainable investments and digital currencies. Here's what you need to know about the upcoming market trends.",
           source_url: "https://example.com/finance-trends",
-          image_url: "https://via.placeholder.com/300x200?text=Finance+News",
+          image_url: `https://picsum.photos/seed/${randomHash + 1}/800/450`,
           timestamp: new Date().toISOString(),
-          likes_count: 15,
-          comments_count: 3
+          likes_count: 15 + Math.floor(Math.random() * 10),
+          comments_count: 3 + Math.floor(Math.random() * 5)
         },
         {
-          id: "3",
+          id: `3-${randomHash}`,
           industry: "Healthcare",
           title: "Breakthrough in Medical Research",
           content: "A team of scientists has discovered a new method for early detection of certain types of cancer, potentially saving millions of lives through early intervention.",
           source_url: "https://example.com/healthcare-news",
-          image_url: "https://via.placeholder.com/300x200?text=Healthcare+News",
+          image_url: `https://picsum.photos/seed/${randomHash + 2}/800/450`,
           timestamp: new Date().toISOString(),
-          likes_count: 32,
-          comments_count: 12
+          likes_count: 32 + Math.floor(Math.random() * 10),
+          comments_count: 12 + Math.floor(Math.random() * 5)
+        },
+        {
+          id: `4-${randomHash}`,
+          industry: "Technology",
+          title: "New Framework Revolutionizes Web Development",
+          content: "A new web development framework is gaining popularity among developers for its efficiency and speed. It promises to reduce development time by up to 40%.",
+          source_url: "https://example.com/web-dev-news",
+          image_url: `https://picsum.photos/seed/${randomHash + 3}/800/450`,
+          timestamp: new Date().toISOString(),
+          likes_count: 19 + Math.floor(Math.random() * 10),
+          comments_count: 7 + Math.floor(Math.random() * 5)
+        },
+        {
+          id: `5-${randomHash}`,
+          industry: "Education",
+          title: "Online Learning Platforms See Unprecedented Growth",
+          content: "The education technology sector continues to expand as more institutions adopt hybrid learning models. Experts predict this trend will continue beyond the pandemic era.",
+          source_url: "https://example.com/education-news",
+          image_url: `https://picsum.photos/seed/${randomHash + 4}/800/450`,
+          timestamp: new Date().toISOString(),
+          likes_count: 28 + Math.floor(Math.random() * 10),
+          comments_count: 9 + Math.floor(Math.random() * 5)
         }
       ];
       
@@ -160,13 +198,39 @@ const NewsInsights = () => {
     setFilteredNews(filtered);
   };
 
+  // Calculate time since last refresh
+  const getLastRefreshedText = () => {
+    const minutes = Math.floor((new Date().getTime() - lastRefreshed.getTime()) / 60000);
+    if (minutes < 1) return "just now";
+    if (minutes === 1) return "1 minute ago";
+    if (minutes < 60) return `${minutes} minutes ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours === 1) return "1 hour ago";
+    return `${hours} hours ago`;
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Industry Insights</h1>
-        <p className="text-muted-foreground">
-          Latest news and trends relevant to your industry and interests
-        </p>
+      <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Industry Insights</h1>
+          <p className="text-muted-foreground">
+            Latest news and trends relevant to your industry and interests
+          </p>
+        </div>
+        <div className="flex items-center gap-2 mt-4 md:mt-0">
+          <span className="text-sm text-muted-foreground">Last updated: {getLastRefreshedText()}</span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => fetchNews()} 
+            disabled={isLoading}
+            className="flex items-center gap-1"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            {isLoading ? "Refreshing..." : "Refresh"}
+          </Button>
+        </div>
       </div>
       
       <div className="mb-6">

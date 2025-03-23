@@ -73,6 +73,7 @@ const Navigation = ({ isLoggedIn }: NavigationProps) => {
             <Link
               key={link.name}
               to={link.path}
+              prefetch="intent"
               className={cn(
                 "relative px-2 md:px-4 py-2 text-xs md:text-sm font-medium transition-colors rounded-full hover:text-white group",
                 isActive(link.path)

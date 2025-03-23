@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import MatchCardConnectable from "@/components/MatchCardConnectable";
+import MatchCardConnectable from "@/components/match-card/MatchCardConnectable";
 import { UserProfile } from "@/lib/matchmaking";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,25 +43,41 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    if (user?.id) {
-      loadMatchData();
-      
-      if (geolocation.latitude && geolocation.longitude && !geolocation.error) {
-        updateUserLocationCoordinates(geolocation.latitude, geolocation.longitude);
-      }
+    // Instead of waiting for geolocation, load what we can immediately
+    loadMatchData();
+    
+    // If geolocation becomes available, update user coordinates
+    if (geolocation.latitude && geolocation.longitude && !geolocation.error) {
+      updateUserLocationCoordinates(geolocation.latitude, geolocation.longitude);
     }
   }, [user, geolocation.latitude, geolocation.longitude]);
 
   const loadMatchData = async () => {
+    if (!user?.id) return;
+    
     setIsLoading(true);
     try {
-      const recommendedData = await getMatchRecommendations(user?.id || "", 10);
-      setRecommendedMatches(recommendedData);
-
-      if (geolocation.latitude && geolocation.longitude) {
-        const proximityData = await getProximityMatches(user?.id || "", radius, 10);
-        setNearbyMatches(proximityData);
+      // Use Promise.allSettled to load both data types in parallel
+      const results = await Promise.allSettled([
+        getMatchRecommendations(user.id, 10),
+        geolocation.latitude && geolocation.longitude 
+          ? getProximityMatches(user.id, radius, 10) 
+          : Promise.resolve([])
+      ]);
+      
+      // Handle recommended matches result
+      if (results[0].status === 'fulfilled') {
+        setRecommendedMatches(results[0].value);
+      } else {
+        console.error("Error loading recommended matches:", results[0].reason);
+        toast.error("Couldn't load recommended matches");
       }
+      
+      // Handle nearby matches result
+      if (results[1].status === 'fulfilled') {
+        setNearbyMatches(results[1].value);
+      }
+      
     } catch (error) {
       console.error("Error loading match data:", error);
       toast.error("Failed to load matches");
@@ -71,18 +87,19 @@ const Dashboard = () => {
   };
 
   const updateUserLocationCoordinates = async (latitude: number, longitude: number) => {
-    if (user?.id) {
-      try {
-        const success = await updateUserCoordinates(user.id, latitude, longitude);
-        if (success) {
-          toast.success("Location updated successfully!");
-          const proximityData = await getProximityMatches(user.id, radius, 10);
-          setNearbyMatches(proximityData);
-        }
-      } catch (error) {
-        console.error("Error updating location:", error);
-        toast.error("Failed to update your location");
+    if (!user?.id) return;
+    
+    try {
+      const success = await updateUserCoordinates(user.id, latitude, longitude);
+      if (success) {
+        // Only toast on manual updates
+        // toast.success("Location updated successfully!");
+        const proximityData = await getProximityMatches(user.id, radius, 10);
+        setNearbyMatches(proximityData);
       }
+    } catch (error) {
+      console.error("Error updating location:", error);
+      toast.error("Failed to update your location");
     }
   };
 
@@ -129,7 +146,7 @@ const Dashboard = () => {
 
   const handleRefreshMatches = () => {
     loadMatchData();
-    toast("Refreshing your matches...");
+    toast.info("Refreshing your matches...");
   };
 
   const handleRadiusChange = (value: number[]) => {
@@ -224,7 +241,7 @@ const Dashboard = () => {
               </>
             ) : (
               <>
-                <Sparkles className="mr-2 h-4 w-4" />
+                <RefreshCw className="mr-2 h-4 w-4" />
                 Refresh Matches
               </>
             )}
@@ -307,8 +324,8 @@ const Dashboard = () => {
                     key={profile.id}
                     profile={profile}
                     delay={index * 100}
-                    onViewProfile={handleViewProfile}
-                    onConnect={handleConnectRequest}
+                    onViewProfile={() => handleViewProfile(profile.id)}
+                    onConnect={() => handleConnectRequest(profile.id)}
                   />
                 ))}
               </div>
@@ -365,8 +382,8 @@ const Dashboard = () => {
                         key={profile.id}
                         profile={profile}
                         delay={index * 100}
-                        onViewProfile={handleViewProfile}
-                        onConnect={handleConnectRequest}
+                        onViewProfile={() => handleViewProfile(profile.id)}
+                        onConnect={() => handleConnectRequest(profile.id)}
                       />
                     ))}
                   </div>

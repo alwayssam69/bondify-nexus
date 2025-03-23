@@ -9,7 +9,7 @@ const FloatingNavigation = () => {
   const location = useLocation();
   
   const navLinks = [
-    { name: "Home", path: "/", icon: Home },
+    { name: "Home", path: "/dashboard", icon: Home },
     { name: "Matches", path: "/matches", icon: Users },
     { name: "Chat", path: "/chat", icon: MessageCircle },
     { name: "Q&A", path: "/qa-forum", icon: HelpCircle },
@@ -32,6 +32,7 @@ const FloatingNavigation = () => {
           <Link
             key={link.name}
             to={link.path}
+            prefetch="intent"
             className={cn(
               "relative p-2 transition-colors rounded-full group",
               isActive(link.path)
