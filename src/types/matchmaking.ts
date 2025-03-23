@@ -23,6 +23,12 @@ export interface MatchmakingResult {
 
 export interface MatchCardConnectableProps {
   profile: any;
-  key: string;
-  onAction?: (action: any) => void;
+  key?: string;
+  delay?: number;
+  onViewProfile?: (id: string) => void;
+  onConnect?: (id: string) => void;
+  onAction?: (action: "like" | "pass" | "save") => void;
+  showChatButton?: boolean;
+  showDistance?: boolean;
+  onStartChat?: () => void;
 }

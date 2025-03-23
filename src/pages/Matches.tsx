@@ -421,7 +421,9 @@ const Matches = () => {
                 <MatchCardConnectable
                   key={profile.id}
                   profile={profile}
-                  onAction={(action) => handleMatchAction(profile.id, action)}
+                  onViewProfile={() => navigate(`/profile/${profile.id}`)}
+                  onConnect={() => handleMatchAction(profile.id, "like")}
+                  showDistance={locationEnabled}
                 />
               ))}
             </div>
