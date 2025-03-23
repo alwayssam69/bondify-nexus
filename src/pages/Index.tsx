@@ -7,7 +7,6 @@ import Hero from "@/components/Hero";
 import HowItWorks from "@/components/HowItWorks";
 import DynamicMatches from "@/components/DynamicMatches";
 import WhatWeOffer from "@/components/WhatWeOffer";
-import FloatingNavigation from "@/components/FloatingNavigation";
 import Testimonials from "@/components/Testimonials";
 
 const Index = () => {
@@ -27,7 +26,6 @@ const Index = () => {
         <HowItWorks />
         <Testimonials />
         <DynamicMatches />
-        <FloatingNavigation />
       </div>
     </Layout>
   );
