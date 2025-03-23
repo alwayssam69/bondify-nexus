@@ -18,6 +18,10 @@ const SocialLogin = () => {
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         },
       });
       
@@ -38,6 +42,11 @@ const SocialLogin = () => {
     } finally {
       setIsGoogleLoading(false);
     }
+  };
+
+  const handlePhoneLogin = () => {
+    toast.info("Phone login will be available soon!");
+    // Implementation for phone login would go here
   };
 
   return (
@@ -85,6 +94,37 @@ const SocialLogin = () => {
           />
         </svg>
         {isGoogleLoading ? "Connecting..." : "Continue with Google"}
+      </Button>
+      
+      <Button
+        variant="outline"
+        type="button"
+        onClick={handlePhoneLogin}
+        className="w-full flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors"
+      >
+        <svg 
+          width="18" 
+          height="18" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path 
+            d="M17 2H7C5.89543 2 5 2.89543 5 4V20C5 21.1046 5.89543 22 7 22H17C18.1046 22 19 21.1046 19 20V4C19 2.89543 18.1046 2 17 2Z" 
+            stroke="#000000" 
+            strokeWidth="2" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+          />
+          <path 
+            d="M12 18H12.01" 
+            stroke="#000000" 
+            strokeWidth="2" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+          />
+        </svg>
+        Continue with Phone
       </Button>
     </div>
   );

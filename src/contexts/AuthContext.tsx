@@ -169,6 +169,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
         setSession(null);
         setProfile(null);
+        toast.success("You have successfully logged out.");
+        window.location.href = "/login"; // Redirect to login page after logout
         return; // Return successfully
       }
     } catch (error) {

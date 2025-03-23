@@ -13,7 +13,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Mail } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import SocialLogin from "./SocialLogin";
 import { Separator } from "@/components/ui/separator";
 import { motion } from "framer-motion";
@@ -21,11 +21,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface Step1EmailProps {
-  onNextStep: (email: string) => void;
+  onNextStep: (email: string, password: string) => void;
 }
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(6, "Confirm password is required"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -33,11 +38,15 @@ type FormValues = z.infer<typeof formSchema>;
 const Step1Email = ({ onNextStep }: Step1EmailProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
+      password: "",
+      confirmPassword: "",
     },
   });
 
@@ -68,7 +77,7 @@ const Step1Email = ({ onNextStep }: Step1EmailProps) => {
       // Simulate typing "verifying email..." animation
       await simulateTyping("Verifying email", 1500);
       
-      onNextStep(values.email);
+      onNextStep(values.email, values.password);
     } catch (error) {
       console.error("Step 1 error:", error);
       toast.error("An error occurred. Please try again.");
@@ -89,6 +98,14 @@ const Step1Email = ({ onNextStep }: Step1EmailProps) => {
         }
       }, duration / 4);
     });
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
   };
 
   return (
@@ -117,6 +134,76 @@ const Step1Email = ({ onNextStep }: Step1EmailProps) => {
                       {...field} 
                       disabled={isLoading || isValidating}
                     />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Create a password" 
+                      className="pl-10" 
+                      {...field} 
+                      disabled={isLoading || isValidating}
+                    />
+                    <Button 
+                      type="button"
+                      variant="ghost" 
+                      size="sm" 
+                      className="absolute right-1 top-1 h-8 w-8 p-0"
+                      onClick={togglePasswordVisibility}
+                    >
+                      {showPassword ? 
+                        <EyeOff className="h-4 w-4 text-muted-foreground" /> : 
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      }
+                    </Button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirm Password</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirm your password" 
+                      className="pl-10" 
+                      {...field} 
+                      disabled={isLoading || isValidating}
+                    />
+                    <Button 
+                      type="button"
+                      variant="ghost" 
+                      size="sm" 
+                      className="absolute right-1 top-1 h-8 w-8 p-0"
+                      onClick={toggleConfirmPasswordVisibility}
+                    >
+                      {showConfirmPassword ? 
+                        <EyeOff className="h-4 w-4 text-muted-foreground" /> : 
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      }
+                    </Button>
                   </div>
                 </FormControl>
                 <FormMessage />

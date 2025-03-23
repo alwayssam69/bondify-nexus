@@ -36,10 +36,9 @@ const Onboarding = () => {
     checkSession();
   }, [navigate]);
   
-  const handleEmailStep = (userEmail: string) => {
+  const handleEmailStep = (userEmail: string, userPassword: string) => {
     setEmail(userEmail);
-    // Generate a random secure password
-    setPassword(generateSecurePassword());
+    setPassword(userPassword);
     setCurrentStep(1);
   };
   
@@ -126,15 +125,6 @@ const Onboarding = () => {
       toast.error(error.message || "Failed to create account. Please try again.");
       setIsCreatingAccount(false);
     }
-  };
-  
-  const generateSecurePassword = () => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
-    let password = "";
-    for (let i = 0; i < 16; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
   };
   
   const handleStepClick = (step: number) => {
