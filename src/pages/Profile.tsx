@@ -301,7 +301,7 @@ const Profile = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">None/Not Applicable</SelectItem>
+                          <SelectItem value="none">None/Not Applicable</SelectItem>
                           <SelectItem value="IIT Delhi">IIT Delhi</SelectItem>
                           <SelectItem value="IIT Bombay">IIT Bombay</SelectItem>
                           <SelectItem value="IIT Madras">IIT Madras</SelectItem>
@@ -333,7 +333,7 @@ const Profile = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">None/Not Applicable</SelectItem>
+                          <SelectItem value="none">None/Not Applicable</SelectItem>
                           <SelectItem value="1st Year">1st Year</SelectItem>
                           <SelectItem value="2nd Year">2nd Year</SelectItem>
                           <SelectItem value="3rd Year">3rd Year</SelectItem>

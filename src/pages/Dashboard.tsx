@@ -256,7 +256,7 @@ const Dashboard = () => {
                 <SelectValue placeholder="Select profession" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Professions</SelectItem>
+                <SelectItem value="all">All Professions</SelectItem>
                 {professions.map(profession => (
                   <SelectItem key={profession} value={profession.toLowerCase()}>
                     {profession}
@@ -273,7 +273,7 @@ const Dashboard = () => {
                 <SelectValue placeholder="Select skill" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Skills</SelectItem>
+                <SelectItem value="all">All Skills</SelectItem>
                 {commonSkills.map(skill => (
                   <SelectItem key={skill} value={skill.toLowerCase()}>
                     {skill}
