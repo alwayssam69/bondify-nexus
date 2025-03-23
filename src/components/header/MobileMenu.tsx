@@ -78,7 +78,7 @@ const MobileMenu = ({ isOpen, isLoggedIn, onClose }: MobileMenuProps) => {
         >
           <div className="h-full overflow-y-auto pb-20">
             <motion.div 
-              className="bg-gray-900 border border-gray-800 rounded-2xl shadow-lg p-6 max-w-md mx-auto"
+              className="bg-white rounded-2xl shadow-lg p-6 max-w-md mx-auto"
               variants={itemVariants}
             >
               <nav className="flex flex-col gap-4">
@@ -87,10 +87,10 @@ const MobileMenu = ({ isOpen, isLoggedIn, onClose }: MobileMenuProps) => {
                     <Link
                       to={link.path}
                       className={cn(
-                        "flex items-center text-base font-medium transition-all hover:text-white py-3 px-5 rounded-xl relative",
+                        "flex items-center text-base font-medium transition-all py-3 px-5 rounded-xl relative",
                         isActive(link.path)
                           ? "bg-blue-600 text-white"
-                          : "text-gray-200"
+                          : "text-gray-800 hover:bg-gray-100"
                       )}
                       onClick={onClose}
                     >
@@ -105,10 +105,10 @@ const MobileMenu = ({ isOpen, isLoggedIn, onClose }: MobileMenuProps) => {
                       <Link
                         to="/profile"
                         className={cn(
-                          "flex items-center text-base font-medium transition-all hover:text-white py-3 px-5 rounded-xl relative",
+                          "flex items-center text-base font-medium transition-all py-3 px-5 rounded-xl relative",
                           isActive("/profile") 
                             ? "bg-blue-600 text-white"
-                            : "text-gray-200"
+                            : "text-gray-800 hover:bg-gray-100"
                         )}
                         onClick={onClose}
                       >
@@ -118,7 +118,7 @@ const MobileMenu = ({ isOpen, isLoggedIn, onClose }: MobileMenuProps) => {
                     
                     <motion.div variants={itemVariants}>
                       <button
-                        className="flex items-center w-full text-left text-base font-medium transition-all hover:text-white py-3 px-5 rounded-xl relative text-gray-200 hover:bg-red-600"
+                        className="flex items-center w-full text-left text-base font-medium transition-all py-3 px-5 rounded-xl relative text-gray-800 hover:bg-red-100 hover:text-red-700"
                         onClick={handleLogout}
                       >
                         <span className="z-10 relative">Logout</span>
@@ -130,12 +130,12 @@ const MobileMenu = ({ isOpen, isLoggedIn, onClose }: MobileMenuProps) => {
                 {!isLoggedIn && (
                   <motion.div variants={itemVariants} className="mt-4 space-y-4">
                     <Link to="/login" onClick={onClose} className="block">
-                      <Button variant="outline" className="w-full bg-transparent border-gray-700 text-white hover:bg-gray-800 rounded-xl">
+                      <Button variant="outline" className="w-full border-gray-300 hover:bg-gray-100 text-gray-800 rounded-xl">
                         Sign In
                       </Button>
                     </Link>
                     <Link to="/register" onClick={onClose} className="block">
-                      <Button className="w-full bg-blue-600 hover:bg-blue-700 rounded-xl">
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
                         Get Started
                       </Button>
                     </Link>

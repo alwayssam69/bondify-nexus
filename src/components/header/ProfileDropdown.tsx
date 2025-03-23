@@ -50,26 +50,26 @@ const ProfileDropdown = () => {
           <span className="text-blue-600">{getInitial()}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-white">
-        <DropdownMenuLabel>My Account</DropdownMenuLabel>
-        <DropdownMenuItem className="text-sm text-muted-foreground">
+      <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-md">
+        <DropdownMenuLabel className="text-gray-800 font-medium">My Account</DropdownMenuLabel>
+        <DropdownMenuItem className="text-sm text-gray-600">
           {profile?.full_name || user?.email}
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => handleProfileClick("/profile")}>
+        <DropdownMenuSeparator className="bg-gray-200" />
+        <DropdownMenuItem onClick={() => handleProfileClick("/profile")} className="text-gray-800 hover:bg-gray-100">
           Profile
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleProfileClick("/dashboard")}>
+        <DropdownMenuItem onClick={() => handleProfileClick("/dashboard")} className="text-gray-800 hover:bg-gray-100">
           Dashboard
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleProfileClick("/matches")}>
+        <DropdownMenuItem onClick={() => handleProfileClick("/matches")} className="text-gray-800 hover:bg-gray-100">
           Matches
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleProfileClick("/chat")}>
+        <DropdownMenuItem onClick={() => handleProfileClick("/chat")} className="text-gray-800 hover:bg-gray-100">
           Messages
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut}>
+        <DropdownMenuSeparator className="bg-gray-200" />
+        <DropdownMenuItem onClick={handleSignOut} className="text-red-600 hover:bg-red-50">
           Logout
         </DropdownMenuItem>
       </DropdownMenuContent>
