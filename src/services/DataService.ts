@@ -7,30 +7,24 @@ import { ChatContact, ChatMessage, CityMatchData, RecentMatch } from "@/types/ch
  */
 export const fetchUserNotifications = async (userId: string) => {
   try {
-    // Query notifications table
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    // Since "notifications" table doesn't exist yet, we'll return mock data
+    // TODO: Create notifications table in Supabase
+    const mockNotifications = [
+      {
+        id: "1",
+        type: "match" as const,
+        message: "You matched with Sarah Johnson",
+        time: "2h ago"
+      },
+      {
+        id: "2",
+        type: "message" as const,
+        message: "New message from Alex Chen",
+        time: "4h ago"
+      }
+    ];
     
-    if (error) {
-      console.error("Error fetching notifications:", error);
-      return [];
-    }
-    
-    // If no data, return empty array
-    if (!data || data.length === 0) {
-      return [];
-    }
-    
-    // Transform to expected format
-    return data.map(item => ({
-      id: item.id,
-      type: item.type as 'match' | 'message' | 'view',
-      message: item.message,
-      time: formatTimeAgo(item.created_at)
-    }));
+    return mockNotifications;
   } catch (error) {
     console.error("Error in fetchUserNotifications:", error);
     return [];
@@ -47,13 +41,12 @@ export const fetchUserMessages = async (userId: string) => {
       .from('messages')
       .select(`
         id,
-        sender,
-        receiver,
+        sender_id,
+        recipient_id,
         content,
-        created_at,
-        profiles:sender_profile(full_name)
+        created_at
       `)
-      .or(`sender.eq.${userId},receiver.eq.${userId}`)
+      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
       .order('created_at', { ascending: false });
     
     if (error) {
@@ -66,14 +59,37 @@ export const fetchUserMessages = async (userId: string) => {
       return [];
     }
     
+    // Get unique contacts that the user has messaged with
+    const contactIds = new Set<string>();
+    data.forEach(msg => {
+      if (msg.sender_id === userId) {
+        contactIds.add(msg.recipient_id);
+      } else {
+        contactIds.add(msg.sender_id);
+      }
+    });
+    
+    // Fetch user profiles for these contacts
+    const { data: contactProfiles, error: profilesError } = await supabase
+      .from('user_profiles')
+      .select('id, full_name')
+      .in('id', Array.from(contactIds));
+    
+    if (profilesError) {
+      console.error("Error fetching contact profiles:", profilesError);
+      return [];
+    }
+    
     // Group by conversation and take the latest message
     const latestMessages = new Map();
     data.forEach(msg => {
-      const contactId = msg.sender === userId ? msg.receiver : msg.sender;
-      if (!latestMessages.has(contactId)) {
+      const contactId = msg.sender_id === userId ? msg.recipient_id : msg.sender_id;
+      const profile = contactProfiles?.find(p => p.id === contactId);
+      
+      if (!latestMessages.has(contactId) && profile) {
         latestMessages.set(contactId, {
           id: latestMessages.size + 1,
-          name: msg.profiles?.full_name || 'Unknown User',
+          name: profile.full_name || 'Unknown User',
           message: msg.content,
           time: formatTimeAgo(msg.created_at)
         });
@@ -161,7 +177,8 @@ export const fetchRecentMatches = async (limit = 6): Promise<CityMatchData[]> =>
       .select(`
         id,
         created_at,
-        user_profiles:matched_user_id(location)
+        matched_user_id,
+        user_id
       `)
       .eq('status', 'confirmed')
       .order('created_at', { ascending: false });
@@ -175,11 +192,27 @@ export const fetchRecentMatches = async (limit = 6): Promise<CityMatchData[]> =>
       return [];
     }
     
+    // Get location data for all users involved in matches
+    const allUserIds = data.flatMap(match => [match.user_id, match.matched_user_id]);
+    const uniqueUserIds = [...new Set(allUserIds)];
+    
+    const { data: userProfiles, error: profilesError } = await supabase
+      .from('user_profiles')
+      .select('id, location')
+      .in('id', uniqueUserIds);
+      
+    if (profilesError || !userProfiles) {
+      console.error("Error fetching user profiles:", profilesError);
+      return [];
+    }
+    
     // Group by city and count matches
     const cityMap = new Map<string, {count: number, lastMatched: string}>();
     
     data.forEach(match => {
-      const city = match.user_profiles?.location || 'Unknown';
+      const userProfile = userProfiles.find(p => p.id === match.matched_user_id);
+      const city = userProfile?.location || 'Unknown';
+      
       if (!cityMap.has(city)) {
         cityMap.set(city, {
           count: 1,
@@ -236,13 +269,13 @@ export const fetchChatContacts = async (userId: string): Promise<ChatContact[]> 
       .from('messages')
       .select(`
         id,
-        sender,
-        receiver,
+        sender_id,
+        recipient_id,
         content,
         created_at,
-        read
+        is_read
       `)
-      .or(`sender.eq.${userId},receiver.eq.${userId}`)
+      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
       .order('created_at', { ascending: false });
     
     if (messagesError) {
@@ -257,17 +290,17 @@ export const fetchChatContacts = async (userId: string): Promise<ChatContact[]> 
     // Get unique contacts that the user has messaged with
     const contactIds = new Set<string>();
     messages.forEach(msg => {
-      if (msg.sender === userId) {
-        contactIds.add(msg.receiver);
+      if (msg.sender_id === userId) {
+        contactIds.add(msg.recipient_id);
       } else {
-        contactIds.add(msg.sender);
+        contactIds.add(msg.sender_id);
       }
     });
     
     // Fetch user profiles for these contacts
     const { data: contactProfiles, error: profilesError } = await supabase
       .from('user_profiles')
-      .select('id, full_name, last_active, avatar_url')
+      .select('id, full_name, last_active, image_url')
       .in('id', Array.from(contactIds));
     
     if (profilesError) {
@@ -287,22 +320,22 @@ export const fetchChatContacts = async (userId: string): Promise<ChatContact[]> 
     ];
     
     contactIds.forEach(contactId => {
-      const profile = contactProfiles.find(p => p.id === contactId);
+      const profile = contactProfiles?.find(p => p.id === contactId);
       if (!profile) return;
       
       // Get last message for this contact
       const lastMessage = messages.find(msg => 
-        (msg.sender === contactId && msg.receiver === userId) || 
-        (msg.sender === userId && msg.receiver === contactId)
+        (msg.sender_id === contactId && msg.recipient_id === userId) || 
+        (msg.sender_id === userId && msg.recipient_id === contactId)
       );
       
       if (!lastMessage) return;
       
       // Count unread messages
       const unreadCount = messages.filter(msg => 
-        msg.sender === contactId && 
-        msg.receiver === userId && 
-        !msg.read
+        msg.sender_id === contactId && 
+        msg.recipient_id === userId && 
+        !msg.is_read
       ).length;
       
       // Determine if user is online (active in last 5 minutes)
@@ -318,7 +351,7 @@ export const fetchChatContacts = async (userId: string): Promise<ChatContact[]> 
         lastMessageTime: formatTimeAgo(lastMessage.created_at),
         unreadCount,
         online: isOnline,
-        avatar: profile.avatar_url || avatarColors[contacts.length % avatarColors.length],
+        avatar: profile.image_url || avatarColors[contacts.length % avatarColors.length],
         lastSeen: lastActive,
         unread: unreadCount
       });
@@ -344,7 +377,7 @@ export const fetchChatMessages = async (userId: string, contactId: string): Prom
     const { data, error } = await supabase
       .from('messages')
       .select('*')
-      .or(`and(sender.eq.${userId},receiver.eq.${contactId}),and(sender.eq.${contactId},receiver.eq.${userId})`)
+      .or(`and(sender_id.eq.${userId},recipient_id.eq.${contactId}),and(sender_id.eq.${contactId},recipient_id.eq.${userId})`)
       .order('created_at', { ascending: true });
     
     if (error) {
@@ -359,12 +392,12 @@ export const fetchChatMessages = async (userId: string, contactId: string): Prom
     // Convert to ChatMessage format
     return data.map(msg => ({
       id: msg.id.toString(),
-      sender: msg.sender,
-      receiver: msg.receiver,
+      sender: msg.sender_id,
+      receiver: msg.recipient_id,
       content: msg.content,
       text: msg.content, // For compatibility
       timestamp: new Date(msg.created_at),
-      read: msg.read
+      read: msg.is_read
     }));
   } catch (error) {
     console.error("Error in fetchChatMessages:", error);
@@ -381,10 +414,10 @@ export const sendMessage = async (senderId: string, receiverId: string, content:
       .from('messages')
       .insert([
         {
-          sender: senderId,
-          receiver: receiverId,
+          sender_id: senderId,
+          recipient_id: receiverId,
           content,
-          read: false
+          is_read: false
         }
       ])
       .select()
@@ -397,12 +430,12 @@ export const sendMessage = async (senderId: string, receiverId: string, content:
     
     return {
       id: data.id.toString(),
-      sender: data.sender,
-      receiver: data.receiver,
+      sender: data.sender_id,
+      receiver: data.recipient_id,
       content: data.content,
       text: data.content, // For compatibility
       timestamp: new Date(data.created_at),
-      read: data.read
+      read: data.is_read
     };
   } catch (error) {
     console.error("Error in sendMessage:", error);

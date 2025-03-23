@@ -13,7 +13,7 @@ import { Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchRecentMatchesForUser } from "@/services/DataService";
 import { RecentMatch } from "@/types/chat";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 const RecentMatchesDropdown = () => {
   const navigate = useNavigate();

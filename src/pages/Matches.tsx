@@ -33,13 +33,11 @@ const Matches = () => {
   const [userCoordinates, setUserCoordinates] = useState<{lat: number, lng: number} | null>(null);
   const [radiusInKm, setRadiusInKm] = useState<number>(50);
   
-  // Available industries for filtering
   const industries = [
     "technology", "finance", "healthcare", "education", 
     "marketing", "design", "legal", "business", "engineering"
   ];
   
-  // Experience levels for filtering
   const experienceLevels = [
     { value: "any", label: "Any Level" },
     { value: "beginner", label: "Beginner" },
@@ -56,14 +54,12 @@ const Matches = () => {
         let matchResults;
         
         if (locationEnabled && userCoordinates) {
-          // Get matches by proximity if location is enabled
           matchResults = await getProximityMatches(
             user.id,
             radiusInKm,
-            50 // Limit
+            50
           );
         } else {
-          // Otherwise get regular matches
           matchResults = await getMatchRecommendations(user.id, 50);
         }
         
@@ -76,17 +72,14 @@ const Matches = () => {
       }
     };
 
-    // Load matches when user logs in or filters change
     if (user) {
       loadMatches();
       
-      // Set up real-time listener for new matches
       const channel = supabase
         .channel('public:user_profiles')
         .on('postgres_changes', 
           { event: 'INSERT', schema: 'public', table: 'user_profiles' }, 
           () => {
-            // Reload matches when a new user is created
             loadMatches();
           }
         )
@@ -98,7 +91,6 @@ const Matches = () => {
     }
   }, [user, locationEnabled, userCoordinates, radiusInKm]);
   
-  // Load confirmed matches when tab changes
   useEffect(() => {
     const loadConfirmedMatches = async () => {
       if (!user || activeTab !== "matches") return;
@@ -117,14 +109,12 @@ const Matches = () => {
     loadConfirmedMatches();
   }, [user, activeTab]);
   
-  // Load saved profiles when tab changes
   useEffect(() => {
     const loadSavedProfiles = async () => {
       if (!user || activeTab !== "saved") return;
       
       setIsLoadingSaved(true);
       try {
-        // Get saved profile IDs
         const savedIds = await getSavedProfiles(user.id);
         
         if (savedIds.length === 0) {
@@ -132,7 +122,6 @@ const Matches = () => {
           return;
         }
         
-        // Get full profiles for saved IDs
         const { data, error } = await supabase
           .from('user_profiles')
           .select('*')
@@ -143,12 +132,10 @@ const Matches = () => {
           return;
         }
         
-        // Transform to UserProfile format
         const savedProfilesData = data.map(profile => ({
           id: profile.id,
-          name: profile.full_name,
+          name: profile.full_name || '',
           age: estimateAgeFromExperienceLevel(profile.experience_level),
-          gender: profile.gender || "unspecified",
           location: profile.location || "",
           interests: profile.interests || [],
           bio: profile.bio || "",
@@ -174,7 +161,6 @@ const Matches = () => {
     loadSavedProfiles();
   }, [user, activeTab]);
   
-  // Request user location
   const requestLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -197,7 +183,6 @@ const Matches = () => {
     }
   };
   
-  // Helper function to estimate age based on experience level
   const estimateAgeFromExperienceLevel = (experienceLevel: string | null): number => {
     switch (experienceLevel) {
       case 'beginner':
@@ -211,11 +196,7 @@ const Matches = () => {
     }
   };
   
-  // Handle match actions (like, pass, save)
   const handleMatchAction = (profileId: string, action: "like" | "pass" | "save") => {
-    // This would be handled by the MatchCardConnectable component
-    // which would call the appropriate API
-    
     if (action === "like") {
       toast.success("You liked this profile!");
     } else if (action === "pass") {
@@ -224,30 +205,24 @@ const Matches = () => {
       toast.success("Profile saved for later");
     }
     
-    // Remove the profile from the current list
     setMatches(prev => prev.filter(p => p.id !== profileId));
   };
   
-  // Filter matches based on search and filters
   const filteredMatches = matches.filter(profile => {
-    // Search term filter
     if (searchTerm && !profile.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
         !profile.industry?.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
     }
     
-    // Industry filter
     if (selectedIndustries.length > 0 && 
         !selectedIndustries.includes(profile.industry?.toLowerCase() || '')) {
       return false;
     }
     
-    // Experience level filter
     if (experienceLevel !== "any" && profile.experienceLevel !== experienceLevel) {
       return false;
     }
     
-    // Location filter
     if (locationFilter && !profile.location.toLowerCase().includes(locationFilter.toLowerCase())) {
       return false;
     }
@@ -255,7 +230,6 @@ const Matches = () => {
     return true;
   });
   
-  // Toggle industry selection
   const toggleIndustry = (industry: string) => {
     if (selectedIndustries.includes(industry)) {
       setSelectedIndustries(prev => prev.filter(i => i !== industry));
@@ -434,7 +408,9 @@ const Matches = () => {
                 <MatchCardConnectable
                   key={profile.id}
                   profile={profile}
-                  onAction={handleMatchAction}
+                  onLike={() => handleMatchAction(profile.id, "like")}
+                  onPass={() => handleMatchAction(profile.id, "pass")}
+                  onSave={() => handleMatchAction(profile.id, "save")}
                 />
               ))}
             </div>
