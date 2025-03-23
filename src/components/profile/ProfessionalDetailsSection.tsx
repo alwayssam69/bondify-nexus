@@ -35,7 +35,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
                   // Reset skills when industry changes to avoid invalid selections
                   form.setValue("skills", []);
                 }} 
-                value={field.value}
+                value={field.value || ""}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -61,7 +61,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
           render={({ field }) => (
             <FormItem>
               <FormLabel>User Type</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={field.onChange} value={field.value || ""}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select user type" />
@@ -90,7 +90,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
         render={({ field }) => (
           <FormItem>
             <FormLabel>Experience Level</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
+            <Select onValueChange={field.onChange} value={field.value || ""}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select experience level" />
@@ -113,13 +113,16 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
         control={form.control}
         name="skills"
         render={({ field }) => (
-          <DynamicSkillSelect
-            industry={selectedIndustry}
-            label="Skills"
-            value={field.value}
-            onChange={field.onChange}
-            placeholder="Select skills relevant to your industry"
-          />
+          <FormItem>
+            <FormLabel>Skills</FormLabel>
+            <DynamicSkillSelect
+              industry={selectedIndustry}
+              value={field.value || []}
+              onChange={field.onChange}
+              placeholder="Select skills relevant to your industry"
+            />
+            <FormMessage />
+          </FormItem>
         )}
       />
     </>

@@ -1,6 +1,6 @@
 
 import React from "react";
-import { FormField } from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { UseFormReturn } from "react-hook-form";
 import MultiInterestSelect from "@/components/form/MultiInterestSelect";
 import { ProfileFormValues } from "./ProfileFormSchema";
@@ -16,12 +16,15 @@ const InterestsSection: React.FC<InterestsSectionProps> = ({ form }) => {
         control={form.control}
         name="interests"
         render={({ field }) => (
-          <MultiInterestSelect
-            label="Personal Interests"
-            value={field.value || []}
-            onChange={field.onChange}
-            placeholder="Select your personal interests"
-          />
+          <FormItem>
+            <FormLabel>Personal Interests</FormLabel>
+            <MultiInterestSelect
+              value={field.value || []}
+              onChange={field.onChange}
+              placeholder="Select your personal interests"
+            />
+            <FormMessage />
+          </FormItem>
         )}
       />
       
@@ -29,12 +32,15 @@ const InterestsSection: React.FC<InterestsSectionProps> = ({ form }) => {
         control={form.control}
         name="projectInterests"
         render={({ field }) => (
-          <MultiInterestSelect
-            label="Project Interests"
-            value={field.value || []}
-            onChange={field.onChange}
-            placeholder="Select your project interests"
-          />
+          <FormItem>
+            <FormLabel>Project Interests</FormLabel>
+            <MultiInterestSelect
+              value={field.value || []}
+              onChange={field.onChange}
+              placeholder="Select your project interests"
+            />
+            <FormMessage />
+          </FormItem>
         )}
       />
     </>
