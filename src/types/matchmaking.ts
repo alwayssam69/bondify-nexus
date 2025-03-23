@@ -1,21 +1,22 @@
 
 export interface MatchmakingFilters {
+  helpType: 'need' | 'offer';
   industry: string;
   skills: string[];
-  distance?: number;
+  relationshipGoal: string;
   useLocation: boolean;
-  helpType: "need" | "offer";
-  latitude?: number;
-  longitude?: number;
+  distance?: number;
 }
 
-export interface RecentMatch {
+export interface MatchmakingResult {
   id: string;
   name: string;
-  industry: string;
-  skills: string[];
+  headline?: string;
+  industry?: string;
+  skills?: string[];
+  location?: string;
   imageUrl?: string;
-  matchDate: Date;
-  isAccepted: boolean;
-  hasRead: boolean;
+  matchScore?: number;
+  bio?: string;
+  distance?: number;
 }

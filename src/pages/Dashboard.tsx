@@ -10,7 +10,11 @@ import { UserProfile } from "@/lib/matchmaking";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { getMatchRecommendations, getProximityMatches, updateUserCoordinates } from "@/services/MatchmakingAPI";
-import { Loader2, MapPin, Filter, Users, Sparkles, RefreshCw } from "lucide-react";
+import { 
+  Loader2, MapPin, Filter, Users, Sparkles, 
+  RefreshCw, BarChart3, MessageSquare, Activity,
+  Eye, LightbulbIcon, TrendingUp, User, Mail, Bell
+} from "lucide-react";
 import { toast } from "sonner";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import {
@@ -23,6 +27,20 @@ import {
 import {
   Slider
 } from "@/components/ui/slider";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import EngagementStats from "@/components/dashboard/EngagementStats";
+import MatchQualityChart from "@/components/dashboard/MatchQualityChart";
+import NearbyProfessionalsMap from "@/components/dashboard/NearbyProfessionalsMap";
+import ProfileCompletionCard from "@/components/dashboard/ProfileCompletionCard";
+import TrendingSkillsCard from "@/components/dashboard/TrendingSkillsCard";
+import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
+import { 
+  ChartContainer, 
+  ChartTooltip, 
+  ChartTooltipContent 
+} from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
 const Dashboard = () => {
   const { user, profile } = useAuth();
@@ -34,6 +52,9 @@ const Dashboard = () => {
   const [radius, setRadius] = useState(50);
   const [professionFilter, setProfessionFilter] = useState<string>("");
   const [skillFilter, setSkillFilter] = useState<string>("");
+  const [locationEnabled, setLocationEnabled] = useState(false);
+  const [profileCompletion, setProfileCompletion] = useState(65);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   
   // Use geolocation with error toasts enabled
   const geolocation = useGeolocation({ 
@@ -42,15 +63,37 @@ const Dashboard = () => {
     enableHighAccuracy: true
   });
 
+  // Mock engagement data - in a real app this would come from the API
+  const engagementData = {
+    activeMatches: 8,
+    connectionsTotal: 24,
+    ongoingChats: 3,
+    profileViews: 15,
+    messagesSent: 36,
+    messagesReceived: 42,
+    responseRate: 92,
+  };
+
+  // Mock activity data for the charts
+  const activityData = [
+    { day: 'Mon', matches: 2, messages: 5, views: 3 },
+    { day: 'Tue', matches: 1, messages: 3, views: 2 },
+    { day: 'Wed', matches: 3, messages: 7, views: 5 },
+    { day: 'Thu', matches: 2, messages: 6, views: 4 },
+    { day: 'Fri', matches: 5, messages: 10, views: 6 },
+    { day: 'Sat', matches: 4, messages: 8, views: 3 },
+    { day: 'Sun', matches: 2, messages: 4, views: 2 },
+  ];
+
   useEffect(() => {
     // Instead of waiting for geolocation, load what we can immediately
     loadMatchData();
     
     // If geolocation becomes available, update user coordinates
-    if (geolocation.latitude && geolocation.longitude && !geolocation.error) {
+    if (locationEnabled && geolocation.latitude && geolocation.longitude && !geolocation.error) {
       updateUserLocationCoordinates(geolocation.latitude, geolocation.longitude);
     }
-  }, [user, geolocation.latitude, geolocation.longitude]);
+  }, [user, geolocation.latitude, geolocation.longitude, locationEnabled]);
 
   const loadMatchData = async () => {
     if (!user?.id) return;
@@ -60,7 +103,7 @@ const Dashboard = () => {
       // Use Promise.allSettled to load both data types in parallel
       const results = await Promise.allSettled([
         getMatchRecommendations(user.id, 10),
-        geolocation.latitude && geolocation.longitude 
+        locationEnabled && geolocation.latitude && geolocation.longitude 
           ? getProximityMatches(user.id, radius, 10) 
           : Promise.resolve([])
       ]);
@@ -144,6 +187,11 @@ const Dashboard = () => {
     toast.success("Connection request sent!");
   };
 
+  const handleStartChat = (id: string) => {
+    toast.success("Opening chat with user...");
+    // Navigate to chat component with selected user
+  };
+
   const handleRefreshMatches = () => {
     loadMatchData();
     toast.info("Refreshing your matches...");
@@ -161,6 +209,14 @@ const Dashboard = () => {
       } catch (error) {
         console.error("Error updating matches for new radius:", error);
       }
+    }
+  };
+
+  const handleToggleLocation = (checked: boolean) => {
+    setLocationEnabled(checked);
+    
+    if (checked) {
+      handleUpdateLocation();
     }
   };
 
@@ -219,195 +275,342 @@ const Dashboard = () => {
     "Finance"
   ];
 
+  const newMatchesToday = recommendedMatches.length ? Math.min(recommendedMatches.length, 5) : 0;
+
   return (
     <Layout>
-      <div className="container py-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Professional Network</h1>
-            <p className="text-muted-foreground mt-1">
-              Find and connect with professionals that match your networking goals
-            </p>
-          </div>
-          <Button 
-            onClick={handleRefreshMatches} 
-            className="mt-4 md:mt-0"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Refreshing...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Refresh Matches
-              </>
-            )}
-          </Button>
-        </div>
+      <div className="container py-6">
+        <DashboardHeader 
+          user={user} 
+          newMatchesCount={newMatchesToday}
+          onRefresh={handleRefreshMatches}
+          isLoading={isLoading}
+        />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="flex flex-col space-y-2">
-            <label className="text-sm font-medium">Filter by Profession</label>
-            <Select onValueChange={setProfessionFilter} value={professionFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select profession" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Professions</SelectItem>
-                {professions.map(profession => (
-                  <SelectItem key={profession} value={profession.toLowerCase()}>
-                    {profession}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="grid grid-cols-12 gap-6 mt-6">
+          {/* Profile Completion Card - Left Column */}
+          <div className="col-span-12 lg:col-span-4">
+            <ProfileCompletionCard 
+              completion={profileCompletion}
+              suggestedActions={[
+                "Add 3 more professional skills",
+                "Complete your bio section",
+                "Add your previous work experience"
+              ]}
+            />
+            
+            <EngagementStats 
+              stats={engagementData}
+              className="mt-6"
+            />
+            
+            <TrendingSkillsCard 
+              industry={profile?.industry || "Technology"}
+              className="mt-6"
+            />
           </div>
 
-          <div className="flex flex-col space-y-2">
-            <label className="text-sm font-medium">Filter by Skill</label>
-            <Select onValueChange={setSkillFilter} value={skillFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select skill" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Skills</SelectItem>
-                {commonSkills.map(skill => (
-                  <SelectItem key={skill} value={skill.toLowerCase()}>
-                    {skill}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center justify-end">
-            <Button 
-              variant="outline" 
-              onClick={handleUpdateLocation}
-              className="w-full md:w-auto"
-            >
-              <MapPin className="mr-2 h-4 w-4" />
-              Update Location
-            </Button>
-          </div>
-        </div>
-
-        <Tabs 
-          defaultValue="recommended" 
-          value={activeTab} 
-          onValueChange={setActiveTab}
-          className="w-full"
-        >
-          <TabsList className="grid grid-cols-2 mb-6">
-            <TabsTrigger value="recommended" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              <span>Recommended</span>
-            </TabsTrigger>
-            <TabsTrigger value="nearby" className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
-              <span>Nearby</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="recommended" className="space-y-6">
-            {isLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : filteredRecommendedMatches.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredRecommendedMatches.map((profile, index) => (
-                  <MatchCardConnectable
-                    key={profile.id}
-                    profile={profile}
-                    delay={index * 100}
-                    onViewProfile={() => handleViewProfile(profile.id)}
-                    onConnect={() => handleConnectRequest(profile.id)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <h3 className="text-xl font-semibold mb-2">No matches found</h3>
-                <p className="text-muted-foreground mb-4">
-                  {professionFilter || skillFilter ? 
-                    "Try adjusting your filters to see more results" : 
-                    "Complete your profile to help us find better matches for you"}
-                </p>
-                <Button>Update Profile</Button>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="nearby" className="space-y-6">
-            {isLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="flex flex-col space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">
-                        Showing professionals within {radius} km
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="px-2">
-                    <Slider
-                      defaultValue={[radius]}
-                      max={100}
-                      min={5}
-                      step={5}
-                      onValueChange={handleRadiusChange}
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>5 km</span>
-                      <span>50 km</span>
-                      <span>100 km</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {filteredNearbyMatches.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredNearbyMatches.map((profile, index) => (
-                      <MatchCardConnectable
-                        key={profile.id}
-                        profile={profile}
-                        delay={index * 100}
-                        onViewProfile={() => handleViewProfile(profile.id)}
-                        onConnect={() => handleConnectRequest(profile.id)}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <h3 className="text-xl font-semibold mb-2">No nearby professionals found</h3>
-                    <p className="text-muted-foreground mb-4">
-                      {!geolocation.latitude || !geolocation.longitude ? 
-                        "We need your location to find nearby matches" : 
-                        "Try increasing your search radius or check back later"}
-                    </p>
+          {/* Main Content - Right Column */}
+          <div className="col-span-12 lg:col-span-8 space-y-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-xl font-semibold">Quality Matches</CardTitle>
+                  <div className="flex items-center gap-2">
                     <Button 
                       variant="outline" 
-                      onClick={handleUpdateLocation}
+                      size="sm"
+                      onClick={() => setShowAnalytics(!showAnalytics)}
                     >
-                      <MapPin className="mr-2 h-4 w-4" />
-                      Update Location
+                      {showAnalytics ? <Users className="h-4 w-4 mr-1" /> : <BarChart3 className="h-4 w-4 mr-1" />}
+                      {showAnalytics ? "Show Matches" : "Analytics"}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleRefreshMatches}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {showAnalytics ? (
+                  <div className="space-y-6">
+                    <h3 className="text-sm font-medium text-muted-foreground">
+                      Networking Activity (Last 7 Days)
+                    </h3>
+                    <div className="h-[250px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={activityData}>
+                          <XAxis dataKey="day" />
+                          <YAxis />
+                          <Tooltip content={({active, payload, label}) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="rounded-lg border bg-background p-2 shadow-md">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="flex items-center">
+                                      <div className="h-2 w-2 rounded bg-blue-500" />
+                                      <span className="ml-1 text-xs">{`Matches: ${payload[0].value}`}</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                      <div className="h-2 w-2 rounded bg-green-500" />
+                                      <span className="ml-1 text-xs">{`Messages: ${payload[1].value}`}</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                      <div className="h-2 w-2 rounded bg-amber-500" />
+                                      <span className="ml-1 text-xs">{`Views: ${payload[2].value}`}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }} />
+                          <Legend />
+                          <Bar dataKey="matches" fill="#3b82f6" name="Matches" />
+                          <Bar dataKey="messages" fill="#22c55e" name="Messages" />
+                          <Bar dataKey="views" fill="#f59e0b" name="Profile Views" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <MatchQualityChart />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 mb-6">
+                      <div className="w-full md:w-1/2">
+                        <label className="text-sm font-medium mb-1 block">Filter by Profession</label>
+                        <Select onValueChange={setProfessionFilter} value={professionFilter}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="All Professions" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">All Professions</SelectItem>
+                            {professions.map(profession => (
+                              <SelectItem key={profession} value={profession.toLowerCase()}>
+                                {profession}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="w-full md:w-1/2">
+                        <label className="text-sm font-medium mb-1 block">Filter by Skill</label>
+                        <Select onValueChange={setSkillFilter} value={skillFilter}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="All Skills" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">All Skills</SelectItem>
+                            {commonSkills.map(skill => (
+                              <SelectItem key={skill} value={skill.toLowerCase()}>
+                                {skill}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <Tabs 
+                      defaultValue="recommended" 
+                      value={activeTab} 
+                      onValueChange={setActiveTab}
+                      className="w-full"
+                    >
+                      <TabsList className="w-full grid grid-cols-2 mb-6">
+                        <TabsTrigger value="recommended" className="flex items-center gap-2">
+                          <Sparkles className="h-4 w-4" />
+                          <span>AI Recommendations</span>
+                          {newMatchesToday > 0 && (
+                            <span className="ml-auto inline-flex items-center justify-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                              {newMatchesToday} new
+                            </span>
+                          )}
+                        </TabsTrigger>
+                        <TabsTrigger value="nearby" className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4" />
+                          <span>Proximity Matches</span>
+                          {filteredNearbyMatches.length > 0 && (
+                            <span className="ml-auto inline-flex items-center justify-center rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-medium text-green-500">
+                              {filteredNearbyMatches.length}
+                            </span>
+                          )}
+                        </TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="recommended" className="space-y-6">
+                        {isLoading ? (
+                          <div className="flex justify-center py-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                          </div>
+                        ) : filteredRecommendedMatches.length > 0 ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+                            {filteredRecommendedMatches.map((profile, index) => (
+                              <MatchCardConnectable
+                                key={profile.id}
+                                profile={profile}
+                                delay={index * 100}
+                                onViewProfile={() => handleViewProfile(profile.id)}
+                                onConnect={() => handleConnectRequest(profile.id)}
+                                onStartChat={() => handleStartChat(profile.id)}
+                                showChatButton={true}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-12">
+                            <h3 className="text-xl font-semibold mb-2">No matches found</h3>
+                            <p className="text-muted-foreground mb-4">
+                              {professionFilter || skillFilter ? 
+                                "Try adjusting your filters to see more results" : 
+                                "Complete your profile to help us find better matches for you"}
+                            </p>
+                            <Button>Update Profile</Button>
+                          </div>
+                        )}
+                      </TabsContent>
+
+                      <TabsContent value="nearby" className="space-y-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Switch 
+                              checked={locationEnabled} 
+                              onCheckedChange={handleToggleLocation} 
+                              id="location-toggle"
+                            />
+                            <label 
+                              htmlFor="location-toggle"
+                              className="text-sm font-medium cursor-pointer"
+                            >
+                              Enable Location Sharing
+                            </label>
+                          </div>
+                          {locationEnabled && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={handleUpdateLocation}
+                            >
+                              <MapPin className="mr-2 h-4 w-4" />
+                              Update Location
+                            </Button>
+                          )}
+                        </div>
+                        
+                        {!locationEnabled ? (
+                          <div className="text-center py-12 border border-dashed rounded-lg">
+                            <MapPin className="mx-auto h-12 w-12 text-muted-foreground opacity-50 mb-4" />
+                            <h3 className="text-xl font-semibold mb-2">Location sharing is disabled</h3>
+                            <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                              Enable location sharing to discover professionals in your area. Your location is only used to find nearby connections.
+                            </p>
+                            <Button onClick={() => setLocationEnabled(true)}>Enable Location</Button>
+                          </div>
+                        ) : isLoading ? (
+                          <div className="flex justify-center py-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                          </div>
+                        ) : (
+                          <div className="space-y-6">
+                            <div className="flex flex-col space-y-4">
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="h-4 w-4 text-primary" />
+                                  <span className="text-sm font-medium">
+                                    Showing professionals within {radius} km
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <div className="px-2">
+                                <Slider
+                                  defaultValue={[radius]}
+                                  max={100}
+                                  min={5}
+                                  step={5}
+                                  onValueChange={handleRadiusChange}
+                                />
+                                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                                  <span>5 km</span>
+                                  <span>50 km</span>
+                                  <span>100 km</span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Map View of Nearby Professionals */}
+                            <div className="bg-muted/20 rounded-lg h-[300px] relative overflow-hidden">
+                              {geolocation.latitude && geolocation.longitude ? (
+                                <NearbyProfessionalsMap 
+                                  userLocation={{
+                                    lat: geolocation.latitude,
+                                    lng: geolocation.longitude
+                                  }}
+                                  professionals={filteredNearbyMatches.map(match => ({
+                                    id: match.id,
+                                    name: match.name,
+                                    position: match.latitude && match.longitude 
+                                      ? { lat: match.latitude, lng: match.longitude }
+                                      : undefined,
+                                    userType: match.userType || '',
+                                    industry: match.industry || '',
+                                    matchScore: match.matchScore || 0
+                                  }))}
+                                  onViewProfile={handleViewProfile}
+                                />
+                              ) : (
+                                <div className="flex items-center justify-center h-full">
+                                  <div className="text-center p-6">
+                                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+                                    <p>Getting your location...</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {filteredNearbyMatches.length > 0 ? (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                                {filteredNearbyMatches.map((profile, index) => (
+                                  <MatchCardConnectable
+                                    key={profile.id}
+                                    profile={profile}
+                                    delay={index * 100}
+                                    onViewProfile={() => handleViewProfile(profile.id)}
+                                    onConnect={() => handleConnectRequest(profile.id)}
+                                    onStartChat={() => handleStartChat(profile.id)}
+                                    showChatButton={true}
+                                    showDistance={true}
+                                  />
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-center py-8 border border-dashed rounded-lg mt-4">
+                                <h3 className="text-lg font-semibold mb-2">No nearby professionals found</h3>
+                                <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                                  Try increasing your search radius or check back later as more professionals join in your area
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </TabsContent>
+                    </Tabs>
+                  </>
                 )}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </Layout>
   );
