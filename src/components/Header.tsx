@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -49,16 +50,16 @@ const Header = () => {
     <>
       <header
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-4 px-6 md:px-10",
-          scrolled ? "bg-white/80 backdrop-blur-lg shadow-sm" : "bg-transparent"
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-4 px-4 md:px-10",
+          scrolled ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg shadow-sm" : "bg-transparent"
         )}
       >
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="max-w-7xl mx-auto flex items-center justify-between h-12">
           <div className="flex items-center gap-4">
             <HeaderLogo />
             
             {isLoggedIn && (
-              <div className="hidden md:flex items-center gap-4 ml-6">
+              <div className="hidden md:flex items-center gap-3">
                 {/* Search Button */}
                 <button 
                   className="h-9 w-9 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
@@ -87,8 +88,6 @@ const Header = () => {
               </div>
             )}
           </div>
-
-          <Navigation isLoggedIn={isLoggedIn} />
 
           <div className="hidden md:flex items-center gap-4">
             {isLoggedIn ? (
@@ -154,6 +153,8 @@ const Header = () => {
           onClose={() => setMobileMenuOpen(false)} 
         />
       </header>
+
+      <Navigation isLoggedIn={isLoggedIn} />
 
       {/* Video Call Component */}
       {activeVideoCall && (

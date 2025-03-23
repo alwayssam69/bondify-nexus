@@ -52,13 +52,13 @@ const Navigation = ({ isLoggedIn }: NavigationProps) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1 }}
       className={cn(
-        "fixed z-50 left-1/2 transform -translate-x-1/2",
-        isMobile ? "bottom-6" : "top-6"
+        "fixed z-40 left-1/2 transform -translate-x-1/2",
+        isMobile ? "bottom-6" : "top-24"
       )}
     >
       <motion.div 
         className={cn(
-          "bg-gray-900/70 backdrop-blur-xl rounded-full py-2.5 px-3 md:px-5 border border-gray-800/50 shadow-lg",
+          "bg-gray-900/80 backdrop-blur-xl rounded-full py-2.5 px-3 md:px-5 border border-gray-800/50 shadow-lg",
           "hover:shadow-blue-500/20 transition-all duration-300",
           "flex items-center justify-center"
         )}
@@ -73,7 +73,7 @@ const Navigation = ({ isLoggedIn }: NavigationProps) => {
           }
         }}
       >
-        <div className="flex items-center gap-1 md:gap-2 relative overflow-hidden">
+        <div className="flex items-center gap-1 md:gap-2 overflow-x-auto relative max-w-[calc(100vw-40px)] md:max-w-none">
           {/* Glow effect behind the active pill */}
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 to-indigo-500/30 blur-xl opacity-70 rounded-full"></div>
           
@@ -83,7 +83,7 @@ const Navigation = ({ isLoggedIn }: NavigationProps) => {
               to={link.path}
               onClick={(e) => handleNavClick(link.path, e)}
               className={cn(
-                "relative px-2 md:px-4 py-2 text-xs md:text-sm font-medium transition-colors rounded-full hover:text-white group",
+                "relative whitespace-nowrap px-2 md:px-4 py-2 text-xs md:text-sm font-medium transition-colors rounded-full hover:text-white group",
                 isActive(link.path)
                   ? "text-white"
                   : "text-gray-400"
