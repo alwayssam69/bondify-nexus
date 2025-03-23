@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserProfile } from "@/lib/matchmaking";
 import { getMatchRecommendations, getProximityMatches, getConfirmedMatches, getSavedProfiles } from "@/services/MatchmakingService";
-import MatchCardConnectable from "@/components/MatchCardConnectable";
+import MatchCardConnectable from "@/components/match-card/MatchCardConnectable";
 import MatchCardSimple from "@/components/MatchCardSimple";
 import { supabase } from "@/integrations/supabase/client";
 
