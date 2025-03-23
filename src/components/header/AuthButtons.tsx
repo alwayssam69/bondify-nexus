@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { LogOut, User } from "lucide-react";
@@ -8,12 +8,14 @@ import { toast } from "sonner";
 
 const AuthButtons = () => {
   const { user, signOut } = useAuth();
-  const navigate = useNavigate();
   
   const handleSignOut = async () => {
     try {
+      console.log("Signing out from AuthButtons...");
       await signOut();
-      navigate('/', { replace: true });
+      console.log("Sign out successful, redirecting to home page");
+      // Force a full page navigation instead of React Router navigation
+      window.location.href = '/';
       toast.success("You have been signed out successfully");
     } catch (error) {
       console.error("Error signing out:", error);

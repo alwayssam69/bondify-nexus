@@ -34,8 +34,11 @@ const ProfileDropdown = () => {
   
   const handleSignOut = async () => {
     try {
+      console.log("Signing out...");
       await signOut();
-      navigate('/', { replace: true });
+      console.log("Sign out successful, navigating to home page");
+      // Ensure we force a full navigation
+      window.location.href = '/';
       toast.success("You have been signed out successfully");
     } catch (error) {
       console.error("Error signing out:", error);
