@@ -150,8 +150,9 @@ export const useNotifications = (limit = 5, offset = 0) => {
         .subscribe((status) => {
           console.log('Realtime subscription status:', status);
           
-          // Fix: Safe string comparison without relying on enum
-          if (status === 'SUBSCRIPTION_ERROR') {
+          // Fix: using the correct approach to check for error status
+          // Comparing status as a string literal type
+          if (typeof status === 'string' && status === 'SUBSCRIPTION_ERROR') {
             console.warn('Could not set up realtime subscription, falling back to sample data');
             fallbackToSampleData();
           }
