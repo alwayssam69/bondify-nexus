@@ -8,6 +8,7 @@ import HowItWorks from "@/components/HowItWorks";
 import DynamicMatches from "@/components/DynamicMatches";
 import WhatWeOffer from "@/components/WhatWeOffer";
 import Testimonials from "@/components/Testimonials";
+import FindMatchButton from "@/components/matchmaking/FindMatchButton";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ const Index = () => {
           onGetStarted={() => navigate("/register")} 
           onSignIn={() => navigate("/login")} 
           onDashboard={() => navigate("/dashboard")} 
+          actionButton={<FindMatchButton />}
         />
         <WhatWeOffer />
         <HowItWorks />

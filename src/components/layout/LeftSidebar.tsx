@@ -42,9 +42,9 @@ const LeftSidebar = () => {
     try {
       console.log("Signing out from LeftSidebar...");
       await signOut();
-      console.log("Sign out successful, redirecting to home page");
-      // Force a full page navigation instead of React Router navigation
-      window.location.href = '/';
+      console.log("Sign out successful, redirecting to login page");
+      // Force a full page navigation to login page
+      window.location.href = '/login';
       toast({
         title: "Logged out successfully",
         description: "You have been logged out of your account",

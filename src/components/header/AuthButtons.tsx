@@ -13,9 +13,9 @@ const AuthButtons = () => {
     try {
       console.log("Signing out from AuthButtons...");
       await signOut();
-      console.log("Sign out successful, redirecting to home page");
-      // Force a full page navigation instead of React Router navigation
-      window.location.href = '/';
+      console.log("Sign out successful, redirecting to login page");
+      // Force a full page navigation to login page
+      window.location.href = '/login';
       toast.success("You have been signed out successfully");
     } catch (error) {
       console.error("Error signing out:", error);

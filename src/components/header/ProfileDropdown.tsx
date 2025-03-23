@@ -1,6 +1,5 @@
 
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,7 +13,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const ProfileDropdown = () => {
-  const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
   
   // Get first letter of name or email for avatar
@@ -29,16 +27,16 @@ const ProfileDropdown = () => {
   
   const handleProfileClick = (path: string) => {
     // Force a full navigation with replace: true
-    navigate(path, { replace: true });
+    window.location.href = path;
   };
   
   const handleSignOut = async () => {
     try {
       console.log("Signing out...");
       await signOut();
-      console.log("Sign out successful, navigating to home page");
-      // Ensure we force a full navigation
-      window.location.href = '/';
+      console.log("Sign out successful, redirecting to login page");
+      // Ensure we force a full navigation to login page
+      window.location.href = '/login';
       toast.success("You have been signed out successfully");
     } catch (error) {
       console.error("Error signing out:", error);
