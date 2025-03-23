@@ -1,130 +1,157 @@
 
 import React, { useState } from "react";
-import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import AnonymousToggle from "./AnonymousToggle";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import AnonymousToggle from "./AnonymousToggle";
+import { Question } from "@/types/custom";
 
-const INDUSTRIES = [
+interface QuestionFormProps {
+  onQuestionAdded: (question: Question) => void;
+}
+
+const industries = [
   "Technology",
   "Finance",
-  "Marketing",
   "Healthcare",
   "Education",
-  "Engineering",
-  "Retail",
-  "Media",
-  "Legal",
+  "Marketing",
   "Design",
+  "Other"
 ];
 
-const QuestionForm = () => {
+const QuestionForm: React.FC<QuestionFormProps> = ({ onQuestionAdded }) => {
+  const { user, profile } = useAuth();
+  const [content, setContent] = useState("");
+  const [industry, setIndustry] = useState(profile?.industry || industries[0]);
   const [isAnonymous, setIsAnonymous] = useState(false);
-  const [question, setQuestion] = useState("");
-  const [industry, setIndustry] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!question.trim() || !industry) {
-      toast({
-        title: "Missing information",
-        description: "Please provide both a question and select an industry",
-        variant: "destructive",
-      });
+    if (!user) {
+      toast.error("You must be logged in to post a question");
+      return;
+    }
+    
+    if (!content.trim()) {
+      toast.error("Please enter your question");
       return;
     }
     
     setIsSubmitting(true);
     
     try {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !userData.user) {
-        throw new Error("You must be logged in to post a question");
-      }
-      
-      const { error } = await supabase.from("questions").insert({
-        user_id: userData.user.id,
-        industry,
-        content: question,
-        anonymous: isAnonymous,
-      });
+      // In a real app with proper tables in Supabase:
+      const { error } = await supabase
+        .from('questions')
+        .insert({
+          user_id: user.id,
+          content: content.trim(),
+          industry,
+          anonymous: isAnonymous,
+        }) as unknown as { error: any };
       
       if (error) throw error;
       
-      toast({
-        title: "Question posted",
-        description: "Your question has been posted successfully!",
-      });
+      // Create the new question object to return
+      const newQuestion: Question = {
+        id: Date.now().toString(), // temporary ID until refresh
+        user_id: user.id,
+        content: content.trim(),
+        industry,
+        anonymous: isAnonymous,
+        timestamp: new Date().toISOString(),
+        user: isAnonymous 
+          ? { full_name: "Anonymous User" }
+          : { 
+              full_name: profile?.full_name || "User",
+              image_url: profile?.image_url,
+              expert_verified: false
+            },
+        answers_count: 0
+      };
       
-      // Reset form
-      setQuestion("");
-      setIndustry("");
+      onQuestionAdded(newQuestion);
+      setContent("");
+      setIndustry(profile?.industry || industries[0]);
       setIsAnonymous(false);
     } catch (error) {
-      toast({
-        title: "Error posting question",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
-        variant: "destructive",
-      });
+      console.error("Error submitting question:", error);
+      toast.error("Failed to submit question");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (!user) {
+    return (
+      <div className="text-center py-6">
+        <p className="mb-4">You need to be logged in to ask questions</p>
+        <Button>Log In</Button>
+      </div>
+    );
+  }
+
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <form onSubmit={handleSubmit}>
-        <CardHeader>
-          <h3 className="text-lg font-semibold">Ask Industry Experts</h3>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <form onSubmit={handleSubmit}>
+      <h3 className="text-lg font-medium mb-4">Ask the Community</h3>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Your Question
+          </label>
+          <Textarea
+            placeholder="Type your question here..."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            required
+            rows={3}
+            className="w-full"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Industry
+          </label>
           <Select value={industry} onValueChange={setIndustry}>
             <SelectTrigger>
-              <SelectValue placeholder="Select Industry" />
+              <SelectValue placeholder="Select an industry" />
             </SelectTrigger>
             <SelectContent>
-              {INDUSTRIES.map((ind) => (
+              {industries.map((ind) => (
                 <SelectItem key={ind} value={ind}>
                   {ind}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          
-          <Textarea
-            placeholder="Ask your question..."
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            rows={4}
-            className="resize-none"
-          />
-          
-          <AnonymousToggle 
-            isAnonymous={isAnonymous} 
-            onChange={setIsAnonymous} 
-          />
-        </CardContent>
-        <CardFooter className="flex justify-end space-x-2">
-          <Button variant="outline" type="button" onClick={() => {
-            setQuestion("");
-            setIndustry("");
-            setIsAnonymous(false);
-          }}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
+        </div>
+        
+        <AnonymousToggle 
+          isAnonymous={isAnonymous} 
+          onChange={setIsAnonymous} 
+        />
+        
+        <div className="flex justify-end">
+          <Button type="submit" disabled={isSubmitting || !content.trim()}>
             {isSubmitting ? "Posting..." : "Post Question"}
           </Button>
-        </CardFooter>
-      </form>
-    </Card>
+        </div>
+      </div>
+    </form>
   );
 };
 
