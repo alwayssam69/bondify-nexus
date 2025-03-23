@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -18,14 +17,12 @@ export const useNotifications = (limit = 5, offset = 0) => {
     
     setState(prev => ({ ...prev, isLoading: true }));
     try {
-      // Try to fetch from the real table if it exists
       const query = supabase
         .from('user_notifications')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
-      // Only add limit and offset if they are provided and valid
       if (limit > 0) {
         query.limit(limit);
       }
@@ -37,13 +34,11 @@ export const useNotifications = (limit = 5, offset = 0) => {
       const { data, error } = await query;
       
       if (error) {
-        // If there's an error (likely table doesn't exist yet), fall back to sample data
         console.warn("Error fetching notifications, using sample data:", error.message);
         fallbackToSampleData();
         return;
       }
       
-      // Cast to our notification type and update state
       const notifications = (data || []) as unknown as Notification[];
       setState({
         notifications,
@@ -57,13 +52,12 @@ export const useNotifications = (limit = 5, offset = 0) => {
   };
 
   const fallbackToSampleData = () => {
-    // Generate sample notifications when table doesn't exist
     const sampleData: Notification[] = [
       {
         id: '1',
         type: 'match',
         message: 'You have a new connection with Jane Doe',
-        created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
+        created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
         is_read: false,
         user_id: user?.id || ''
       },
@@ -71,7 +65,7 @@ export const useNotifications = (limit = 5, offset = 0) => {
         id: '2',
         type: 'message',
         message: 'You received a new message from John Smith',
-        created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), // 3 hours ago
+        created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
         is_read: true,
         user_id: user?.id || ''
       },
@@ -79,7 +73,7 @@ export const useNotifications = (limit = 5, offset = 0) => {
         id: '3',
         type: 'view',
         message: 'Sarah Williams viewed your profile',
-        created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
+        created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
         is_read: false,
         user_id: user?.id || ''
       }
@@ -96,7 +90,6 @@ export const useNotifications = (limit = 5, offset = 0) => {
     if (!user || state.notifications.length === 0) return;
     
     try {
-      // Update the notifications in the database
       const { error } = await supabase
         .from('user_notifications')
         .update({ is_read: true })
@@ -107,7 +100,6 @@ export const useNotifications = (limit = 5, offset = 0) => {
         throw error;
       }
       
-      // Optimistically update UI
       setState(prev => ({
         ...prev,
         notifications: prev.notifications.map(n => ({ ...n, is_read: true }))
@@ -124,7 +116,6 @@ export const useNotifications = (limit = 5, offset = 0) => {
     if (user) {
       fetchNotifications();
       
-      // Set up realtime subscription to the user_notifications table
       const channel = supabase
         .channel('public:user_notifications')
         .on('postgres_changes', {
@@ -135,10 +126,8 @@ export const useNotifications = (limit = 5, offset = 0) => {
         }, (payload) => {
           console.log('Received realtime notification:', payload);
           
-          // Refresh notifications when changes occur
           fetchNotifications();
           
-          // Show toast for new notifications
           if (payload.eventType === 'INSERT') {
             const newNotification = payload.new as Notification;
             toast.info(newNotification.message, {
@@ -150,9 +139,7 @@ export const useNotifications = (limit = 5, offset = 0) => {
         .subscribe((status) => {
           console.log('Realtime subscription status:', status);
           
-          // Fix: using the correct approach to check for error status
-          // Comparing status as a string literal type
-          if (typeof status === 'string' && status === 'SUBSCRIPTION_ERROR') {
+          if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
             console.warn('Could not set up realtime subscription, falling back to sample data');
             fallbackToSampleData();
           }
