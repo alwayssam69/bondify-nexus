@@ -160,9 +160,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
+        console.error("Error signing out:", error);
         toast.error(error.message);
+        throw error;
       } else {
-        toast.success("Logged out successfully");
         setUser(null);
         setSession(null);
         setProfile(null);
@@ -170,6 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error("Error signing out:", error);
       toast.error("An error occurred while signing out");
+      throw error;
     }
   };
 

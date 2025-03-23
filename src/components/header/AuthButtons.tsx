@@ -1,12 +1,25 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogOut, User, Mail } from "lucide-react";
+import { LogOut, User } from "lucide-react";
+import { toast } from "sonner";
 
 const AuthButtons = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/', { replace: true });
+      toast.success("You have been signed out successfully");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Failed to sign out. Please try again.");
+    }
+  };
   
   // If user is authenticated, show logout button instead of login/signup
   if (user) {
@@ -14,7 +27,7 @@ const AuthButtons = () => {
       <Button 
         variant="ghost" 
         className="text-sm flex items-center gap-1" 
-        onClick={signOut}
+        onClick={handleSignOut}
       >
         <LogOut className="h-4 w-4 mr-1" />
         Sign Out

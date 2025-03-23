@@ -18,7 +18,7 @@ const InterestsSection: React.FC<InterestsSectionProps> = ({ form }) => {
         render={({ field }) => (
           <MultiInterestSelect
             label="Personal Interests"
-            value={field.value}
+            value={field.value || []}
             onChange={field.onChange}
             placeholder="Select your personal interests"
           />
@@ -31,7 +31,7 @@ const InterestsSection: React.FC<InterestsSectionProps> = ({ form }) => {
         render={({ field }) => (
           <MultiInterestSelect
             label="Project Interests"
-            value={field.value}
+            value={field.value || []}
             onChange={field.onChange}
             placeholder="Select your project interests"
           />

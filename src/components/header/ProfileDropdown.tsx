@@ -36,7 +36,7 @@ const ProfileDropdown = () => {
     try {
       await signOut();
       navigate('/', { replace: true });
-      toast.success("You have been signed out");
+      toast.success("You have been signed out successfully");
     } catch (error) {
       console.error("Error signing out:", error);
       toast.error("Failed to sign out. Please try again.");
@@ -50,7 +50,7 @@ const ProfileDropdown = () => {
           <span className="text-blue-600">{getInitial()}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="bg-white">
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuItem className="text-sm text-muted-foreground">
           {profile?.full_name || user?.email}

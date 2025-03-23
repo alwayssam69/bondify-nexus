@@ -61,7 +61,7 @@ const DynamicSkillSelect = ({
       // Fallback to empty array if industry not found
       setAvailableSkills([]);
     }
-  }, [industry]);
+  }, [industry, value, onChange]);
 
   const handleSelect = (skillValue: string) => {
     if (value.includes(skillValue)) {
@@ -135,7 +135,7 @@ const DynamicSkillSelect = ({
               <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-full p-0">
+          <PopoverContent className="w-full p-0 bg-white">
             <Command>
               <CommandInput 
                 placeholder="Search skills..." 

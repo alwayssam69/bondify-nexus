@@ -14,7 +14,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { Check, ChevronsUpDown, X, Filter } from "lucide-react";
+import { Check, ChevronsUpDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { interestOptions } from "@/data/formOptions";
@@ -43,6 +43,7 @@ const MultiInterestSelect = ({
   const handleSelect = (interestValue: string) => {
     if (value.includes(interestValue)) {
       onChange(value.filter(v => v !== interestValue));
+      toast.info(`Removed ${getInterestLabel(interestValue)} from your interests`);
     } else {
       if (value.length >= maxSelections) {
         toast.warning(`You can select a maximum of ${maxSelections} interests`);
@@ -104,7 +105,7 @@ const MultiInterestSelect = ({
               <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-full p-0">
+          <PopoverContent className="w-full p-0 bg-white">
             <Command>
               <CommandInput 
                 placeholder="Search interests..." 
