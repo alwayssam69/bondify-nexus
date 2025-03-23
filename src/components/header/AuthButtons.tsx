@@ -13,10 +13,12 @@ const AuthButtons = () => {
     try {
       console.log("Signing out from AuthButtons...");
       await signOut();
-      console.log("Sign out successful, redirecting to login page");
-      // Force a full page navigation to login page
-      window.location.href = '/login';
+      console.log("Sign out successful");
       toast.success("You have been signed out successfully");
+      // Force a full page navigation to login page after slight delay
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 300);
     } catch (error) {
       console.error("Error signing out:", error);
       toast.error("Failed to sign out. Please try again.");

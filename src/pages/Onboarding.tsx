@@ -61,6 +61,8 @@ const Onboarding = () => {
     setIsCreatingAccount(true);
     
     try {
+      console.log("Creating user account with email:", email);
+      
       // 1. Create the user account
       const { data: userData, error: signUpError } = await supabase.auth.signUp({
         email,
@@ -69,6 +71,7 @@ const Onboarding = () => {
           data: {
             full_name: profileData.fullName,
           },
+          emailRedirectTo: `${window.location.origin}/dashboard`,
         },
       });
       
@@ -80,16 +83,35 @@ const Onboarding = () => {
         throw new Error("Failed to create user account");
       }
       
-      // 2. Update the user profile with more data
+      console.log("User account created successfully with ID:", userData.user.id);
+      
+      // 2. Insert a record in the profiles table for legacy support
+      const { error: profilesError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userData.user.id,
+          full_name: profileData.fullName,
+          email: email,
+          location: profileData.location || null,
+          bio: profileData.bio || null,
+        });
+        
+      if (profilesError) {
+        console.error("Error inserting into profiles table:", profilesError);
+      }
+      
+      // 3. Update the user profile with more data
       const { error: profileError } = await supabase
         .from('user_profiles')
-        .update({
+        .upsert({
+          id: userData.user.id,
           full_name: profileData.fullName,
-          location: profileData.location,
-          bio: profileData.bio,
-          industry: profileData.industry,
-          user_type: profileData.profession,
-          skills: profileData.skills,
+          email: email,
+          location: profileData.location || null,
+          bio: profileData.bio || null,
+          industry: profileData.industry || null,
+          user_type: profileData.profession || null,
+          skills: profileData.skills || [],
           university: profileData.university || null,
           profile_completeness: 80,
           project_interests: preferencesData?.interests || [],
@@ -100,11 +122,11 @@ const Onboarding = () => {
             experienceLevel: preferencesData?.experienceLevel || "all",
             locationPreference: preferencesData?.locationPreference || "global",
           },
-        })
-        .eq('id', userData.user.id);
+        }, { onConflict: 'id' });
       
       if (profileError) {
-        console.error("Error updating profile:", profileError);
+        console.error("Error updating user_profiles:", profileError);
+        // We can continue even with this error
       }
       
       // 3. Auto-login the user
@@ -114,7 +136,11 @@ const Onboarding = () => {
       });
       
       if (signInError) {
-        throw signInError;
+        console.error("Error signing in after registration:", signInError);
+        // If auto-login fails, redirect to login page
+        toast.success("Account created successfully! Please log in.");
+        navigate("/login", { state: { email } });
+        return;
       }
       
       // 4. Redirect to dashboard
@@ -123,6 +149,8 @@ const Onboarding = () => {
     } catch (error: any) {
       console.error("Error in account creation:", error);
       toast.error(error.message || "Failed to create account. Please try again.");
+      setIsCreatingAccount(false);
+    } finally {
       setIsCreatingAccount(false);
     }
   };
@@ -190,6 +218,7 @@ const Onboarding = () => {
                 preferencesData={preferencesData}
                 onNextStep={handleComplete}
                 onPrevStep={() => setCurrentStep(2)}
+                isLoading={isCreatingAccount}
               />
             )}
           </OnboardingStep>

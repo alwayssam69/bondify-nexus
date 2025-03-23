@@ -59,6 +59,7 @@ const Login = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
+    console.log("Login attempt with email:", values.email);
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -67,18 +68,27 @@ const Login = () => {
       });
       
       if (error) {
-        toast.error(error.message);
+        console.error("Login error:", error.message);
+        toast.error(error.message || "Invalid email or password");
         setIsLoading(false);
         return;
       }
       
       if (data.user) {
+        console.log("Login successful for user:", data.user.id);
         toast.success("Login successful!");
-        navigate("/dashboard");
+        
+        // Wait a moment to ensure auth state is properly updated
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 500);
+      } else {
+        console.error("No user returned after successful login");
+        toast.error("Login failed. Please try again.");
       }
-    } catch (error) {
-      console.error("Login error:", error);
-      toast.error("An unexpected error occurred");
+    } catch (error: any) {
+      console.error("Unexpected login error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }

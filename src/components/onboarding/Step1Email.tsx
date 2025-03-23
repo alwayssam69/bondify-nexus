@@ -53,18 +53,22 @@ const Step1Email = ({ onNextStep }: Step1EmailProps) => {
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
     try {
-      // Check if user exists
-      const { data: existingUser, error: checkError } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('email', values.email)
-        .single();
+      console.log("Registering with email:", values.email);
       
-      if (checkError && checkError.code !== 'PGRST116') {
+      // Check if user exists first
+      const { data: existingUsers, error: checkError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', values.email);
+      
+      if (checkError) {
         console.error("Error checking existing user:", checkError);
+        toast.error("Error checking if user exists, please try again");
+        setIsLoading(false);
+        return;
       }
       
-      if (existingUser) {
+      if (existingUsers && existingUsers.length > 0) {
         toast.info("Welcome back! Redirecting to login...");
         // Redirect to login with email prefilled
         window.location.href = `/login?email=${encodeURIComponent(values.email)}`;
@@ -75,12 +79,12 @@ const Step1Email = ({ onNextStep }: Step1EmailProps) => {
       setIsValidating(true);
       
       // Simulate typing "verifying email..." animation
-      await simulateTyping("Verifying email", 1500);
+      await simulateTyping("Verifying email", 800);
       
       onNextStep(values.email, values.password);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Step 1 error:", error);
-      toast.error("An error occurred. Please try again.");
+      toast.error(error.message || "An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
       setIsValidating(false);
