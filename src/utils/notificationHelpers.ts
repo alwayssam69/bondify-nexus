@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 export type NotificationType = 'match' | 'message' | 'view';
 
 /**
- * Creates a new notification for a user
+ * Creates a new notification for a user using a custom function
  * @param userId The ID of the user to create the notification for
  * @param type The type of notification
  * @param message The notification message
@@ -20,31 +20,25 @@ export const createNotification = async (
   metadata?: Record<string, any>
 ) => {
   try {
-    // First check if the table exists
-    const { error: tableCheckError } = await supabase
-      .from('user_notifications')
-      .select('id')
-      .limit(1);
-    
-    if (tableCheckError) {
-      console.error("user_notifications table doesn't exist:", tableCheckError.message);
-      return { error: tableCheckError };
-    }
-    
-    // If table exists, insert the notification
-    const { data, error } = await supabase
-      .from('user_notifications')
-      .insert({
-        user_id: userId,
-        type,
-        message,
-        related_entity_id: relatedEntityId,
-        metadata: metadata || {},
-        created_at: new Date().toISOString(),
-      });
+    // Use RPC function to create notifications instead of direct table access
+    const { data, error } = await supabase.rpc('create_notification', {
+      p_user_id: userId,
+      p_type: type,
+      p_message: message,
+      p_related_entity_id: relatedEntityId || null,
+      p_metadata: metadata || {}
+    });
     
     if (error) {
       console.error("Error creating notification:", error);
+      // Fallback if the function doesn't exist yet
+      console.log("Notification would have been created with:", {
+        userId,
+        type,
+        message,
+        relatedEntityId,
+        metadata
+      });
       return { error };
     }
     
@@ -62,10 +56,10 @@ export const createNotification = async (
  */
 export const markAllNotificationsAsRead = async (userId: string) => {
   try {
-    const { error } = await supabase
-      .from('user_notifications')
-      .update({ is_read: true })
-      .eq('user_id', userId);
+    // Use RPC function to mark notifications as read
+    const { error } = await supabase.rpc('mark_all_notifications_read', {
+      user_id: userId
+    });
     
     if (error) {
       console.error("Error marking notifications as read:", error);
