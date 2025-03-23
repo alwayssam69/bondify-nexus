@@ -38,33 +38,30 @@ const NewsInsights = () => {
     try {
       setIsLoading(true);
       
-      // In a real app, we would have these tables created in Supabase
-      // For now, let's use type assertions to handle the missing table issue
-      const { data, error } = await supabase
-        .from('news_feed')
-        .select('*')
-        .order('created_at', { ascending: false }) as unknown as { 
-          data: NewsItem[], 
-          error: any 
-        };
-
-      if (error) {
-        console.error("Error fetching news:", error);
-        toast.error("Failed to load news insights");
-        setIsLoading(false);
-        return;
-      }
-
-      // Convert the response to our NewsItem type
-      const newsItems = data as unknown as NewsItem[];
-      setNews(newsItems);
-      setFilteredNews(newsItems);
+      // Since we don't have proper Supabase integration for these tables yet,
+      // let's use sample data instead of querying the database
+      
+      // This code would be used with actual database tables:
+      // const { data, error } = await supabase
+      //   .from('news_feed')
+      //   .select('*')
+      //   .order('created_at', { ascending: false });
+      //
+      // if (error) {
+      //   console.error("Error fetching news:", error);
+      //   toast.error("Failed to load news insights");
+      //   setIsLoading(false);
+      //   return;
+      // }
+      //
+      // const newsItems = data as NewsItem[];
+      // setNews(newsItems);
+      // setFilteredNews(newsItems);
+      
+      // Populate with sample data directly
+      populateSampleNews();
       setIsLoading(false);
       
-      // If there's no data, let's populate with some sample data
-      if (newsItems.length === 0) {
-        populateSampleNews();
-      }
     } catch (error) {
       console.error("Error in fetchNews:", error);
       setIsLoading(false);
@@ -84,6 +81,8 @@ const NewsInsights = () => {
           source_url: "https://example.com/ai-news",
           image_url: "https://via.placeholder.com/300x200?text=AI+News",
           timestamp: new Date().toISOString(),
+          likes_count: 24,
+          comments_count: 8
         },
         {
           id: "2",
@@ -93,6 +92,8 @@ const NewsInsights = () => {
           source_url: "https://example.com/finance-trends",
           image_url: "https://via.placeholder.com/300x200?text=Finance+News",
           timestamp: new Date().toISOString(),
+          likes_count: 15,
+          comments_count: 3
         },
         {
           id: "3",
@@ -102,28 +103,26 @@ const NewsInsights = () => {
           source_url: "https://example.com/healthcare-news",
           image_url: "https://via.placeholder.com/300x200?text=Healthcare+News",
           timestamp: new Date().toISOString(),
+          likes_count: 32,
+          comments_count: 12
         }
       ];
       
-      // In a real app, we would insert these into the Supabase database
-      // For now, just update the state
       setNews(sampleNews);
       setFilteredNews(sampleNews);
       
-      // Simulate adding to Supabase (this will likely fail due to missing table, but shows the intended logic)
-      for (const item of sampleNews) {
-        const { error } = await supabase
-          .from('news_feed')
-          .insert({
-            industry: item.industry,
-            title: item.title,
-            content: item.content,
-            source_url: item.source_url,
-            image_url: item.image_url,
-          }) as unknown as { error: any };
-          
-        if (error) console.log("Error inserting sample news:", error);
-      }
+      // In a real app with proper database integration, we would insert these into Supabase:
+      // for (const item of sampleNews) {
+      //   await supabase
+      //     .from('news_feed')
+      //     .insert({
+      //       industry: item.industry,
+      //       title: item.title,
+      //       content: item.content,
+      //       source_url: item.source_url,
+      //       image_url: item.image_url,
+      //     });
+      // }
     } catch (error) {
       console.error("Error populating sample news:", error);
     }

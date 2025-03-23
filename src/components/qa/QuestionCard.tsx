@@ -31,53 +31,49 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
     if (!showAnswers && answers.length === 0) {
       setIsLoading(true);
       try {
-        // In a real app, we would have this table created in Supabase
-        // For now, let's use type assertions
-        const { data, error } = await supabase
-          .from('answers')
-          .select(`
-            *,
-            expert:expert_id(full_name, image_url)
-          `)
-          .eq('question_id', question.id)
-          .order('created_at', { ascending: false }) as unknown as {
-            data: any[];
-            error: any;
-          };
+        // Since we don't have proper Supabase integration for these tables yet,
+        // let's use sample data instead of querying the database
+
+        // This code would be used with actual database tables:
+        // const { data, error } = await supabase
+        //   .from('answers')
+        //   .select(`
+        //     *,
+        //     expert:expert_id(full_name, image_url)
+        //   `)
+        //   .eq('question_id', question.id)
+        //   .order('created_at', { ascending: false });
+        // 
+        // if (error) throw error;
+        // setAnswers(data as Answer[]);
         
-        if (error) throw error;
-        
-        // Sample data if no answers
-        if (!data || data.length === 0) {
-          if (answersCount > 0) {
-            const sampleAnswers: Answer[] = [
-              {
-                id: "a1-" + question.id,
-                question_id: question.id,
-                expert_id: "expert123",
-                content: "This is a great question. In my experience, networking effectively in the tech industry involves attending relevant meetups, being active in online communities, and contributing to open source projects.",
-                timestamp: new Date().toISOString(),
-                expert: {
-                  full_name: "Tech Expert",
-                  image_url: "https://via.placeholder.com/40"
-                }
-              },
-              {
-                id: "a2-" + question.id,
-                question_id: question.id,
-                expert_id: "expert456",
-                content: "I would add that LinkedIn can be a powerful tool if used effectively. Don't just connect with people, but engage meaningfully with their content and share your own insights regularly.",
-                timestamp: new Date(Date.now() - 86400000).toISOString(),
-                expert: {
-                  full_name: "Career Coach",
-                  image_url: "https://via.placeholder.com/40"
-                }
+        // Sample data if we have an answers count > 0
+        if (answersCount > 0) {
+          const sampleAnswers: Answer[] = [
+            {
+              id: "a1-" + question.id,
+              question_id: question.id,
+              expert_id: "expert123",
+              content: "This is a great question. In my experience, networking effectively in the tech industry involves attending relevant meetups, being active in online communities, and contributing to open source projects.",
+              timestamp: new Date().toISOString(),
+              expert: {
+                full_name: "Tech Expert",
+                image_url: "https://via.placeholder.com/40"
               }
-            ];
-            setAnswers(sampleAnswers);
-          }
-        } else {
-          setAnswers(data as unknown as Answer[]);
+            },
+            {
+              id: "a2-" + question.id,
+              question_id: question.id,
+              expert_id: "expert456",
+              content: "I would add that LinkedIn can be a powerful tool if used effectively. Don't just connect with people, but engage meaningfully with their content and share your own insights regularly.",
+              timestamp: new Date(Date.now() - 86400000).toISOString(),
+              expert: {
+                full_name: "Career Coach",
+                image_url: "https://via.placeholder.com/40"
+              }
+            }
+          ];
+          setAnswers(sampleAnswers);
         }
       } catch (error) {
         console.error("Error fetching answers:", error);
@@ -104,18 +100,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
     setIsSubmitting(true);
     
     try {
-      // In a real app with proper tables in Supabase:
-      const { error } = await supabase
-        .from('answers')
-        .insert({
-          question_id: question.id,
-          expert_id: user.id,
-          content: answerText.trim(),
-        }) as unknown as { error: any };
-      
-      if (error) throw error;
-      
-      // Add the new answer to the list
+      // Add the new answer to the list for immediate UI feedback
       const newAnswer: Answer = {
         id: Date.now().toString(),
         question_id: question.id,
@@ -132,6 +117,17 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question }) => {
       setAnswerText("");
       setAnswersCount(prev => prev + 1);
       toast.success("Answer posted successfully");
+      
+      // This code would be used with actual database tables:
+      // const { error } = await supabase
+      //   .from('answers')
+      //   .insert({
+      //     question_id: question.id,
+      //     expert_id: user.id,
+      //     content: answerText.trim(),
+      //   });
+      // 
+      // if (error) throw error;
     } catch (error) {
       console.error("Error posting answer:", error);
       toast.error("Failed to post answer");

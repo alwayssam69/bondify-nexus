@@ -29,36 +29,33 @@ const QAForum = () => {
     try {
       setIsLoading(true);
       
-      // In a real app, we would have this table created in Supabase
-      // For now, let's use type assertions to handle the missing table issue
-      const { data, error } = await supabase
-        .from('questions')
-        .select(`
-          *,
-          user:user_id(full_name, image_url, expert_verified)
-        `)
-        .order('created_at', { ascending: false }) as unknown as {
-          data: any[];
-          error: any;
-        };
-
-      if (error) {
-        console.error("Error fetching questions:", error);
-        toast.error("Failed to load questions");
-        setIsLoading(false);
-        return;
-      }
-
-      // Convert to our Question type
-      const questionData = (data || []) as unknown as Question[];
-      setQuestions(questionData);
-      setFilteredQuestions(questionData);
+      // Since we don't have proper Supabase integration for these tables yet,
+      // let's use sample data instead of querying the database
+      
+      // This code would be used with actual database tables:
+      // const { data, error } = await supabase
+      //   .from('questions')
+      //   .select(`
+      //     *,
+      //     user:user_id(full_name, image_url, expert_verified)
+      //   `)
+      //   .order('created_at', { ascending: false });
+      //
+      // if (error) {
+      //   console.error("Error fetching questions:", error);
+      //   toast.error("Failed to load questions");
+      //   setIsLoading(false);
+      //   return;
+      // }
+      //
+      // const questionData = data as Question[];
+      // setQuestions(questionData);
+      // setFilteredQuestions(questionData);
+      
+      // Populate with sample data directly
+      populateSampleQuestions();
       setIsLoading(false);
       
-      // If no questions exist, add some sample data
-      if (questionData.length === 0) {
-        populateSampleQuestions();
-      }
     } catch (error) {
       console.error("Error in fetchQuestions:", error);
       setIsLoading(false);

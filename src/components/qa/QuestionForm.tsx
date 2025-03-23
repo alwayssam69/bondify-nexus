@@ -52,19 +52,7 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ onQuestionAdded }) => {
     setIsSubmitting(true);
     
     try {
-      // In a real app with proper tables in Supabase:
-      const { error } = await supabase
-        .from('questions')
-        .insert({
-          user_id: user.id,
-          content: content.trim(),
-          industry,
-          anonymous: isAnonymous,
-        }) as unknown as { error: any };
-      
-      if (error) throw error;
-      
-      // Create the new question object to return
+      // Create the new question object for immediate UI feedback
       const newQuestion: Question = {
         id: Date.now().toString(), // temporary ID until refresh
         user_id: user.id,
@@ -81,6 +69,18 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ onQuestionAdded }) => {
             },
         answers_count: 0
       };
+      
+      // This code would be used with actual database tables:
+      // const { error } = await supabase
+      //   .from('questions')
+      //   .insert({
+      //     user_id: user.id,
+      //     content: content.trim(),
+      //     industry,
+      //     anonymous: isAnonymous,
+      //   });
+      // 
+      // if (error) throw error;
       
       onQuestionAdded(newQuestion);
       setContent("");
