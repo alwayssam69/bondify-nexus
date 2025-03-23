@@ -36,7 +36,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
                   // Reset skills when industry changes to avoid invalid selections
                   form.setValue("skills", []);
                 }} 
-                value={field.value || ""}
+                value={field.value || "select-industry"}
               >
                 <FormControl>
                   <SelectTrigger className={errors.industry ? "border-red-500" : ""}>
@@ -62,7 +62,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
           render={({ field }) => (
             <FormItem>
               <FormLabel>User Type</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ""}>
+              <Select onValueChange={field.onChange} value={field.value || "select-type"}>
                 <FormControl>
                   <SelectTrigger className={errors.userType ? "border-red-500" : ""}>
                     <SelectValue placeholder="Select user type" />
@@ -91,7 +91,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
         render={({ field }) => (
           <FormItem>
             <FormLabel>Experience Level</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value || ""}>
+            <Select onValueChange={field.onChange} value={field.value || "select-level"}>
               <FormControl>
                 <SelectTrigger className={errors.experienceLevel ? "border-red-500" : ""}>
                   <SelectValue placeholder="Select experience level" />

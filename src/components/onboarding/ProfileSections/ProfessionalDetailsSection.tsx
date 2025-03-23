@@ -38,7 +38,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
                   // Reset skills when industry changes
                   form.setValue("skills", []);
                 }}
-                value={field.value || ""}
+                value={field.value || "select-industry"}
               >
                 <FormControl>
                   <SelectTrigger className={`w-full ${errors.industry ? "border-red-500" : ""}`}>
@@ -66,7 +66,7 @@ const ProfessionalDetailsSection: React.FC<ProfessionalDetailsSectionProps> = ({
               <FormLabel>Experience Level</FormLabel>
               <Select
                 onValueChange={field.onChange}
-                value={field.value || ""}
+                value={field.value || "select-level"}
               >
                 <FormControl>
                   <SelectTrigger className={`w-full ${errors.experienceLevel ? "border-red-500" : ""}`}>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,14 +55,12 @@ const Dashboard = () => {
   const [profileCompletion, setProfileCompletion] = useState(65);
   const [showAnalytics, setShowAnalytics] = useState(false);
   
-  // Use geolocation with error toasts enabled
   const geolocation = useGeolocation({ 
     watch: false, 
     showErrorToasts: true,
     enableHighAccuracy: true
   });
 
-  // Mock engagement data - in a real app this would come from the API
   const engagementData = {
     activeMatches: 8,
     connectionsTotal: 24,
@@ -74,7 +71,6 @@ const Dashboard = () => {
     responseRate: 92,
   };
 
-  // Mock activity data for the charts
   const activityData = [
     { day: 'Mon', matches: 2, messages: 5, views: 3 },
     { day: 'Tue', matches: 1, messages: 3, views: 2 },
@@ -86,10 +82,8 @@ const Dashboard = () => {
   ];
 
   useEffect(() => {
-    // Instead of waiting for geolocation, load what we can immediately
     loadMatchData();
     
-    // If geolocation becomes available, update user coordinates
     if (locationEnabled && geolocation.latitude && geolocation.longitude && !geolocation.error) {
       updateUserLocationCoordinates(geolocation.latitude, geolocation.longitude);
     }
@@ -100,7 +94,6 @@ const Dashboard = () => {
     
     setIsLoading(true);
     try {
-      // Use Promise.allSettled to load both data types in parallel
       const results = await Promise.allSettled([
         getMatchRecommendations(user.id, 10),
         locationEnabled && geolocation.latitude && geolocation.longitude 
@@ -108,7 +101,6 @@ const Dashboard = () => {
           : Promise.resolve([])
       ]);
       
-      // Handle recommended matches result
       if (results[0].status === 'fulfilled') {
         setRecommendedMatches(results[0].value);
       } else {
@@ -116,7 +108,6 @@ const Dashboard = () => {
         toast.error("Couldn't load recommended matches");
       }
       
-      // Handle nearby matches result
       if (results[1].status === 'fulfilled') {
         setNearbyMatches(results[1].value);
       }
@@ -135,8 +126,6 @@ const Dashboard = () => {
     try {
       const success = await updateUserCoordinates(user.id, latitude, longitude);
       if (success) {
-        // Only toast on manual updates
-        // toast.success("Location updated successfully!");
         const proximityData = await getProximityMatches(user.id, radius, 10);
         setNearbyMatches(proximityData);
       }
@@ -288,7 +277,6 @@ const Dashboard = () => {
         />
 
         <div className="grid grid-cols-12 gap-6 mt-6">
-          {/* Profile Completion Card - Left Column */}
           <div className="col-span-12 lg:col-span-4">
             <ProfileCompletionCard 
               completion={profileCompletion}
@@ -310,7 +298,6 @@ const Dashboard = () => {
             />
           </div>
 
-          {/* Main Content - Right Column */}
           <div className="col-span-12 lg:col-span-8 space-y-6">
             <Card>
               <CardHeader className="pb-3">
@@ -388,12 +375,12 @@ const Dashboard = () => {
                     <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 mb-6">
                       <div className="w-full md:w-1/2">
                         <label className="text-sm font-medium mb-1 block">Filter by Profession</label>
-                        <Select onValueChange={setProfessionFilter} value={professionFilter}>
+                        <Select onValueChange={setProfessionFilter} value={professionFilter || "all"}>
                           <SelectTrigger>
                             <SelectValue placeholder="All Professions" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">All Professions</SelectItem>
+                            <SelectItem value="all">All Professions</SelectItem>
                             {professions.map(profession => (
                               <SelectItem key={profession} value={profession.toLowerCase()}>
                                 {profession}
@@ -405,12 +392,12 @@ const Dashboard = () => {
 
                       <div className="w-full md:w-1/2">
                         <label className="text-sm font-medium mb-1 block">Filter by Skill</label>
-                        <Select onValueChange={setSkillFilter} value={skillFilter}>
+                        <Select onValueChange={setSkillFilter} value={skillFilter || "all"}>
                           <SelectTrigger>
                             <SelectValue placeholder="All Skills" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">All Skills</SelectItem>
+                            <SelectItem value="all">All Skills</SelectItem>
                             {commonSkills.map(skill => (
                               <SelectItem key={skill} value={skill.toLowerCase()}>
                                 {skill}
@@ -548,7 +535,6 @@ const Dashboard = () => {
                               </div>
                             </div>
                             
-                            {/* Map View of Nearby Professionals */}
                             <div className="bg-muted/20 rounded-lg h-[300px] relative overflow-hidden">
                               {geolocation.latitude && geolocation.longitude ? (
                                 <NearbyProfessionalsMap 

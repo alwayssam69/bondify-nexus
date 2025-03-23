@@ -114,9 +114,7 @@ const LocationSelector = ({
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              {stateValue === "" && (
-                <SelectItem value="select-state">Select state</SelectItem>
-              )}
+              <SelectItem value="select-state">Select state</SelectItem>
               {indianStates.map((state) => (
                 <SelectItem key={state.value} value={state.value}>
                   {state.label}
@@ -145,9 +143,7 @@ const LocationSelector = ({
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              {cityValue === "" && cities.length > 0 && (
-                <SelectItem value="select-city">Select city</SelectItem>
-              )}
+              <SelectItem value="select-city">Select city</SelectItem>
               {cities.map((city) => (
                 <SelectItem key={city.value} value={city.value}>
                   {city.label}

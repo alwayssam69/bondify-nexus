@@ -139,9 +139,7 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
                 <SelectValue placeholder="Select your industry" />
               </SelectTrigger>
               <SelectContent>
-                {industry === "" && (
-                  <SelectItem value="select-industry">Select your industry</SelectItem>
-                )}
+                <SelectItem value="select-industry">Select your industry</SelectItem>
                 {industryOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
