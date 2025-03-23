@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, MessageSquare, Video, Users } from "lucide-react";
@@ -11,9 +10,10 @@ interface HeroProps {
   onGetStarted: () => void;
   onSignIn: () => void;
   onDashboard: () => void;
+  actionButton?: React.ReactNode; // Added actionButton prop
 }
 
-const Hero = ({ user, onGetStarted, onSignIn, onDashboard }: HeroProps) => {
+const Hero = ({ user, onGetStarted, onSignIn, onDashboard, actionButton }: HeroProps) => {
   const { theme } = useTheme();
   
   return (
@@ -101,6 +101,13 @@ const Hero = ({ user, onGetStarted, onSignIn, onDashboard }: HeroProps) => {
                     Sign In
                   </Button>
                 </>
+              )}
+              
+              {/* Render the actionButton if provided */}
+              {actionButton && (
+                <div className="mt-4 sm:mt-0">
+                  {actionButton}
+                </div>
               )}
             </div>
           </motion.div>
