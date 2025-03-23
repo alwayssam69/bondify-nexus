@@ -1,10 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Notification, NotificationState } from "./types";
-import { REALTIME_SUBSCRIBE_STATES } from "@supabase/supabase-js";
 
 export const useNotifications = (limit = 5, offset = 0) => {
   const { user } = useAuth();
@@ -121,7 +119,6 @@ export const useNotifications = (limit = 5, offset = 0) => {
     }
   };
 
-  // Set up initial data fetching and realtime subscription
   useEffect(() => {
     if (user) {
       fetchNotifications();
@@ -152,7 +149,7 @@ export const useNotifications = (limit = 5, offset = 0) => {
         .subscribe((status) => {
           console.log('Realtime subscription status:', status);
           
-          // Fix: Use the correct enum value
+          // Fix: Compare directly with string instead of enum
           if (status === 'SUBSCRIPTION_ERROR') {
             console.warn('Could not set up realtime subscription, falling back to sample data');
             fallbackToSampleData();

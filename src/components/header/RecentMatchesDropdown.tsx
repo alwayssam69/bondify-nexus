@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -57,8 +56,14 @@ const RecentMatchesDropdown = () => {
             oneDayAgo.setHours(oneDayAgo.getHours() - 24);
             const isNew = new Date(item.created_at) > oneDayAgo;
             
-            // Fix: Access properties correctly from the user_profiles object
-            const userProfile = item.user_profiles;
+            // Access properties correctly from the user_profiles object
+            // Fix: Properly type the user_profiles property using type assertion
+            const userProfile = item.user_profiles as {
+              id: string;
+              full_name: string | null;
+              location: string | null;
+              image_url: string | null;
+            };
             
             return {
               id: item.id,
