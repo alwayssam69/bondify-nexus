@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,9 +33,15 @@ const NotificationsDropdown = () => {
       setIsLoading(true);
       try {
         const notificationsData = await fetchUserNotifications(user.id);
-        setNotifications(notificationsData as Notification[]);
+        // Only set notifications if data is returned and is an array
+        if (Array.isArray(notificationsData) && notificationsData.length > 0) {
+          setNotifications(notificationsData as Notification[]);
+        } else {
+          setNotifications([]);
+        }
       } catch (error) {
         console.error("Error loading notifications:", error);
+        setNotifications([]);
       } finally {
         setIsLoading(false);
       }
@@ -43,13 +50,15 @@ const NotificationsDropdown = () => {
     if (user) {
       loadNotifications();
       
-      const interval = setInterval(loadNotifications, 2 * 60 * 1000);
+      // Reduce polling frequency to avoid unnecessary loading
+      const interval = setInterval(loadNotifications, 5 * 60 * 1000); // Check every 5 minutes instead of 2
       return () => clearInterval(interval);
     }
   }, [user]);
 
   const handleMarkAllRead = () => {
     toast.success("All notifications marked as read");
+    setNotifications([]);
   };
 
   return (

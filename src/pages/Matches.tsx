@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -72,6 +72,7 @@ const Matches = () => {
       } catch (error) {
         console.error("Error loading matches:", error);
         toast.error("Failed to load matches");
+        setMatches([]);
       } finally {
         setIsLoading(false);
       }
@@ -80,19 +81,23 @@ const Matches = () => {
     if (user) {
       loadMatches();
       
-      const channel = supabase
-        .channel('public:user_profiles')
-        .on('postgres_changes', 
-          { event: 'INSERT', schema: 'public', table: 'user_profiles' }, 
-          () => {
-            loadMatches();
-          }
-        )
-        .subscribe();
-      
-      return () => {
-        supabase.removeChannel(channel);
-      };
+      try {
+        const channel = supabase
+          .channel('public:user_profiles')
+          .on('postgres_changes', 
+            { event: 'INSERT', schema: 'public', table: 'user_profiles' }, 
+            () => {
+              loadMatches();
+            }
+          )
+          .subscribe();
+        
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      } catch (error) {
+        console.error("Error setting up real-time listener:", error);
+      }
     }
   }, [user, locationEnabled, userCoordinates, radiusInKm]);
   
@@ -106,6 +111,7 @@ const Matches = () => {
         setConfirmedMatches(matchResults);
       } catch (error) {
         console.error("Error loading confirmed matches:", error);
+        setConfirmedMatches([]);
       } finally {
         setIsLoadingConfirmed(false);
       }
@@ -254,11 +260,13 @@ const Matches = () => {
         </div>
         
         <div className="mt-4 md:mt-0">
-          <Button onClick={() => navigate("/chat")}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-            Messages
+          <Button asChild>
+            <Link to="/chat">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              Messages
+            </Link>
           </Button>
         </div>
       </div>

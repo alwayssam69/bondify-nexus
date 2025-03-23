@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import VideoCall from "./chat/VideoCall";
@@ -46,23 +45,6 @@ const Header = () => {
     setActiveVideoCall(contact);
   };
 
-  const simulateIncomingCall = () => {
-    // Simulate an incoming call after a short delay
-    if (isLoggedIn) {
-      setTimeout(() => {
-        setIncomingCall({
-          contactId: "2",
-          contactName: "Taylor M."
-        });
-      }, 3000);
-      toast.info("Incoming call in 3 seconds...", {
-        className: "animate-slide-up",
-      });
-    } else {
-      toast.error("You need to be logged in to receive calls");
-    }
-  };
-
   return (
     <>
       <header
@@ -94,7 +76,7 @@ const Header = () => {
                 {/* Video Call Dropdown */}
                 <VideoCallDropdown 
                   onInitiateCall={initiateVideoCall}
-                  onSimulateIncomingCall={simulateIncomingCall}
+                  onSimulateIncomingCall={undefined}
                 />
 
                 {/* Messages Dropdown */}

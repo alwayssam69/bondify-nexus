@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -22,7 +22,6 @@ interface Message {
 }
 
 const MessagesDropdown = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,6 +36,7 @@ const MessagesDropdown = () => {
         setMessages(messagesData);
       } catch (error) {
         console.error("Error loading messages:", error);
+        setMessages([]);
       } finally {
         setIsLoading(false);
       }
@@ -45,8 +45,8 @@ const MessagesDropdown = () => {
     if (user) {
       loadMessages();
       
-      // Refresh messages every 2 minutes
-      const interval = setInterval(loadMessages, 2 * 60 * 1000);
+      // Reduce polling frequency to prevent unnecessary loads
+      const interval = setInterval(loadMessages, 5 * 60 * 1000); // Every 5 minutes instead of 2
       return () => clearInterval(interval);
     }
   }, [user]);
@@ -67,8 +67,8 @@ const MessagesDropdown = () => {
         <DropdownMenuLabel className="font-normal">
           <div className="flex justify-between items-center">
             <span className="font-semibold">Messages</span>
-            <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => navigate("/chat")}>
-              View All
+            <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" asChild>
+              <Link to="/chat">View All</Link>
             </Button>
           </div>
         </DropdownMenuLabel>
@@ -84,19 +84,21 @@ const MessagesDropdown = () => {
           </div>
         ) : (
           messages.map((message) => (
-            <DropdownMenuItem key={message.id} className="p-3 cursor-pointer" onClick={() => navigate("/chat")}>
-              <div className="flex gap-3 w-full">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <span className="text-base">{message.name[0]}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between">
-                    <p className="font-medium text-sm">{message.name}</p>
-                    <span className="text-xs text-muted-foreground">{message.time}</span>
+            <DropdownMenuItem key={message.id} className="p-3 cursor-pointer" asChild>
+              <Link to="/chat" className="w-full">
+                <div className="flex gap-3 w-full">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <span className="text-base">{message.name[0]}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">{message.message}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between">
+                      <p className="font-medium text-sm">{message.name}</p>
+                      <span className="text-xs text-muted-foreground">{message.time}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">{message.message}</p>
+                  </div>
                 </div>
-              </div>
+              </Link>
             </DropdownMenuItem>
           ))
         )}
