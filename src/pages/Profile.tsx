@@ -28,6 +28,11 @@ const Profile = () => {
   
   const isPublicProfile = !!id && id !== user?.id;
 
+  // Debug logs
+  console.log("Profile rendering, user:", user?.id);
+  console.log("isEditMode:", isEditMode);
+  console.log("authProfile:", authProfile);
+
   useEffect(() => {
     const fetchProfile = async () => {
       setIsLoading(true);
@@ -60,7 +65,7 @@ const Profile = () => {
           .from('user_profiles')
           .select('*')
           .eq('id', profileId)
-          .single();
+          .maybeSingle();
         
         if (userProfileData) {
           console.log("Profile found in user_profiles:", userProfileData);
@@ -172,7 +177,7 @@ const Profile = () => {
     return () => clearTimeout(timer);
   }, [id, user, authProfile, navigate, refreshProfile, loadAttempts, isPublicProfile]);
   
-  // Apply the edit mode from URL parameters
+  // Apply the edit mode from URL parameters and make sure it updates if URL changes
   useEffect(() => {
     if (isEditMode) {
       setActiveTab("edit");
@@ -194,6 +199,12 @@ const Profile = () => {
   
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+    // Update URL if switching to edit tab
+    if (value === "edit") {
+      navigate('/profile?edit=true', { replace: true });
+    } else if (isEditMode) {
+      navigate('/profile', { replace: true });
+    }
   };
   
   const handleSignOut = async () => {

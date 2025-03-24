@@ -9,7 +9,8 @@ import DynamicMatches from "@/components/DynamicMatches";
 import WhatWeOffer from "@/components/WhatWeOffer";
 import Testimonials from "@/components/Testimonials";
 import FindMatchButton from "@/components/matchmaking/FindMatchButton";
-import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { User } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -23,6 +24,10 @@ const Index = () => {
     navigate("/login");
   };
 
+  const handleEditProfile = () => {
+    navigate("/profile?edit=true");
+  };
+
   return (
     <Layout>
       <div className="min-h-screen flex flex-col">
@@ -31,7 +36,18 @@ const Index = () => {
           onGetStarted={handleGetStarted} 
           onSignIn={handleSignIn} 
           onDashboard={() => navigate("/dashboard")} 
-          actionButton={<FindMatchButton />}
+          actionButton={
+            user ? (
+              <Button 
+                variant="outline" 
+                onClick={handleEditProfile}
+                className="flex items-center gap-2"
+              >
+                <User className="h-4 w-4" />
+                <span>Edit Profile</span>
+              </Button>
+            ) : <FindMatchButton />
+          }
         />
         <WhatWeOffer />
         <HowItWorks />

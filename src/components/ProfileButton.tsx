@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface ProfileButtonProps {
   variant?: 'default' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive';
@@ -16,8 +17,10 @@ const ProfileButton = ({ variant = 'outline', size = 'default' }: ProfileButtonP
   
   const handleClick = () => {
     if (user) {
+      // Always navigate to edit mode
       navigate('/profile?edit=true');
     } else {
+      toast.error("You need to log in first");
       navigate('/login');
     }
   };

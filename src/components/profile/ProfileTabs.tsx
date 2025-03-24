@@ -16,6 +16,10 @@ interface ProfileTabsProps {
 }
 
 const ProfileTabs = ({ activeTab, onTabChange, userProfile, refreshProfile }: ProfileTabsProps) => {
+  // Add debug to check userProfile data
+  console.log("ProfileTabs rendering with profile:", userProfile);
+  console.log("Active tab:", activeTab);
+
   return (
     <div className="bg-card border rounded-lg shadow-sm">
       <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">

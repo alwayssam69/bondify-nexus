@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, MessageSquare, Video, Users } from "lucide-react";
@@ -82,7 +81,6 @@ const Hero = ({ user, onGetStarted, onSignIn, onDashboard, actionButton }: HeroP
                     <span>Go to Dashboard</span>
                     <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Button>
-                  <ProfileButton variant="outline" size="lg" />
                 </>
               ) : (
                 <>
