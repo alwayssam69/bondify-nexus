@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -99,6 +100,7 @@ const Matches = () => {
           id: profile.id,
           name: profile.full_name || 'Anonymous User',
           age: estimateAgeFromExperienceLevel(profile.experience_level),
+          gender: "unspecified", // Not stored in our schema
           location: profile.location || 'Unknown location',
           bio: profile.bio || '',
           relationshipGoal: 'networking',
@@ -112,8 +114,13 @@ const Matches = () => {
           distance: undefined,
           activityScore: profile.activity_score || 75,
           profileCompleteness: profile.profile_completeness || 80,
-          language: 'English',
+          language: 'English', // Add the required language property
           projectInterests: profile.project_interests || [],
+          university: profile.university || '',
+          courseYear: profile.course_year || '',
+          networkingGoals: profile.networking_goals || [],
+          latitude: profile.latitude,
+          longitude: profile.longitude
         }));
         
         setMatches(userProfiles);
@@ -171,6 +178,7 @@ const Matches = () => {
           id: profile.id,
           name: profile.full_name || 'Anonymous User',
           age: estimateAgeFromExperienceLevel(profile.experience_level),
+          gender: "unspecified", // Not stored in our schema
           location: profile.location || 'Unknown location',
           bio: profile.bio || '',
           relationshipGoal: 'networking',
@@ -183,6 +191,13 @@ const Matches = () => {
           matchScore: 85 + Math.floor(Math.random() * 15),
           activityScore: profile.activity_score || 75,
           profileCompleteness: profile.profile_completeness || 80,
+          language: 'English', // Add the required language property
+          university: profile.university || '',
+          courseYear: profile.course_year || '',
+          networkingGoals: profile.networking_goals || [],
+          projectInterests: profile.project_interests || [],
+          latitude: profile.latitude,
+          longitude: profile.longitude
         }));
         
         setConfirmedMatches(confirmedProfilesData);
@@ -215,6 +230,7 @@ const Matches = () => {
           id: profile.id,
           name: profile.full_name || 'Anonymous User',
           age: estimateAgeFromExperienceLevel(profile.experience_level),
+          gender: "unspecified", // Not stored in our schema
           location: profile.location || 'Unknown location',
           bio: profile.bio || '',
           relationshipGoal: 'networking',
@@ -227,6 +243,13 @@ const Matches = () => {
           matchScore: 70 + Math.floor(Math.random() * 20),
           activityScore: profile.activity_score || 75,
           profileCompleteness: profile.profile_completeness || 80,
+          language: 'English', // Add the required language property
+          university: profile.university || '',
+          courseYear: profile.course_year || '',
+          networkingGoals: profile.networking_goals || [],
+          projectInterests: profile.project_interests || [],
+          latitude: profile.latitude,
+          longitude: profile.longitude
         }));
         
         setSavedProfiles(savedProfilesData);
