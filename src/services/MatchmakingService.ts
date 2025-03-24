@@ -13,6 +13,20 @@ export const getMatchRecommendations = getRecommendations;
 export const getProximityMatches = getProximity;
 export { updateUserCoordinates };
 
+// Define an interface for the user profile data returned from Supabase
+interface UserProfileData {
+  full_name?: string;
+  image_url?: string;
+  industry?: string;
+  user_type?: string;
+  location?: string;
+  interests?: string[];
+  bio?: string;
+  skills?: string[];
+  experience_level?: string;
+  // Add other potential fields that might be returned
+}
+
 // Get confirmed matches for a user (users who mutually liked each other)
 export const getConfirmedMatches = async (userId: string): Promise<UserProfile[]> => {
   try {
@@ -38,8 +52,8 @@ export const getConfirmedMatches = async (userId: string): Promise<UserProfile[]
       // Determine which user is the match (not the current user)
       const matchUserId = match.user_id_1 === userId ? match.user_id_2 : match.user_id_1;
       
-      // Get the profile data from the join
-      const profileData = match.user_profiles || {};
+      // Get the profile data from the join and ensure it's properly typed
+      const profileData = (match.user_profiles || {}) as UserProfileData;
       
       return {
         id: matchUserId,
