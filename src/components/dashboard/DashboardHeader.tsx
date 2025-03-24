@@ -12,6 +12,7 @@ import {
   Moon
 } from "lucide-react";
 import FindMatchButton from "@/components/matchmaking/FindMatchButton";
+import ThemeToggle from "@/components/onboarding/ThemeToggle";
 
 interface DashboardHeaderProps {
   user: any;
@@ -59,6 +60,7 @@ const DashboardHeader = ({
             </>
           )}
         </Button>
+        <ThemeToggle />
       </div>
     </div>
   );

@@ -12,12 +12,13 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Check if running in browser environment before accessing localStorage
+    // Check if we're in the browser environment
     if (typeof window !== "undefined") {
       const savedTheme = localStorage.getItem("theme") as Theme;
+      // Use saved theme or detect user's preference
       return savedTheme || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     }
-    return "light"; // Default fallback
+    return "light"; // Default fallback for SSR
   });
 
   useEffect(() => {
