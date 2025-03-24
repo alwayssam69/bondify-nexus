@@ -11,8 +11,15 @@ const FloatingNavigation = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   
-  // Only show floating navigation on mobile devices
-  if (!isMobile) {
+  // Only show floating navigation on mobile devices and when logged in
+  // Check if we're on a route that should show the floating nav
+  const shouldShowNav = isMobile && 
+    !location.pathname.startsWith('/login') && 
+    !location.pathname.startsWith('/register') && 
+    !location.pathname.startsWith('/onboarding') && 
+    location.pathname !== '/';
+  
+  if (!shouldShowNav) {
     return null;
   }
   

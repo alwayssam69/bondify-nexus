@@ -11,6 +11,8 @@ import Matches from './pages/Matches';
 import Chat from './pages/Chat';
 import Onboarding from './pages/Onboarding';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import FloatingNavigation from './components/FloatingNavigation';
+import Index from './pages/Index';
 
 function App() {
   return (
@@ -19,9 +21,9 @@ function App() {
         <AppHeader />
         <main className="flex-1">
           <Routes>
+            <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/" element={<Onboarding />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/profile/:id" element={<Profile />} /> {/* Using Profile component for public profile */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -30,6 +32,7 @@ function App() {
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
           </Routes>
         </main>
+        <FloatingNavigation />
         <Toaster />
       </div>
     </Router>
