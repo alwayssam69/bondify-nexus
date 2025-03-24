@@ -1,13 +1,16 @@
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/layout/Layout";
 import ProfileForm from "@/components/profile/ProfileForm";
 import { ProfileFormValues } from "@/components/profile/ProfileFormSchema";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 const Profile = () => {
+  const navigate = useNavigate();
   const { profile, refreshProfile, user } = useAuth();
   const [initialData, setInitialData] = useState<Partial<ProfileFormValues>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -55,25 +58,41 @@ const Profile = () => {
     }
   }, [profile]);
 
+  const goBack = () => {
+    navigate(-1);
+  };
+
   // Display empty profile form only if profile is explicitly null or undefined after loading finishes
   const profileMissing = !isLoading && !profile;
 
   return (
     <Layout className="py-24 px-6">
       <div className="max-w-3xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Your Profile</h1>
-          <p className="text-muted-foreground">
-            {profileMissing ? 
-              "Complete your profile to get better matches" : 
-              "Update your information to get better matches"}
-          </p>
+        <div className="mb-8 flex items-center">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={goBack} 
+            className="mr-2"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Your Profile</h1>
+            <p className="text-muted-foreground">
+              {profileMissing ? 
+                "Complete your profile to get better matches" : 
+                "Update your information to get better matches"}
+            </p>
+          </div>
         </div>
         
         <div className="card-glass rounded-xl p-8">
           {isLoading ? (
-            <div className="flex justify-center items-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="flex flex-col justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+              <p className="text-muted-foreground">Loading your profile data...</p>
             </div>
           ) : profileMissing ? (
             <div className="text-center py-8">

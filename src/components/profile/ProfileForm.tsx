@@ -57,7 +57,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
       
       const { error } = await supabase
         .from('user_profiles')
-        .update({
+        .upsert({
+          id: user.id,
           full_name: values.fullName,
           location: values.location,
           bio: values.bio,
@@ -75,7 +76,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
           updated_at: new Date().toISOString(),
           profile_completeness: completenessScore,
         })
-        .eq('id', user.id);
+        .select();
       
       if (error) {
         throw error;
@@ -123,7 +124,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate(-1)}
           >
             Cancel
           </Button>

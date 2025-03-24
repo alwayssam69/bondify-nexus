@@ -17,6 +17,13 @@ import type { Notification } from "./notifications/types";
 const NotificationsDropdown = () => {
   const navigate = useNavigate();
   const { notifications, isLoading, unreadCount, markAsRead, markAllAsRead, error } = useNotifications();
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = React.useState(false);
+  
+  React.useEffect(() => {
+    if (!isLoading) {
+      setHasInitiallyLoaded(true);
+    }
+  }, [isLoading]);
 
   const handleNotificationClick = (notification: Notification) => {
     // Handle navigation based on notification type
@@ -69,7 +76,7 @@ const NotificationsDropdown = () => {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        {!isLoading && notifications.length === 0 && (
+        {(hasInitiallyLoaded || !isLoading) && notifications.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8 px-4 text-center text-gray-500">
             <Inbox className="h-12 w-12 mb-2 text-gray-400" />
             <p>No notifications yet</p>
@@ -80,7 +87,7 @@ const NotificationsDropdown = () => {
         {!error && notifications.length > 0 && (
           <NotificationList 
             notifications={notifications} 
-            isLoading={false}  // Changed from isLoading to false to prevent loading state
+            isLoading={false}
             markAsRead={markAsRead}
             markAllAsRead={markAllAsRead}
             onClose={() => {}}

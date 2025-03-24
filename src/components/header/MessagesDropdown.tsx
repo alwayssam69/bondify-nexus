@@ -25,6 +25,7 @@ const MessagesDropdown = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
   
   useEffect(() => {
     const loadMessages = async () => {
@@ -39,6 +40,7 @@ const MessagesDropdown = () => {
         setMessages([]);
       } finally {
         setIsLoading(false);
+        setHasInitiallyLoaded(true);
       }
     };
 
@@ -74,7 +76,7 @@ const MessagesDropdown = () => {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        {!isLoading && messages.length === 0 ? (
+        {(hasInitiallyLoaded || !isLoading) && messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 px-4 text-center text-gray-500">
             <Inbox className="h-12 w-12 mb-2 text-gray-400" />
             <p>No messages yet</p>
@@ -99,7 +101,7 @@ const MessagesDropdown = () => {
               </Link>
             </DropdownMenuItem>
           ))
-        ) : isLoading && (
+        ) : isLoading && !hasInitiallyLoaded && (
           <div className="p-4 flex justify-center">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
           </div>
