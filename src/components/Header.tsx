@@ -47,9 +47,22 @@ const Header = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    // Close mobile menu when route changes
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
   const initiateVideoCall = (contact: {id: string, name: string}) => {
     toast.info(`Initiating video call with ${contact.name}`);
     setActiveVideoCall(contact);
+  };
+
+  const simulateIncomingCall = () => {
+    setIncomingCall({
+      contactId: "simulated-call-id",
+      contactName: "Incoming Test Call"
+    });
+    toast.info("Simulating incoming call for testing");
   };
 
   return (
@@ -57,7 +70,7 @@ const Header = () => {
       <header
         className={cn(
           "sticky top-0 z-50 transition-all duration-300 py-2 px-3 md:px-5",
-          scrolled ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg shadow-sm" : "bg-transparent"
+          scrolled ? "bg-background/90 backdrop-blur-lg shadow-sm" : "bg-background/50"
         )}
       >
         <div className="max-w-7xl mx-auto flex flex-col items-center justify-between">
@@ -84,7 +97,7 @@ const Header = () => {
                   {/* Video Call Dropdown */}
                   <VideoCallDropdown 
                     onInitiateCall={initiateVideoCall}
-                    onSimulateIncomingCall={undefined}
+                    onSimulateIncomingCall={process.env.NODE_ENV === 'development' ? simulateIncomingCall : undefined}
                   />
 
                   {/* Messages Dropdown */}
@@ -155,7 +168,7 @@ const Header = () => {
         </div>
 
         {/* Search Overlay */}
-        <SearchOverlay isOpen={searchOpen} />
+        <SearchOverlay isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
 
         {/* Mobile Menu */}
         <MobileMenu 

@@ -1,5 +1,5 @@
+
 import React, { useState, useEffect } from "react";
-import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,8 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getMatchRecommendations, getProximityMatches, updateUserCoordinates } from "@/services/MatchmakingAPI";
 import { 
   Loader2, MapPin, Filter, Users, Sparkles, 
-  RefreshCw, BarChart3, MessageSquare, Activity,
-  Eye, LightbulbIcon, TrendingUp, User, Mail, Bell
+  RefreshCw, BarChart3, MessageSquare, Activity
 } from "lucide-react";
 import { toast } from "sonner";
 import { useGeolocation } from "@/hooks/useGeolocation";
@@ -34,16 +33,12 @@ import ProfileCompletionCard from "@/components/dashboard/ProfileCompletionCard"
 import TrendingSkillsCard from "@/components/dashboard/TrendingSkillsCard";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { 
-  ChartContainer, 
-  ChartTooltip, 
-  ChartTooltipContent 
-} from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const { user, profile } = useAuth();
   const { toast: uiToast } = useToast();
+  const navigate = useNavigate();
   const [recommendedMatches, setRecommendedMatches] = useState<UserProfile[]>([]);
   const [nearbyMatches, setNearbyMatches] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,7 +57,7 @@ const Dashboard = () => {
   });
 
   const engagementData = {
-    activeMatches: 0,
+    activeMatches: recommendedMatches.length,
     connectionsTotal: 0,
     ongoingChats: 0,
     profileViews: 0,
@@ -71,6 +66,7 @@ const Dashboard = () => {
     responseRate: 0,
   };
 
+  // Here we're not using a predetermined set of data
   const activityData = [
     { day: 'Mon', matches: 0, messages: 0, views: 0 },
     { day: 'Tue', matches: 0, messages: 0, views: 0 },
@@ -82,12 +78,34 @@ const Dashboard = () => {
   ];
 
   useEffect(() => {
-    loadMatchData();
+    if (user) {
+      loadMatchData();
+      
+      if (user?.user_metadata?.full_name) {
+        // Calculate profile completion based on available data
+        let completionScore = 0;
+        const completionMetrics = [
+          !!profile?.full_name,         // 20%
+          !!profile?.industry,          // 15%
+          !!profile?.skills?.length,    // 15%
+          !!profile?.location,          // 10%
+          !!profile?.bio,               // 20%
+          !!profile?.image_url          // 20%
+        ];
+        
+        const scores = [20, 15, 15, 10, 20, 20];
+        completionMetrics.forEach((isComplete, index) => {
+          if (isComplete) completionScore += scores[index];
+        });
+        
+        setProfileCompletion(completionScore);
+      }
     
-    if (locationEnabled && geolocation.latitude && geolocation.longitude && !geolocation.error) {
-      updateUserLocationCoordinates(geolocation.latitude, geolocation.longitude);
+      if (locationEnabled && geolocation.latitude && geolocation.longitude && !geolocation.error) {
+        updateUserLocationCoordinates(geolocation.latitude, geolocation.longitude);
+      }
     }
-  }, [user, geolocation.latitude, geolocation.longitude, locationEnabled]);
+  }, [user, geolocation.latitude, geolocation.longitude, locationEnabled, profile]);
 
   const loadMatchData = async () => {
     if (!user?.id) return;
@@ -169,16 +187,17 @@ const Dashboard = () => {
   };
 
   const handleViewProfile = (id: string) => {
-    console.log("View profile:", id);
+    navigate(`/profile/${id}`);
   };
 
   const handleConnectRequest = async (id: string) => {
     toast.success("Connection request sent!");
+    // Here you'd implement the actual connection request
   };
 
   const handleStartChat = (id: string) => {
     toast.success("Opening chat with user...");
-    // Navigate to chat component with selected user
+    navigate(`/chat?contact=${id}`);
   };
 
   const handleRefreshMatches = () => {
@@ -266,8 +285,20 @@ const Dashboard = () => {
 
   const newMatchesToday = recommendedMatches.length ? Math.min(recommendedMatches.length, 5) : 0;
 
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center p-8">
+          <h1 className="text-2xl font-bold mb-4">Please sign in</h1>
+          <p className="mb-6 text-muted-foreground">You need to be logged in to view your dashboard</p>
+          <Button onClick={() => navigate('/login')}>Sign In</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <Layout>
+    <div className="min-h-screen bg-background">
       <div className="container py-6">
         <DashboardHeader 
           user={user} 
@@ -281,10 +312,11 @@ const Dashboard = () => {
             <ProfileCompletionCard 
               completion={profileCompletion}
               suggestedActions={[
-                "Add 3 more professional skills",
-                "Complete your bio section",
-                "Add your previous work experience"
-              ]}
+                profile?.full_name ? null : "Add your full name",
+                profile?.skills?.length ? null : "Add professional skills",
+                profile?.bio ? null : "Complete your bio section",
+                profile?.image_url ? null : "Add a profile photo"
+              ].filter(Boolean) as string[]}
             />
             
             <EngagementStats 
@@ -333,40 +365,12 @@ const Dashboard = () => {
                     <h3 className="text-sm font-medium text-muted-foreground">
                       Networking Activity (Last 7 Days)
                     </h3>
-                    <div className="h-[250px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={activityData}>
-                          <XAxis dataKey="day" />
-                          <YAxis />
-                          <Tooltip content={({active, payload, label}) => {
-                            if (active && payload && payload.length) {
-                              return (
-                                <div className="rounded-lg border bg-background p-2 shadow-md">
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div className="flex items-center">
-                                      <div className="h-2 w-2 rounded bg-blue-500" />
-                                      <span className="ml-1 text-xs">{`Matches: ${payload[0].value}`}</span>
-                                    </div>
-                                    <div className="flex items-center">
-                                      <div className="h-2 w-2 rounded bg-green-500" />
-                                      <span className="ml-1 text-xs">{`Messages: ${payload[1].value}`}</span>
-                                    </div>
-                                    <div className="flex items-center">
-                                      <div className="h-2 w-2 rounded bg-amber-500" />
-                                      <span className="ml-1 text-xs">{`Views: ${payload[2].value}`}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }} />
-                          <Legend />
-                          <Bar dataKey="matches" fill="#3b82f6" name="Matches" />
-                          <Bar dataKey="messages" fill="#22c55e" name="Messages" />
-                          <Bar dataKey="views" fill="#f59e0b" name="Profile Views" />
-                        </BarChart>
-                      </ResponsiveContainer>
+                    <div className="text-center py-8 text-muted-foreground border border-dashed rounded-md">
+                      <Activity className="mx-auto h-12 w-12 mb-4 opacity-20" />
+                      <p className="font-medium mb-1">Not enough data yet</p>
+                      <p className="text-sm">
+                        Start connecting with professionals to see your activity stats
+                      </p>
                     </div>
                     <MatchQualityChart />
                   </div>
@@ -462,7 +466,7 @@ const Dashboard = () => {
                                 "Try adjusting your filters to see more results" : 
                                 "Complete your profile to help us find better matches for you"}
                             </p>
-                            <Button>Update Profile</Button>
+                            <Button onClick={() => navigate("/profile")}>Update Profile</Button>
                           </div>
                         )}
                       </TabsContent>
@@ -535,25 +539,35 @@ const Dashboard = () => {
                               </div>
                             </div>
                             
+                            {/* Map section */}
                             <div className="bg-muted/20 rounded-lg h-[300px] relative overflow-hidden">
                               {geolocation.latitude && geolocation.longitude ? (
-                                <NearbyProfessionalsMap 
-                                  userLocation={{
-                                    lat: geolocation.latitude,
-                                    lng: geolocation.longitude
-                                  }}
-                                  professionals={filteredNearbyMatches.map(match => ({
-                                    id: match.id,
-                                    name: match.name,
-                                    position: match.latitude && match.longitude 
-                                      ? { lat: match.latitude, lng: match.longitude }
-                                      : undefined,
-                                    userType: match.userType || '',
-                                    industry: match.industry || '',
-                                    matchScore: match.matchScore || 0
-                                  }))}
-                                  onViewProfile={handleViewProfile}
-                                />
+                                filteredNearbyMatches.length > 0 ? (
+                                  <NearbyProfessionalsMap 
+                                    userLocation={{
+                                      lat: geolocation.latitude,
+                                      lng: geolocation.longitude
+                                    }}
+                                    professionals={filteredNearbyMatches.map(match => ({
+                                      id: match.id,
+                                      name: match.name,
+                                      position: match.latitude && match.longitude 
+                                        ? { lat: match.latitude, lng: match.longitude }
+                                        : undefined,
+                                      userType: match.userType || '',
+                                      industry: match.industry || '',
+                                      matchScore: match.matchScore || 0
+                                    }))}
+                                    onViewProfile={handleViewProfile}
+                                  />
+                                ) : (
+                                  <div className="flex items-center justify-center h-full">
+                                    <div className="text-center p-6">
+                                      <p>No professionals found in your area</p>
+                                      <p className="text-sm text-muted-foreground mt-1">Try increasing your search radius</p>
+                                    </div>
+                                  </div>
+                                )
                               ) : (
                                 <div className="flex items-center justify-center h-full">
                                   <div className="text-center p-6">
@@ -598,9 +612,8 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 
 export default Dashboard;
-
