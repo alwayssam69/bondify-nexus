@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Form, FormSection } from "@/components/ui/form";
@@ -43,6 +43,29 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
       useCurrentLocation: initialData?.useCurrentLocation || false,
     },
   });
+  
+  // Update form values when initialData changes
+  useEffect(() => {
+    if (initialData && Object.keys(initialData).length > 0) {
+      // Reset form with new values
+      form.reset({
+        fullName: initialData.fullName || "",
+        location: initialData.location || "",
+        bio: initialData.bio || "",
+        industry: initialData.industry || "",
+        userType: initialData.userType || "",
+        experienceLevel: initialData.experienceLevel || "",
+        university: initialData.university || "",
+        courseYear: initialData.courseYear || "",
+        skills: initialData.skills || [],
+        interests: initialData.interests || [],
+        projectInterests: initialData.projectInterests || [],
+        state: initialData.state || "",
+        city: initialData.city || "",
+        useCurrentLocation: initialData.useCurrentLocation || false,
+      });
+    }
+  }, [initialData, form]);
   
   const onSubmit = async (values: ProfileFormValues) => {
     if (!user) {
@@ -120,7 +143,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
           <LocationSection form={form} />
         </FormSection>
         
-        <div className="flex justify-end gap-4">
+        <div className="flex justify-between gap-4">
           <Button
             type="button"
             variant="outline"

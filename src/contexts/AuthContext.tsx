@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,7 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [profileLoaded, setProfileLoaded] = useState(false);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string): Promise<any> => {
     try {
       console.log("Fetching profile for user:", userId);
       let { data, error } = await supabase
@@ -36,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error("Error fetching from user_profiles:", error);
-        toast.error(`Error fetching profile: ${error.message}`);
+        throw error;
       }
 
       if (!data) {
@@ -49,7 +48,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (result.error) {
           console.error("Error fetching profile from profiles table:", result.error);
-          toast.error(`Error fetching profile: ${result.error.message}`);
           
           if (!result.data) {
             const userData = await supabase.auth.getUser();
@@ -66,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const { error: profileError } = await supabase.from('profiles').insert(newProfile);
               if (profileError) {
                 console.error("Error creating profile in profiles table:", profileError);
-                toast.error(`Error creating profile: ${profileError.message}`);
+                throw profileError;
               }
               
               const userProfileData = {
@@ -86,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const { error: userProfileError } = await supabase.from('user_profiles').insert(userProfileData);
               if (userProfileError) {
                 console.error("Error creating profile in user_profiles table:", userProfileError);
-                toast.error(`Error creating user profile: ${userProfileError.message}`);
+                throw userProfileError;
               }
               
               data = newProfile;
@@ -128,17 +126,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Profile data retrieved:", data);
       setProfile(data);
       setProfileLoaded(true);
+      return data;
     } catch (error) {
       console.error("Error in fetchProfile:", error);
-      toast.error(`Error fetching profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setProfileLoaded(true);
+      throw error;
     }
   };
 
   useEffect(() => {
     console.log("AuthProvider: Setting up auth state listener");
     let isActive = true;
-    let timeout: NodeJS.Timeout;
     
     // Set up auth listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -153,7 +151,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(newSession?.user ?? null);
           
           if (newSession?.user) {
-            await fetchProfile(newSession.user.id);
+            try {
+              const profileData = await fetchProfile(newSession.user.id);
+              setProfile(profileData);
+            } catch (error) {
+              console.error("Error fetching profile after sign in:", error);
+              // Still set user as logged in even if profile fetch fails
+            }
           }
         } else if (event === 'SIGNED_OUT') {
           console.log("User signed out");
@@ -166,13 +170,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(newSession?.user ?? null);
           
           if (newSession?.user) {
-            await fetchProfile(newSession.user.id);
+            try {
+              const profileData = await fetchProfile(newSession.user.id);
+              setProfile(profileData);
+            } catch (error) {
+              console.error("Error fetching profile after user update:", error);
+            }
           }
         }
       }
     );
 
-    // Then check for existing session with a timeout
+    // Then check for existing session
     const getSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -184,7 +193,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user) {
           setSession(session);
           setUser(session.user);
-          await fetchProfile(session.user.id);
+          try {
+            const profileData = await fetchProfile(session.user.id);
+            setProfile(profileData);
+          } catch (error) {
+            console.error("Error fetching initial profile:", error);
+            // Don't prevent app from loading if profile fetch fails
+          }
         } else {
           setSession(null);
           setUser(null);
@@ -193,9 +208,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (error) {
         console.error("Error getting session:", error);
-        toast.error(`Error checking session: ${error instanceof Error ? error.message : 'Unknown error'}`);
       } finally {
         if (isActive) {
+          // Ensure we exit loading state even if there are errors
           setIsLoading(false);
         }
       }
@@ -203,13 +218,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     getSession();
 
-    // Ensure loading state doesn't get stuck
-    timeout = setTimeout(() => {
+    // Ensure loading state doesn't get stuck (safety timeout)
+    const timeout = setTimeout(() => {
       if (isActive && isLoading) {
         console.log("Force ending loading state after timeout");
         setIsLoading(false);
       }
-    }, 5000);
+    }, 3000); // Reduced from 5000 to 3000 ms for faster response
 
     return () => {
       isActive = false;
@@ -225,8 +240,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [profileLoaded, isLoading]);
 
   const refreshProfile = async () => {
-    if (user) {
-      await fetchProfile(user.id);
+    if (!user) return;
+    
+    try {
+      const data = await fetchProfile(user.id);
+      return data;
+    } catch (error) {
+      console.error("Error in refreshProfile:", error);
+      toast.error("Failed to refresh profile data");
+      throw error;
     }
   };
 

@@ -8,12 +8,14 @@ import { ProfileFormValues } from "@/components/profile/ProfileFormSchema";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { NoMatchesFound } from "@/components/matchmaking/NoMatchesFound";
 
 const Profile = () => {
   const navigate = useNavigate();
   const { profile, refreshProfile, user } = useAuth();
   const [initialData, setInitialData] = useState<Partial<ProfileFormValues>>({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   
   useEffect(() => {
     // Immediately refresh profile data when component mounts
@@ -21,6 +23,8 @@ const Profile = () => {
       if (!user) return;
       
       setIsLoading(true);
+      setHasError(false);
+      
       try {
         // Set a timeout to ensure we don't load for more than 5 seconds
         const timeoutPromise = new Promise((_, reject) => {
@@ -32,6 +36,7 @@ const Profile = () => {
         } catch (error) {
           console.error("Error refreshing profile:", error);
           toast.error("Failed to load your profile data");
+          setHasError(true);
         }
       } finally {
         setIsLoading(false);
@@ -40,6 +45,8 @@ const Profile = () => {
     
     if (user) {
       loadProfileData();
+    } else {
+      setIsLoading(false);
     }
   }, [refreshProfile, user]);
   
@@ -61,11 +68,47 @@ const Profile = () => {
         city: profile.city || "",
         useCurrentLocation: profile.use_current_location || false,
       });
+      setIsLoading(false);
     }
   }, [profile]);
 
   const goBack = () => {
     navigate(-1);
+  };
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex flex-col justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground">Loading your profile data...</p>
+        </div>
+      );
+    }
+    
+    if (hasError) {
+      return (
+        <div className="text-center py-8">
+          <p className="mb-4 text-muted-foreground">
+            We encountered an error loading your profile. Please try again.
+          </p>
+          <Button onClick={() => refreshProfile()}>Retry</Button>
+        </div>
+      );
+    }
+    
+    if (!profile) {
+      return (
+        <div className="text-center py-8">
+          <p className="mb-4 text-muted-foreground">
+            Please complete your profile to start connecting with others.
+          </p>
+          <ProfileForm initialData={{}} />
+        </div>
+      );
+    }
+    
+    return <ProfileForm initialData={initialData} />;
   };
 
   return (
@@ -92,21 +135,7 @@ const Profile = () => {
         </div>
         
         <div className="card-glass rounded-xl p-8">
-          {isLoading ? (
-            <div className="flex flex-col justify-center items-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-              <p className="text-muted-foreground">Loading your profile data...</p>
-            </div>
-          ) : !profile ? (
-            <div className="text-center py-8">
-              <p className="mb-4 text-muted-foreground">
-                Please complete your profile to start connecting with others.
-              </p>
-              <ProfileForm initialData={{}} />
-            </div>
-          ) : (
-            <ProfileForm initialData={initialData} />
-          )}
+          {renderContent()}
         </div>
       </div>
     </Layout>
