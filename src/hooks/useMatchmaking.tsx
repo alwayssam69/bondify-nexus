@@ -86,6 +86,18 @@ export const useMatchmaking = ({
         );
       }
 
+      if (filters.relationshipGoal) {
+        // For relationshipGoal, try to match users with similar goals or where one has what the other seeks
+        matchedProfiles = matchedProfiles.filter(profile => {
+          // If the profile has matching relationship goals or is compatible
+          return profile.relationshipGoal === filters.relationshipGoal ||
+            // Special cases for compatible relationship goals
+            (filters.relationshipGoal === "mentorship" && profile.relationshipGoal === "networking") ||
+            (filters.relationshipGoal === "job" && profile.relationshipGoal === "networking") ||
+            (filters.relationshipGoal === "collaboration" && profile.relationshipGoal === "networking");
+        });
+      }
+
       // Sort by match score (highest first)
       matchedProfiles.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
       

@@ -22,4 +22,5 @@ export interface NotificationState {
   markAsRead: (id: string) => Promise<void>;
   refreshNotifications: () => Promise<void>;
   markAllAsRead: () => Promise<void>;
+  fetchNotifications?: (page: number, limit: number) => Promise<Notification[]>;
 }

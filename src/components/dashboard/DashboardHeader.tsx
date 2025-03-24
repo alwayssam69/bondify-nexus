@@ -11,6 +11,7 @@ import {
   Sun,
   Moon
 } from "lucide-react";
+import FindMatchButton from "@/components/matchmaking/FindMatchButton";
 
 interface DashboardHeaderProps {
   user: any;
@@ -38,9 +39,10 @@ const DashboardHeader = ({
         </p>
       </div>
       <div className="flex items-center gap-2">
+        <FindMatchButton size="sm" variant="default" className="h-9" />
         <Button 
           onClick={onRefresh} 
-          variant="default"
+          variant="outline"
           size="sm"
           className="h-9"
           disabled={isLoading}

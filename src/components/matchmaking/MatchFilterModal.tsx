@@ -31,6 +31,8 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
   const [distance, setDistance] = useState(25);
   const [useLocation, setUseLocation] = useState(false);
   const [helpType, setHelpType] = useState<"need" | "offer">("need");
+  const [relationshipGoal, setRelationshipGoal] = useState("networking");
+  const [experienceLevel, setExperienceLevel] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
   const geolocation = useGeolocation({
@@ -46,6 +48,8 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
       setDistance(25);
       setUseLocation(false);
       setHelpType("need");
+      setRelationshipGoal("networking");
+      setExperienceLevel("");
     }
   }, [isOpen]);
 
@@ -90,6 +94,8 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
         skills: skills.join(','),
         distance: distance.toString(),
         helpType,
+        relationshipGoal,
+        experienceLevel,
       });
       
       if (useLocation && geolocation.latitude && geolocation.longitude) {
@@ -215,6 +221,47 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
                 </div>
               </div>
             )}
+          </div>
+          
+          {/* Relationship Goal Selection */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Match Purpose</Label>
+            <Select 
+              value={relationshipGoal} 
+              onValueChange={setRelationshipGoal}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select purpose" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="networking">🤝 Networking</SelectItem>
+                <SelectItem value="collaboration">🎯 Collaboration</SelectItem>
+                <SelectItem value="job">💼 Job Opportunity</SelectItem>
+                <SelectItem value="mentorship">👨‍🏫 Mentorship</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Experience Level Selection */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Experience Level</Label>
+            <Select 
+              value={experienceLevel || "select-level"} 
+              onValueChange={(value) => {
+                if (value === "select-level") return;
+                setExperienceLevel(value);
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select experience level" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="select-level">Select experience level</SelectItem>
+                <SelectItem value="beginner">🔹 Beginner</SelectItem>
+                <SelectItem value="intermediate">🏆 Mid-Level</SelectItem>
+                <SelectItem value="expert">👑 Senior</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           {/* Help Type Selection */}
