@@ -17,7 +17,7 @@ import LocationSection from "./LocationSection";
 
 interface ProfileFormProps {
   initialData?: Partial<ProfileFormValues>;
-  onSuccess?: () => void; // Add the onSuccess prop
+  onSuccess?: () => void;
 }
 
 const ProfileForm: React.FC<ProfileFormProps> = ({ initialData, onSuccess }) => {

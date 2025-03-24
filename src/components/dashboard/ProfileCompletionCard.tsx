@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, AlertCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface ProfileCompletionCardProps {
   completion: number;
@@ -18,6 +19,16 @@ const ProfileCompletionCard = ({
   className = "",
   onUpdateProfile
 }: ProfileCompletionCardProps) => {
+  const navigate = useNavigate();
+  
+  const handleUpdateProfile = () => {
+    if (onUpdateProfile) {
+      onUpdateProfile();
+    } else {
+      navigate("/profile");
+    }
+  };
+  
   return (
     <Card className={className}>
       <CardHeader className="pb-2">
@@ -55,7 +66,7 @@ const ProfileCompletionCard = ({
             </ul>
           </div>
 
-          <Button onClick={onUpdateProfile} className="w-full">
+          <Button onClick={handleUpdateProfile} className="w-full">
             Update Profile
           </Button>
         </div>
