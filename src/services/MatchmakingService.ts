@@ -11,6 +11,7 @@ import { UserProfile } from '@/lib/matchmaking';
 // Re-export functions from MatchmakingAPI for easier imports elsewhere
 export const getMatchRecommendations = getRecommendations;
 export const getProximityMatches = getProximity;
+export { updateUserCoordinates };
 
 // Get confirmed matches for a user (users who mutually liked each other)
 export const getConfirmedMatches = async (userId: string): Promise<UserProfile[]> => {
@@ -20,7 +21,7 @@ export const getConfirmedMatches = async (userId: string): Promise<UserProfile[]
       .select(`
         user_id_1,
         user_id_2,
-        user_profiles!user_matches_user_id_2_fkey(*)
+        user_profiles:user_id_2(*)
       `)
       .or(`user_id_1.eq.${userId},user_id_2.eq.${userId}`)
       .order('created_at', { ascending: false })
@@ -32,6 +33,8 @@ export const getConfirmedMatches = async (userId: string): Promise<UserProfile[]
     const matches = data.map(match => {
       // Determine which user is the match (not the current user)
       const matchUserId = match.user_id_1 === userId ? match.user_id_2 : match.user_id_1;
+      
+      // Get the profile data from the join
       const profileData = match.user_profiles;
       
       return {
