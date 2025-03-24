@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { UserProfile } from "@/lib/matchmaking";
 
@@ -89,6 +88,92 @@ export const updateUserCoordinates = async (
     return true;
   } catch (error) {
     console.error('Exception in updateUserCoordinates:', error);
+    return false;
+  }
+};
+
+/**
+ * Get confirmed matches for a user
+ */
+export const getConfirmedMatches = async (userId: string): Promise<UserProfile[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('user_matches')
+      .select('matched_user_id')
+      .eq('user_id', userId)
+      .eq('status', 'accepted');
+
+    if (error) {
+      console.error('Error fetching confirmed matches:', error);
+      return [];
+    }
+
+    // Get full profiles for matched users
+    const matchedUserIds = data.map(match => match.matched_user_id);
+    const { data: profiles, error: profilesError } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .in('id', matchedUserIds);
+
+    if (profilesError) {
+      console.error('Error fetching matched profiles:', profilesError);
+      return [];
+    }
+
+    return transformMatchResults(profiles);
+  } catch (error) {
+    console.error('Exception in getConfirmedMatches:', error);
+    return [];
+  }
+};
+
+/**
+ * Record a swipe action (like/pass)
+ */
+export const recordSwipeAction = async (
+  userId: string,
+  targetId: string,
+  action: 'like' | 'pass' | 'save'
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('user_swipes')
+      .insert({
+        user_id: userId,
+        target_id: targetId,
+        action: action
+      });
+
+    if (error) {
+      console.error('Error recording swipe action:', error);
+      return false;
+    }
+
+    // If it's a like, create a match if the other user has also liked
+    if (action === 'like') {
+      const { data: mutual, error: mutualError } = await supabase
+        .from('user_swipes')
+        .select('*')
+        .eq('user_id', targetId)
+        .eq('target_id', userId)
+        .eq('action', 'like')
+        .single();
+
+      if (!mutualError && mutual) {
+        // Create match
+        await supabase
+          .from('user_matches')
+          .insert({
+            user_id: userId,
+            matched_user_id: targetId,
+            status: 'accepted'
+          });
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Exception in recordSwipeAction:', error);
     return false;
   }
 };

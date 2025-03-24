@@ -18,6 +18,13 @@ export interface UserProfile {
   distance?: number;
   activityScore: number;
   profileCompleteness: number;
+  // Add missing properties
+  university?: string;
+  courseYear?: string;
+  networkingGoals?: string[];
+  projectInterests?: string[];
+  latitude?: number;
+  longitude?: number;
 }
 
 export const loadSampleUsers = (): UserProfile[] => {
