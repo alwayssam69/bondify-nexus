@@ -55,20 +55,20 @@ const Navigation = ({ isLoggedIn }: NavigationProps) => {
     >
       <motion.div 
         className={cn(
-          "bg-gray-900 border border-gray-800 rounded-full py-2 px-3 md:px-5 shadow-md",
+          "bg-gray-900 border border-gray-800 rounded-full py-2.5 px-3 md:px-5 shadow-md",
           "transition-all duration-300",
           "flex items-center justify-center"
         )}
         whileHover={{ scale: 1.02 }}
       >
-        <div className="flex items-center gap-1.5 md:gap-3 overflow-x-auto relative max-w-[calc(100vw-40px)] md:max-w-none">
+        <div className="flex items-center gap-2 md:gap-3 overflow-x-auto relative max-w-[calc(100vw-40px)] md:max-w-none">
           {navLinks.map((link) => (
             <Link
               key={link.name}
               to={link.path}
               onClick={(e) => handleNavClick(link.path, e)}
               className={cn(
-                "relative whitespace-nowrap px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium rounded-full transition-colors",
+                "relative whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm font-medium rounded-full transition-colors",
                 isActive(link.path)
                   ? "text-white"
                   : "text-gray-200 hover:text-white"

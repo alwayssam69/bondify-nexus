@@ -5,24 +5,14 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Home, Users, MessageCircle, HelpCircle, Newspaper } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAuth } from "@/contexts/AuthContext";
 
 const FloatingNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { user } = useAuth();
   
-  // Only show floating navigation on mobile devices and when logged in
-  // Check if we're on a route that should show the floating nav
-  const shouldShowNav = isMobile && 
-    user && // Only show when logged in
-    !location.pathname.startsWith('/login') && 
-    !location.pathname.startsWith('/register') && 
-    !location.pathname.startsWith('/onboarding') && 
-    location.pathname !== '/';
-  
-  if (!shouldShowNav) {
+  // Only show floating navigation on mobile devices
+  if (!isMobile) {
     return null;
   }
   
@@ -48,7 +38,7 @@ const FloatingNavigation = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-floating-nav md:hidden"
+      className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 md:hidden"
     >
       <div className="bg-gray-900 rounded-full py-2 px-4 border border-gray-800 shadow-md flex items-center gap-6">
         {navLinks.map((link) => (

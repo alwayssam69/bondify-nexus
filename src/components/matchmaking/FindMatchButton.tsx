@@ -1,48 +1,44 @@
 
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button, ButtonProps } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
-import { cn } from "@/lib/utils";
-import SkillsSelector from "./SkillsSelector";
+import MatchFilterModal from "./MatchFilterModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-interface FindMatchButtonProps extends ButtonProps {
+interface FindMatchButtonProps {
+  size?: "default" | "lg" | "sm";
+  variant?: "default" | "outline" | "secondary" | "ghost";
+  className?: string;
   showIcon?: boolean;
   label?: string;
 }
 
 const FindMatchButton: React.FC<FindMatchButtonProps> = ({
-  className,
+  size = "lg",
   variant = "default",
-  size = "default",
-  showIcon = false,
-  label = "Find Matches",
-  ...props
+  className = "",
+  showIcon = true,
+  label = "Find a Match",
 }) => {
-  const [isSkillsSelectorOpen, setIsSkillsSelectorOpen] = useState(false);
-  const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const handleClick = () => {
     if (!user) {
-      toast.error("You need to sign in to find matches");
-      navigate("/login");
+      toast.info("Please sign in to find matches", {
+        description: "Create an account or sign in to connect with professionals",
+        action: {
+          label: "Sign In",
+          onClick: () => navigate("/login"),
+        },
+      });
       return;
     }
     
-    setIsSkillsSelectorOpen(true);
-  };
-
-  const handleSubmit = (industry: string, skills: string[]) => {
-    // Create URL parameters
-    const params = new URLSearchParams();
-    if (industry) params.append("industry", industry);
-    if (skills.length > 0) params.append("skills", skills.join(","));
-    
-    // Navigate to matches page with filters
-    navigate(`/matches?${params.toString()}`);
+    setIsModalOpen(true);
   };
 
   return (
@@ -50,18 +46,23 @@ const FindMatchButton: React.FC<FindMatchButtonProps> = ({
       <Button
         variant={variant}
         size={size}
-        className={cn("gap-2", className)}
         onClick={handleClick}
-        {...props}
+        className={`group relative overflow-hidden transition-all duration-300 ${
+          variant === "default"
+            ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+            : ""
+        } ${className}`}
       >
-        {showIcon && <Search className="h-4 w-4" />}
-        {label}
+        <span className="relative z-10 flex items-center gap-2">
+          {showIcon && <Search className="h-5 w-5" />}
+          {label}
+        </span>
+        <span className="absolute inset-0 bg-gradient-to-r from-blue-700 to-indigo-700 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       </Button>
-      
-      <SkillsSelector
-        isOpen={isSkillsSelectorOpen}
-        onClose={() => setIsSkillsSelectorOpen(false)}
-        onSubmit={handleSubmit}
+
+      <MatchFilterModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
       />
     </>
   );

@@ -1,63 +1,78 @@
 
-import { ArrowRightIcon } from "lucide-react";
+import React from "react";
+import { UserPlus, Users, MessageCircle } from "lucide-react";
+import { motion } from "framer-motion";
 
 const HowItWorks = () => {
   const steps = [
     {
-      name: 'Create Your Profile',
-      description: 'Sign up and create your professional profile with your skills, experience, and preferences.',
+      icon: <UserPlus className="h-8 w-8" />,
+      title: "Sign Up & Set Preferences",
+      description: "Create your profile and set your skills, interests, location, and networking goals."
     },
     {
-      name: 'Find Matches',
-      description: 'Our smart matching system connects you with professionals who align with your interests and goals.',
+      icon: <Users className="h-8 w-8" />,
+      title: "Get Matched Instantly",
+      description: "Our algorithm finds the most relevant professionals based on your preferences."
     },
     {
-      name: 'Connect & Chat',
-      description: 'Start meaningful conversations through chat or video calls with your new connections.',
-    },
-    {
-      name: 'Grow Your Network',
-      description: 'Build and maintain professional relationships that help you achieve your career goals.',
-    },
+      icon: <MessageCircle className="h-8 w-8" />,
+      title: "Start Meaningful Conversations",
+      description: "Connect through instant chat, video, or audio calls to build your professional network."
+    }
   ];
 
   return (
-    <div className="py-24 sm:py-32">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl lg:text-center">
-          <h2 className="text-base font-semibold leading-7 text-indigo-600 dark:text-indigo-400">
-            Get Started
-          </h2>
-          <p className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-            How It Works
-          </p>
-          <p className="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
-            Start growing your professional network in four simple steps
+    <section id="how-it-works" className="py-20 bg-gradient-to-b from-white to-blue-50 dark:from-gray-900 dark:to-gray-800 px-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-16">
+          <div className="inline-block mb-4">
+            <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 rounded-full py-1 px-4">
+              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+              <span className="text-sm font-medium text-blue-900 dark:text-blue-300">How It Works</span>
+            </div>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground dark:text-white">Simple Steps to Grow Your Network</h2>
+          <p className="text-foreground dark:text-gray-200 max-w-2xl mx-auto">
+            Our platform makes it easy to connect with professionals who share your interests and career goals.
           </p>
         </div>
 
-        <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24">
-          <div className="grid grid-cols-1 gap-y-8 lg:grid-cols-4 lg:gap-x-8">
-            {steps.map((step, index) => (
-              <div key={step.name} className="relative pl-9">
-                <div className="flex items-center gap-4 text-sm font-semibold leading-6 text-indigo-600 dark:text-indigo-400">
-                  <span className="absolute left-0 top-0 flex h-9 w-9 items-center justify-center rounded-lg border border-indigo-600/10 bg-indigo-50 dark:bg-indigo-950">
-                    {index + 1}
-                  </span>
-                  {step.name}
-                  {index < steps.length - 1 && (
-                    <ArrowRightIcon className="h-5 w-5 text-gray-400 lg:block hidden" />
-                  )}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {steps.map((step, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-md hover:shadow-lg transition-all h-full border border-blue-100 dark:border-gray-700">
+                <div className="w-16 h-16 mb-6 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                  {step.icon}
                 </div>
-                <p className="mt-2 text-sm leading-7 text-gray-600 dark:text-gray-300">
-                  {step.description}
-                </p>
+                <h3 className="text-xl font-semibold mb-4 text-foreground dark:text-white">{step.title}</h3>
+                <p className="text-foreground/90 dark:text-gray-200">{step.description}</p>
+                
+                {index < steps.length - 1 && (
+                  <div className="hidden md:block absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 w-8 h-8 text-blue-300 dark:text-blue-500">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
+              
+              {/* Step number */}
+              <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center">
+                {index + 1}
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

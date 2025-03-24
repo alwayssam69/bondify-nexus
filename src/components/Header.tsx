@@ -47,39 +47,26 @@ const Header = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    // Close mobile menu when route changes
-    setMobileMenuOpen(false);
-  }, [location.pathname]);
-
   const initiateVideoCall = (contact: {id: string, name: string}) => {
     toast.info(`Initiating video call with ${contact.name}`);
     setActiveVideoCall(contact);
-  };
-
-  const simulateIncomingCall = () => {
-    setIncomingCall({
-      contactId: "simulated-call-id",
-      contactName: "Incoming Test Call"
-    });
-    toast.info("Simulating incoming call for testing");
   };
 
   return (
     <>
       <header
         className={cn(
-          "sticky top-0 z-50 transition-all duration-300 py-2 px-3 md:px-5",
-          scrolled ? "bg-background/90 backdrop-blur-lg shadow-sm" : "bg-background/50"
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-2 px-3 md:px-5", // reduced padding here
+          scrolled ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg shadow-sm" : "bg-transparent"
         )}
       >
         <div className="max-w-7xl mx-auto flex flex-col items-center justify-between">
-          <div className="w-full flex items-center justify-between h-10 mb-1">
-            <div className="flex items-center gap-3">
+          <div className="w-full flex items-center justify-between h-10 mb-1"> {/* reduced height and margin */}
+            <div className="flex items-center gap-3"> {/* reduced gap */}
               <HeaderLogo />
               
               {isLoggedIn && (
-                <div className="hidden md:flex items-center gap-2">
+                <div className="hidden md:flex items-center gap-2"> {/* reduced gap */}
                   {/* Search Button */}
                   <button 
                     className="h-8 w-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
@@ -97,7 +84,7 @@ const Header = () => {
                   {/* Video Call Dropdown */}
                   <VideoCallDropdown 
                     onInitiateCall={initiateVideoCall}
-                    onSimulateIncomingCall={process.env.NODE_ENV === 'development' ? simulateIncomingCall : undefined}
+                    onSimulateIncomingCall={undefined}
                   />
 
                   {/* Messages Dropdown */}
@@ -109,7 +96,7 @@ const Header = () => {
               )}
             </div>
 
-            <div className="hidden md:flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-3"> {/* reduced gap */}
               {isLoggedIn ? (
                 <ProfileDropdown />
               ) : (
@@ -163,12 +150,12 @@ const Header = () => {
             </button>
           </div>
           
-          {/* Navigation */}
+          {/* Integrated Navigation */}
           <Navigation isLoggedIn={isLoggedIn} />
         </div>
 
         {/* Search Overlay */}
-        <SearchOverlay isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+        <SearchOverlay isOpen={searchOpen} />
 
         {/* Mobile Menu */}
         <MobileMenu 

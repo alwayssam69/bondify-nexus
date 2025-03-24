@@ -5,6 +5,7 @@ import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import Hero from "@/components/Hero";
 import HowItWorks from "@/components/HowItWorks";
+import DynamicMatches from "@/components/DynamicMatches";
 import WhatWeOffer from "@/components/WhatWeOffer";
 import Testimonials from "@/components/Testimonials";
 import FindMatchButton from "@/components/matchmaking/FindMatchButton";
@@ -34,6 +35,7 @@ const Index = () => {
         <WhatWeOffer />
         <HowItWorks />
         <Testimonials />
+        <DynamicMatches />
       </div>
     </Layout>
   );

@@ -60,20 +60,6 @@
   }
 }
 
-/* Custom z-index management */
-.z-header {
-  z-index: 50;
-}
-.z-dropdown {
-  z-index: 45;
-}
-.z-modal {
-  z-index: 60;
-}
-.z-floating-nav {
-  z-index: 40;
-}
-
 /* Custom card and match styling */
 .match-card {
   @apply transition-all duration-300;

@@ -49,6 +49,7 @@ const Matches = () => {
   ];
   
   useEffect(() => {
+    // Parse search params if they exist
     if (searchParams.has('industry')) {
       setSelectedIndustries([searchParams.get('industry') || '']);
     }
@@ -76,12 +77,14 @@ const Matches = () => {
       
       setIsLoading(true);
       try {
+        // Fetch real user profiles from Supabase
         let query = supabase
           .from('user_profiles')
           .select('*')
           .neq('id', user.id)
           .limit(50);
         
+        // Apply filters from URL if available
         if (selectedIndustries.length > 0) {
           query = query.in('industry', selectedIndustries);
         }
@@ -96,32 +99,51 @@ const Matches = () => {
           throw error;
         }
         
-        const userProfiles = data.map((profile): UserProfile => ({
-          id: profile.id,
-          name: profile.full_name || 'Anonymous User',
-          age: estimateAgeFromExperienceLevel(profile.experience_level),
-          gender: "unspecified", // Not stored in our schema
-          location: profile.location || 'Unknown location',
-          bio: profile.bio || '',
-          relationshipGoal: 'networking',
-          skills: profile.skills || [],
-          interests: profile.interests || [],
-          imageUrl: profile.image_url || '',
-          industry: profile.industry || '',
-          userType: profile.user_type || '',
-          experienceLevel: profile.experience_level || '',
-          matchScore: 50 + Math.floor(Math.random() * 40),
-          distance: undefined,
-          activityScore: profile.activity_score || 75,
-          profileCompleteness: profile.profile_completeness || 80,
-          language: 'English', // Add the required language property
-          projectInterests: profile.project_interests || [],
-          university: profile.university || '',
-          courseYear: profile.course_year || '',
-          networkingGoals: profile.networking_goals || [],
-          latitude: profile.latitude,
-          longitude: profile.longitude
-        }));
+        // Transform data to UserProfile format
+        const userProfiles = data.map((profile): UserProfile => {
+          // Calculate a mock distance if location is enabled
+          let distance = undefined;
+          if (locationEnabled && userCoordinates && profile.latitude && profile.longitude) {
+            // Simple distance calculation (not accurate for large distances)
+            const lat1 = userCoordinates.lat;
+            const lon1 = userCoordinates.lng;
+            const lat2 = profile.latitude;
+            const lon2 = profile.longitude;
+            
+            const R = 6371; // Radius of the earth in km
+            const dLat = deg2rad(lat2 - lat1);
+            const dLon = deg2rad(lon2 - lon1);
+            const a = 
+              Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+              Math.sin(dLon/2) * Math.sin(dLon/2); 
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+            distance = R * c; // Distance in km
+          }
+          
+          // Calculate a mock match score based on common interests/skills
+          let matchScore = 50 + Math.floor(Math.random() * 40); // Base score between 50-90
+          
+          return {
+            id: profile.id,
+            name: profile.full_name || 'Anonymous User',
+            age: estimateAgeFromExperienceLevel(profile.experience_level),
+            location: profile.location || 'Unknown location',
+            bio: profile.bio || '',
+            relationshipGoal: 'networking',
+            skills: profile.skills || [],
+            interests: profile.interests || [],
+            imageUrl: profile.image_url || '',
+            industry: profile.industry || '',
+            userType: profile.user_type || '',
+            experienceLevel: profile.experience_level || '',
+            matchScore,
+            distance,
+            activityScore: profile.activity_score || 75,
+            profileCompleteness: profile.profile_completeness || 80,
+            projectInterests: profile.project_interests || [],
+          };
+        });
         
         setMatches(userProfiles);
       } catch (error) {
@@ -166,6 +188,9 @@ const Matches = () => {
       
       setIsLoadingConfirmed(true);
       try {
+        // In a real app, you'd fetch confirmed matches from a table like user_matches
+        // For now, we'll simulate this with a subset of regular matches
+        
         const { data, error } = await supabase
           .from('user_profiles')
           .select('*')
@@ -178,7 +203,6 @@ const Matches = () => {
           id: profile.id,
           name: profile.full_name || 'Anonymous User',
           age: estimateAgeFromExperienceLevel(profile.experience_level),
-          gender: "unspecified", // Not stored in our schema
           location: profile.location || 'Unknown location',
           bio: profile.bio || '',
           relationshipGoal: 'networking',
@@ -188,16 +212,9 @@ const Matches = () => {
           industry: profile.industry || '',
           userType: profile.user_type || '',
           experienceLevel: profile.experience_level || '',
-          matchScore: 85 + Math.floor(Math.random() * 15),
+          matchScore: 85 + Math.floor(Math.random() * 15), // High match scores for confirmed matches
           activityScore: profile.activity_score || 75,
           profileCompleteness: profile.profile_completeness || 80,
-          language: 'English', // Add the required language property
-          university: profile.university || '',
-          courseYear: profile.course_year || '',
-          networkingGoals: profile.networking_goals || [],
-          projectInterests: profile.project_interests || [],
-          latitude: profile.latitude,
-          longitude: profile.longitude
         }));
         
         setConfirmedMatches(confirmedProfilesData);
@@ -218,6 +235,9 @@ const Matches = () => {
       
       setIsLoadingSaved(true);
       try {
+        // In a real app, you'd fetch saved profiles from a saved_profiles table
+        // For now, we'll simulate with a subset of regular matches
+        
         const { data, error } = await supabase
           .from('user_profiles')
           .select('*')
@@ -230,7 +250,6 @@ const Matches = () => {
           id: profile.id,
           name: profile.full_name || 'Anonymous User',
           age: estimateAgeFromExperienceLevel(profile.experience_level),
-          gender: "unspecified", // Not stored in our schema
           location: profile.location || 'Unknown location',
           bio: profile.bio || '',
           relationshipGoal: 'networking',
@@ -243,13 +262,6 @@ const Matches = () => {
           matchScore: 70 + Math.floor(Math.random() * 20),
           activityScore: profile.activity_score || 75,
           profileCompleteness: profile.profile_completeness || 80,
-          language: 'English', // Add the required language property
-          university: profile.university || '',
-          courseYear: profile.course_year || '',
-          networkingGoals: profile.networking_goals || [],
-          projectInterests: profile.project_interests || [],
-          latitude: profile.latitude,
-          longitude: profile.longitude
         }));
         
         setSavedProfiles(savedProfilesData);
@@ -520,6 +532,7 @@ const Matches = () => {
             </div>
           )}
           
+          {/* Show Find More button if there are any matches */}
           {filteredMatches.length > 0 && (
             <div className="mt-8 flex justify-center">
               <FindMatchButton variant="outline" label="Find More Matches" />
