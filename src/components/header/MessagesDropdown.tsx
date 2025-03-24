@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Inbox } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchUserMessages } from "@/services/DataService";
 
@@ -74,15 +74,13 @@ const MessagesDropdown = () => {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        {isLoading ? (
-          <div className="p-4 flex justify-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        {!isLoading && messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 px-4 text-center text-gray-500">
+            <Inbox className="h-12 w-12 mb-2 text-gray-400" />
+            <p>No messages yet</p>
+            <p className="text-xs mt-1">Start a conversation with your matches</p>
           </div>
-        ) : messages.length === 0 ? (
-          <div className="p-4 text-center text-muted-foreground">
-            No messages yet
-          </div>
-        ) : (
+        ) : messages.length > 0 ? (
           messages.map((message) => (
             <DropdownMenuItem key={message.id} className="p-3 cursor-pointer" asChild>
               <Link to="/chat" className="w-full">
@@ -101,6 +99,10 @@ const MessagesDropdown = () => {
               </Link>
             </DropdownMenuItem>
           ))
+        ) : isLoading && (
+          <div className="p-4 flex justify-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+          </div>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

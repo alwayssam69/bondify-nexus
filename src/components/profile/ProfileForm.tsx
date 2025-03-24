@@ -85,6 +85,9 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
       await refreshProfile();
       
       toast.success("Profile updated successfully!");
+      
+      // Redirect to dashboard after successful update
+      navigate("/dashboard");
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error("An error occurred while updating your profile");

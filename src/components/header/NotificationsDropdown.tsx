@@ -69,7 +69,7 @@ const NotificationsDropdown = () => {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        {notifications.length === 0 && !isLoading && (
+        {!isLoading && notifications.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8 px-4 text-center text-gray-500">
             <Inbox className="h-12 w-12 mb-2 text-gray-400" />
             <p>No notifications yet</p>
@@ -77,10 +77,10 @@ const NotificationsDropdown = () => {
           </div>
         )}
         
-        {!error && (
+        {!error && notifications.length > 0 && (
           <NotificationList 
             notifications={notifications} 
-            isLoading={isLoading}
+            isLoading={false}  // Changed from isLoading to false to prevent loading state
             markAsRead={markAsRead}
             markAllAsRead={markAllAsRead}
             onClose={() => {}}

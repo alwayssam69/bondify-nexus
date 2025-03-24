@@ -120,12 +120,22 @@ const VideoCallDropdown = ({
         <DropdownMenuLabel className="text-gray-200 font-semibold">Video Call</DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-gray-800" />
         
-        {loading ? (
+        {!loading && !hasContacts ? (
+          // Empty state when no contacts - show immediately without loading
+          <div className="p-8 text-center">
+            <div className="flex justify-center mb-3">
+              <UserX className="h-12 w-12 text-gray-500" />
+            </div>
+            <h4 className="text-base font-medium text-gray-300 mb-2">No Recent Contacts</h4>
+            <p className="text-sm text-gray-400">Connect with professionals to start video calls</p>
+          </div>
+        ) : loading ? (
+          // Only show loading if contacts are being fetched and not empty state
           <div className="p-6 text-center">
             <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full mx-auto animate-spin mb-3"></div>
             <p className="text-sm text-gray-400">Loading contacts...</p>
           </div>
-        ) : hasContacts ? (
+        ) : (
           // Show real contacts
           recentContacts.map(contact => (
             <DropdownMenuItem 
@@ -145,15 +155,6 @@ const VideoCallDropdown = ({
               </div>
             </DropdownMenuItem>
           ))
-        ) : (
-          // Empty state when no contacts
-          <div className="p-8 text-center">
-            <div className="flex justify-center mb-3">
-              <UserX className="h-12 w-12 text-gray-500" />
-            </div>
-            <h4 className="text-base font-medium text-gray-300 mb-2">No Recent Contacts</h4>
-            <p className="text-sm text-gray-400">Connect with professionals to start video calls</p>
-          </div>
         )}
         
         {/* Only show simulation button during development */}
