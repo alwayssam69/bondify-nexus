@@ -11,10 +11,10 @@ import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import NotFound from '@/pages/NotFound';
 import ProtectedRoute from './ProtectedRoute';
+import Profile from '@/pages/Profile'; // Import Profile directly instead of lazy loading
 
 // Lazy loaded components for non-critical routes
 const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
-const Profile = lazy(() => import('@/pages/Profile'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const Matches = lazy(() => import('@/pages/Matches'));
 const Chat = lazy(() => import('@/pages/Chat'));

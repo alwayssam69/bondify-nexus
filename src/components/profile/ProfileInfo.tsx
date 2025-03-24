@@ -9,7 +9,8 @@ import {
   Hash, 
   MapPin, 
   Mail, 
-  Calendar 
+  Calendar, 
+  AlertTriangle
 } from "lucide-react";
 
 interface ProfileInfoProps {
@@ -20,19 +21,35 @@ interface ProfileInfoProps {
 const ProfileInfo: React.FC<ProfileInfoProps> = ({ profileData, isPublic }) => {
   if (!profileData) {
     return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">Profile data not available.</p>
+      <div className="text-center py-12 bg-muted/20 rounded-lg border border-dashed">
+        <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+        <h3 className="text-xl font-medium mb-2">Profile data not available</h3>
+        <p className="text-muted-foreground max-w-md mx-auto">
+          There was a problem loading this profile information. Please try refreshing the page.
+        </p>
       </div>
     );
   }
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    try {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch (e) {
+      return "Invalid date";
+    }
+  };
+
+  // Helper function to safely display array data
+  const displayArray = (arr: string[] | null | undefined) => {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+      return null;
+    }
+    return arr;
   };
 
   return (
@@ -49,6 +66,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ profileData, isPublic }) => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="md:col-span-2">
           <CardContent className="p-6 space-y-4">
+            {/* Personal Information */}
             <div className="space-y-2">
               <h3 className="text-lg font-medium flex items-center gap-2">
                 <User className="h-5 w-5 text-primary" />
@@ -59,10 +77,12 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ profileData, isPublic }) => {
                   <p className="text-sm text-muted-foreground">Full Name</p>
                   <p className="font-medium">{profileData.full_name || "Not provided"}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{profileData.email || "Not provided"}</p>
-                </div>
+                {!isPublic && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p className="font-medium">{profileData.email || "Not provided"}</p>
+                  </div>
+                )}
                 <div className="md:col-span-2">
                   <p className="text-sm text-muted-foreground">Bio</p>
                   <p>{profileData.bio || "No bio provided"}</p>
@@ -70,6 +90,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ profileData, isPublic }) => {
               </div>
             </div>
 
+            {/* Professional Details */}
             <div className="space-y-2">
               <h3 className="text-lg font-medium flex items-center gap-2">
                 <Briefcase className="h-5 w-5 text-primary" />
@@ -91,6 +112,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ profileData, isPublic }) => {
               </div>
             </div>
 
+            {/* Education */}
             <div className="space-y-2">
               <h3 className="text-lg font-medium flex items-center gap-2">
                 <GraduationCap className="h-5 w-5 text-primary" />
@@ -108,15 +130,18 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ profileData, isPublic }) => {
               </div>
             </div>
 
+            {/* Skills & Interests */}
             <div className="space-y-2">
               <h3 className="text-lg font-medium flex items-center gap-2">
                 <Hash className="h-5 w-5 text-primary" />
                 Skills & Interests
               </h3>
+              
+              {/* Skills */}
               <div>
                 <p className="text-sm text-muted-foreground">Skills</p>
                 <div className="flex flex-wrap gap-2 mt-1">
-                  {profileData.skills && profileData.skills.length > 0 ? (
+                  {displayArray(profileData.skills) ? (
                     profileData.skills.map((skill: string, index: number) => (
                       <Badge key={index} variant="secondary">
                         {skill}
@@ -127,10 +152,12 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ profileData, isPublic }) => {
                   )}
                 </div>
               </div>
+              
+              {/* Interests */}
               <div>
                 <p className="text-sm text-muted-foreground">Interests</p>
                 <div className="flex flex-wrap gap-2 mt-1">
-                  {profileData.interests && profileData.interests.length > 0 ? (
+                  {displayArray(profileData.interests) ? (
                     profileData.interests.map((interest: string, index: number) => (
                       <Badge key={index} variant="secondary">
                         {interest}
@@ -141,10 +168,12 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ profileData, isPublic }) => {
                   )}
                 </div>
               </div>
+              
+              {/* Project Interests */}
               <div>
                 <p className="text-sm text-muted-foreground">Project Interests</p>
                 <div className="flex flex-wrap gap-2 mt-1">
-                  {profileData.project_interests && profileData.project_interests.length > 0 ? (
+                  {displayArray(profileData.project_interests) ? (
                     profileData.project_interests.map((interest: string, index: number) => (
                       <Badge key={index} variant="outline">
                         {interest}
@@ -161,6 +190,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ profileData, isPublic }) => {
 
         <Card>
           <CardContent className="p-6 space-y-4">
+            {/* Location */}
             <div className="space-y-2">
               <h3 className="text-lg font-medium flex items-center gap-2">
                 <MapPin className="h-5 w-5 text-primary" />
@@ -176,6 +206,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ profileData, isPublic }) => {
               </div>
             </div>
 
+            {/* Account Details */}
             <div className="space-y-2">
               <h3 className="text-lg font-medium flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-primary" />
@@ -189,6 +220,12 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ profileData, isPublic }) => {
                 <p className="text-sm text-muted-foreground">Profile Completion</p>
                 <p className="font-medium">{profileData.profile_completeness || 0}%</p>
               </div>
+              {!isPublic && profileData.user_tag && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Username</p>
+                  <p className="font-medium">@{profileData.user_tag}</p>
+                </div>
+              )}
             </div>
 
             {!isPublic && (

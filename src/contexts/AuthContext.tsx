@@ -24,10 +24,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [fetchAttempts, setFetchAttempts] = useState(0);
 
   const fetchProfile = async (userId: string): Promise<any> => {
     try {
       console.log("Fetching profile for user:", userId);
+      setFetchAttempts(prev => prev + 1);
+      
       let { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -36,7 +39,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error("Error fetching from user_profiles:", error);
-        throw error;
       }
 
       if (!data) {
@@ -49,78 +51,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (result.error) {
           console.error("Error fetching profile from profiles table:", result.error);
+        } else if (result.data) {
+          data = result.data;
+        }
+      }
+      
+      if (!data) {
+        console.log("No profile found in any table, creating a new one");
+        const userData = await supabase.auth.getUser();
+        
+        if (userData.data?.user) {
+          const timestamp = new Date().getTime().toString().slice(-5);
+          const userTag = userData.data.user.user_metadata?.user_tag || 
+                         `user_${timestamp}`;
           
-          if (!result.data) {
-            const userData = await supabase.auth.getUser();
-            if (userData.data?.user) {
-              const userTag = userData.data.user.user_metadata?.user_tag || 
-                             `user_${Math.floor(Math.random() * 10000)}`;
-              
-              const newProfile = {
-                id: userId,
-                full_name: userData.data.user.user_metadata?.full_name || 
-                          userData.data.user.email?.split('@')[0] || "User",
-                email: userData.data.user.email,
-                user_tag: userTag,
-              };
-              
-              const { error: profileError } = await supabase.from('profiles').insert(newProfile);
-              if (profileError) {
-                console.error("Error creating profile in profiles table:", profileError);
-                throw profileError;
-              }
-              
-              const userProfileData = {
-                ...newProfile,
-                activity_score: 0,
-                experience_level: '',
-                interests: [] as string[],
-                industry: '',
-                course_year: '',
-                user_type: '',
-                image_url: '',
-                profile_completeness: 20,
-                skills: [],
-                last_active: new Date().toISOString(),
-              };
-              
-              const { error: userProfileError } = await supabase.from('user_profiles').insert(userProfileData);
-              if (userProfileError) {
-                console.error("Error creating profile in user_profiles table:", userProfileError);
-                throw userProfileError;
-              }
-              
-              data = newProfile;
-            }
-          } else {
-            data = {
-              id: result.data?.id,
-              full_name: result.data?.full_name,
-              email: result.data?.email,
-              location: result.data?.location,
-              bio: result.data?.bio,
-              skills: result.data?.skills ? [result.data.skills] : [],
-              user_tag: result.data?.user_tag || `user_${Math.floor(Math.random() * 10000)}`,
-              activity_score: 0,
-              experience_level: '',
-              interests: [] as string[],
-              created_at: result.data?.created_at,
-              updated_at: result.data?.updated_at,
-              industry: '',
-              course_year: '',
-              user_type: '',
-              image_url: '',
-              profile_completeness: 0,
-              last_active: new Date().toISOString(),
-              latitude: null,
-              longitude: null,
-              match_preferences: {},
-              networking_goals: [] as string[],
-              profile_photos: [] as string[],
-              project_interests: [] as string[],
-              university: '',
-            };
+          const newProfile = {
+            id: userId,
+            full_name: userData.data.user.user_metadata?.full_name || 
+                      userData.data.user.email?.split('@')[0] || "User",
+            email: userData.data.user.email,
+            user_tag: userTag,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            profile_completeness: 20,
+          };
+          
+          await supabase.from('profiles').upsert(newProfile);
+          
+          const userProfileData = {
+            ...newProfile,
+            activity_score: 0,
+            experience_level: '',
+            interests: [] as string[],
+            industry: '',
+            course_year: '',
+            user_type: '',
+            image_url: '',
+            skills: [],
+            last_active: new Date().toISOString(),
+            match_preferences: {},
+            networking_goals: [] as string[],
+            project_interests: [] as string[],
+          };
+          
+          const { error: userProfileError } = await supabase.from('user_profiles').upsert(userProfileData);
+          
+          if (userProfileError) {
+            console.error("Error creating profile in user_profiles table:", userProfileError);
           }
+          
+          data = userProfileData;
         }
       }
 
@@ -131,7 +111,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error("Error in fetchProfile:", error);
       setProfileLoaded(true);
-      return { id: userId, full_name: "User", email: "" };
+      
+      const minimalProfile = { 
+        id: userId, 
+        full_name: "User", 
+        email: "",
+        created_at: new Date().toISOString(),
+        profile_completeness: 0
+      };
+      
+      setProfile(minimalProfile);
+      return minimalProfile;
     }
   };
 
@@ -237,6 +227,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     
     try {
+      console.log("Refreshing profile data for user:", user.id);
       const data = await fetchProfile(user.id);
       return data;
     } catch (error) {
