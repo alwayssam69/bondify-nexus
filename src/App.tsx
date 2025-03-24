@@ -5,7 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/ui/theme-provider';
 import { Toaster as SonnerToaster } from 'sonner';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthContextProvider } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
 import Routes from './pages/Routes';
 
 // Create a new instance of QueryClient
@@ -22,13 +22,13 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="match-ui-theme">
-        <AuthContextProvider>
+        <AuthProvider>
           <Router>
             <Routes />
           </Router>
           <SonnerToaster position="top-right" closeButton richColors />
           <Toaster />
-        </AuthContextProvider>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
