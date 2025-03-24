@@ -33,3 +33,6 @@ export interface MatchCardConnectableProps {
   showDistance?: boolean;
   onStartChat?: () => void;
 }
+
+// Define the SwipeAction type to include 'pass' and 'save'
+export type SwipeAction = 'like' | 'pass' | 'save';

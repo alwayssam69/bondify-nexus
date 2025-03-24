@@ -1,10 +1,10 @@
-
 import React, { Component } from 'react';
 import { motion, PanInfo } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { UserProfile } from '@/lib/matchmaking';
 import { recordSwipeAction } from '@/services/MatchmakingService';
 import { toast } from 'sonner';
+import { SwipeAction } from '@/types/matchmaking';
 
 interface SwipeContainerProps {
   profiles: UserProfile[];
@@ -33,12 +33,10 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
   }
 
   componentDidUpdate(prevProps: SwipeContainerProps) {
-    // Reset index if profiles array changes
     if (prevProps.profiles !== this.props.profiles && this.props.profiles.length > 0) {
       this.setState({ currentIndex: 0 });
     }
     
-    // Check if we've run out of profiles
     if (this.state.currentIndex >= this.props.profiles.length && this.props.profiles.length > 0) {
       this.props.onEmpty?.();
     }
@@ -68,7 +66,7 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
     }
   };
 
-  handleSwipe = (action: "like" | "pass" | "save") => {
+  handleSwipe = (action: SwipeAction) => {
     const { profiles, onSwipeLeft, onSwipeRight, onSave, currentUser } = this.props;
     const { currentIndex } = this.state;
     
@@ -77,7 +75,6 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
     const currentProfile = profiles[currentIndex];
     
     if (action === "like" || action === "pass") {
-      // Record the swipe action in the database
       if (currentUser.id !== 'current-user') {
         recordSwipeAction(currentUser.id, currentProfile.id, action)
           .catch(err => console.error("Failed to record swipe:", err));
@@ -163,7 +160,6 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
       ? `url(${currentProfile.imageUrl})` 
       : 'none';
     
-    // Generate a background gradient if no image is available
     const noImageGradient = currentProfile.imageUrl?.startsWith('http') 
       ? 'bg-gradient-to-t from-black/80 via-black/40 to-transparent' 
       : 'bg-gradient-to-br from-blue-400 to-indigo-600';
@@ -186,10 +182,8 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
             className="h-full w-full bg-cover bg-center rounded-lg relative overflow-hidden"
             style={{ backgroundImage: backgroundImageUrl }}
           >
-            {/* Gradient background */}
             <div className={`absolute inset-0 ${noImageGradient}`}></div>
             
-            {/* Profile content */}
             <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
               <div className="flex items-end justify-between">
                 <div>
@@ -234,7 +228,6 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
               </div>
             </div>
             
-            {/* Swipe indicators */}
             {direction === 'left' && (
               <div className="absolute top-6 right-6 bg-red-500 text-white px-4 py-1 rounded-full transform rotate-12 text-lg font-bold border-2 border-white">
                 PASS
@@ -248,7 +241,6 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
           </div>
         </motion.div>
         
-        {/* Action buttons */}
         <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-4">
           <Button 
             variant="outline" 
@@ -288,7 +280,6 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
           </Button>
         </div>
         
-        {/* Progress indicator */}
         <div className="absolute top-4 left-4 right-4">
           <div className="bg-white/30 h-1 rounded-full w-full overflow-hidden">
             <div 
