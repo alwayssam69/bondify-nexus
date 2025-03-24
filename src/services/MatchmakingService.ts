@@ -24,6 +24,7 @@ interface UserProfileData {
   bio?: string;
   skills?: string[];
   experience_level?: string;
+  user_tag?: string;
   // Add other potential fields that might be returned
 }
 
@@ -74,6 +75,7 @@ export const getConfirmedMatches = async (userId: string): Promise<UserProfile[]
         experienceLevel: profileData.experience_level || 'intermediate',
         activityScore: 75,
         profileCompleteness: 80,
+        userTag: profileData.user_tag || '',
       };
     });
     

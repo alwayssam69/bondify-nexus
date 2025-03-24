@@ -1,80 +1,83 @@
 
-import { Route, Routes } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
+import React from 'react';
+import { Routes as RouterRoutes, Route, Navigate } from 'react-router-dom';
+import Index from '@/pages/Index';
+import Login from '@/pages/Login';
+import Register from '@/pages/Register';
+import ForgotPassword from '@/pages/ForgotPassword';
+import ResetPassword from '@/pages/ResetPassword';
+import Profile from '@/pages/Profile';
+import Dashboard from '@/pages/Dashboard';
+import Matches from '@/pages/Matches';
+import Chat from '@/pages/Chat';
+import NotificationCenter from '@/pages/NotificationCenter';
+import DiscoverSwipe from '@/pages/DiscoverSwipe';
+import Community from '@/pages/Community';
+import QAForum from '@/pages/QAForum';
+import NewsInsights from '@/pages/NewsInsights';
+import UserSearchPage from '@/pages/UserSearchPage';
+import Onboarding from '@/pages/Onboarding';
 import ProtectedRoute from './ProtectedRoute';
-import Loader from '@/components/ui/loader';
+import About from '@/pages/About';
+import Help from '@/pages/Help';
+import Safety from '@/pages/Safety';
+import Terms from '@/pages/Terms';
+import Privacy from '@/pages/Privacy';
+import Cookie from '@/pages/Cookie';
+import Accessibility from '@/pages/Accessibility';
+import Careers from '@/pages/Careers';
+import Press from '@/pages/Press';
+import Contact from '@/pages/Contact';
+import Blog from '@/pages/Blog';
+import NotFound from '@/pages/NotFound';
+import { useAuth } from '@/contexts/AuthContext';
 
-// Auth Pages
-const Login = lazy(() => import('./Login'));
-const Register = lazy(() => import('./Register'));
-const ForgotPassword = lazy(() => import('./ForgotPassword'));
-const ResetPassword = lazy(() => import('./ResetPassword'));
-const Onboarding = lazy(() => import('./Onboarding'));
+const Routes: React.FC = () => {
+  const { user } = useAuth();
 
-// Main Pages
-const Index = lazy(() => import('./Index'));
-const Dashboard = lazy(() => import('./Dashboard'));
-const Profile = lazy(() => import('./Profile'));
-const Matches = lazy(() => import('./Matches'));
-const DiscoverSwipe = lazy(() => import('./DiscoverSwipe'));
-const Chat = lazy(() => import('./Chat'));
-const Settings = lazy(() => import('./Settings'));
-const NotificationCenter = lazy(() => import('./NotificationCenter'));
-
-// Information Pages
-const About = lazy(() => import('./About'));
-const Privacy = lazy(() => import('./Privacy'));
-const Terms = lazy(() => import('./Terms'));
-const Help = lazy(() => import('./Help'));
-const Safety = lazy(() => import('./Safety'));
-const Community = lazy(() => import('./Community'));
-const Contact = lazy(() => import('./Contact'));
-const Careers = lazy(() => import('./Careers'));
-const Blog = lazy(() => import('./Blog'));
-const Press = lazy(() => import('./Press'));
-const Cookie = lazy(() => import('./Cookie'));
-const Accessibility = lazy(() => import('./Accessibility'));
-
-const AppRoutes = () => {
   return (
-    <Suspense fallback={<Loader />}>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Index />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+    <RouterRoutes>
+      {/* Public routes */}
+      <Route path="/" element={<Index />} />
+      <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
+      <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/onboarding" element={<Onboarding />} />
 
-        {/* Information Pages */}
-        <Route path="/about" element={<About />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/terms" element={<Terms />} />
-        <Route path="/help" element={<Help />} />
-        <Route path="/safety" element={<Safety />} />
+      {/* About/Info pages */}
+      <Route path="/about" element={<About />} />
+      <Route path="/help" element={<Help />} />
+      <Route path="/safety" element={<Safety />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/cookie" element={<Cookie />} />
+      <Route path="/accessibility" element={<Accessibility />} />
+      <Route path="/careers" element={<Careers />} />
+      <Route path="/press" element={<Press />} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/blog" element={<Blog />} />
+
+      {/* Protected routes */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/profile/:id" element={<Profile />} />
+        <Route path="/matches" element={<Matches />} />
+        <Route path="/chat" element={<Chat />} />
+        <Route path="/chat/:id" element={<Chat />} />
+        <Route path="/notifications" element={<NotificationCenter />} />
+        <Route path="/discover" element={<DiscoverSwipe />} />
         <Route path="/community" element={<Community />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/careers" element={<Careers />} />
-        <Route path="/blog" element={<Blog />} />
-        <Route path="/press" element={<Press />} />
-        <Route path="/cookie" element={<Cookie />} />
-        <Route path="/accessibility" element={<Accessibility />} />
+        <Route path="/qa-forum" element={<QAForum />} />
+        <Route path="/news" element={<NewsInsights />} />
+        <Route path="/search" element={<UserSearchPage />} />
+      </Route>
 
-        {/* Protected Routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/profile/:id" element={<Profile />} />
-          <Route path="/matches" element={<Matches />} />
-          <Route path="/discover" element={<DiscoverSwipe />} />
-          <Route path="/chat" element={<Chat />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/notifications" element={<NotificationCenter />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-        </Route>
-      </Routes>
-    </Suspense>
+      {/* Catch-all for 404 */}
+      <Route path="*" element={<NotFound />} />
+    </RouterRoutes>
   );
 };
 
-export default AppRoutes;
+export default Routes;

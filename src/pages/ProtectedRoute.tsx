@@ -1,18 +1,21 @@
 
-import { Navigate, Outlet } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from 'sonner';
-import { useEffect } from 'react';
 
 const ProtectedRoute = () => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, profile } = useAuth();
+  const [hasShownMessage, setHasShownMessage] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!isLoading && !user && !hasShownMessage) {
       toast.error("Please sign in to access this page");
+      setHasShownMessage(true);
     }
-  }, [isLoading, user]);
+  }, [isLoading, user, hasShownMessage]);
 
   if (isLoading) {
     return (
@@ -22,7 +25,11 @@ const ProtectedRoute = () => {
     );
   }
 
-  return user ? <Outlet /> : <Navigate to="/login" replace />;
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  return <Outlet />;
 };
 
 export default ProtectedRoute;

@@ -53,11 +53,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!result.data) {
             const userData = await supabase.auth.getUser();
             if (userData.data?.user) {
-              const userTag = userData.data.user.user_metadata?.user_tag || `user_${Math.floor(Math.random() * 10000)}`;
+              const userTag = userData.data.user.user_metadata?.user_tag || 
+                             `user_${Math.floor(Math.random() * 10000)}`;
               
               const newProfile = {
                 id: userId,
-                full_name: userData.data.user.user_metadata?.full_name || userData.data.user.email?.split('@')[0] || "User",
+                full_name: userData.data.user.user_metadata?.full_name || 
+                          userData.data.user.email?.split('@')[0] || "User",
                 email: userData.data.user.email,
                 user_tag: userTag,
               };
@@ -91,36 +93,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               data = newProfile;
             }
           } else {
-            data = result.data;
+            data = {
+              id: result.data?.id,
+              full_name: result.data?.full_name,
+              email: result.data?.email,
+              location: result.data?.location,
+              bio: result.data?.bio,
+              skills: result.data?.skills ? [result.data.skills] : [],
+              user_tag: result.data?.user_tag || `user_${Math.floor(Math.random() * 10000)}`,
+              activity_score: 0,
+              experience_level: '',
+              interests: [] as string[],
+              created_at: result.data?.created_at,
+              updated_at: result.data?.updated_at,
+              industry: '',
+              course_year: '',
+              user_type: '',
+              image_url: '',
+              profile_completeness: 0,
+              last_active: new Date().toISOString(),
+              latitude: null,
+              longitude: null,
+              match_preferences: {},
+              networking_goals: [] as string[],
+              profile_photos: [] as string[],
+              project_interests: [] as string[],
+              university: '',
+            };
           }
-        } else if (result.data) {
-          data = {
-            id: result.data?.id,
-            full_name: result.data?.full_name,
-            email: result.data?.email,
-            location: result.data?.location,
-            bio: result.data?.bio,
-            skills: result.data?.skills ? [result.data.skills] : [],
-            user_tag: result.data?.user_tag || `user_${Math.floor(Math.random() * 10000)}`,
-            activity_score: 0,
-            experience_level: '',
-            interests: [] as string[],
-            created_at: result.data?.created_at,
-            updated_at: result.data?.updated_at,
-            industry: '',
-            course_year: '',
-            user_type: '',
-            image_url: '',
-            profile_completeness: 0,
-            last_active: new Date().toISOString(),
-            latitude: null,
-            longitude: null,
-            match_preferences: {},
-            networking_goals: [] as string[],
-            profile_photos: [] as string[],
-            project_interests: [] as string[],
-            university: '',
-          };
         }
       }
 
@@ -131,7 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error("Error in fetchProfile:", error);
       setProfileLoaded(true);
-      throw error;
+      return { id: userId, full_name: "User", email: "" };
     }
   };
 
@@ -218,7 +218,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log("Force ending loading state after timeout");
         setIsLoading(false);
       }
-    }, 3000);
+    }, 5000);
 
     return () => {
       isActive = false;
