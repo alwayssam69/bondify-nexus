@@ -1,3 +1,4 @@
+
 import React, { Component } from 'react';
 import { motion, PanInfo } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -77,7 +78,10 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
     
     if (action === "like" || action === "pass") {
       // Record the swipe action in the database
-      recordSwipeAction(currentUser.id, currentProfile.id, action);
+      if (currentUser.id !== 'current-user') {
+        recordSwipeAction(currentUser.id, currentProfile.id, action)
+          .catch(err => console.error("Failed to record swipe:", err));
+      }
       
       if (action === "like") {
         onSwipeRight?.(currentProfile);
@@ -89,7 +93,10 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
       this.setState({ currentIndex: currentIndex + 1 });
     } else if (action === "save") {
       onSave?.(currentProfile);
-      recordSwipeAction(currentUser.id, currentProfile.id, action);
+      if (currentUser.id !== 'current-user') {
+        recordSwipeAction(currentUser.id, currentProfile.id, action)
+          .catch(err => console.error("Failed to save profile:", err));
+      }
       toast.success(`Saved ${currentProfile.name} to your favorites!`);
     }
   };
@@ -102,7 +109,7 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
       return (
         <div className="flex flex-col items-center justify-center h-[500px] bg-muted/30 rounded-lg">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-          <p className="text-muted-foreground">Finding potential matches...</p>
+          <p className="text-muted-foreground">Finding potential connections...</p>
         </div>
       );
     }
@@ -120,7 +127,7 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
           </div>
           <h3 className="text-lg font-medium mb-2">No Matches Available</h3>
           <p className="text-muted-foreground mb-4">
-            We couldn't find any matches for you right now. Try adjusting your preferences or check back later.
+            We couldn't find any connections for you right now. Try adjusting your preferences or check back later.
           </p>
           <Button variant="outline" onClick={() => window.location.reload()}>
             Refresh
@@ -140,7 +147,7 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
           </div>
           <h3 className="text-lg font-medium mb-2">You're All Caught Up!</h3>
           <p className="text-muted-foreground mb-4">
-            You've viewed all potential matches for now. Check back later for new connections.
+            You've viewed all potential connections for now. Check back later for new matches.
           </p>
           <Button variant="outline" onClick={() => window.location.reload()}>
             Refresh
@@ -150,6 +157,14 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
     }
     
     const currentProfile = profiles[currentIndex];
+    const backgroundImageUrl = currentProfile.imageUrl?.startsWith('http') 
+      ? `url(${currentProfile.imageUrl})` 
+      : 'none';
+    
+    // Generate a background gradient if no image is available
+    const noImageGradient = currentProfile.imageUrl?.startsWith('http') 
+      ? 'bg-gradient-to-t from-black/80 via-black/40 to-transparent' 
+      : 'bg-gradient-to-br from-blue-400 to-indigo-600';
     
     return (
       <div className="relative h-[500px] w-full overflow-hidden rounded-lg bg-background">
@@ -167,18 +182,10 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
         >
           <div 
             className="h-full w-full bg-cover bg-center rounded-lg relative overflow-hidden"
-            style={{ 
-              backgroundImage: currentProfile.imageUrl?.startsWith('http') 
-                ? `url(${currentProfile.imageUrl})` 
-                : 'none'
-            }}
+            style={{ backgroundImage }}
           >
-            {/* Gradient background if no image or for text contrast */}
-            <div className={`absolute inset-0 ${
-              currentProfile.imageUrl?.startsWith('http') 
-                ? 'bg-gradient-to-t from-black/80 via-black/40 to-transparent' 
-                : currentProfile.imageUrl || 'bg-gradient-to-br from-blue-400 to-indigo-600'
-            }`}></div>
+            {/* Gradient background */}
+            <div className={`absolute inset-0 ${noImageGradient}`}></div>
             
             {/* Profile content */}
             <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
@@ -203,7 +210,7 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
               </div>
               
               <div className="mt-4">
-                <p className="text-sm text-white/80 mb-2">{currentProfile.bio || `${currentProfile.name} is looking to connect with professionals in ${currentProfile.industry || 'your industry'}.`}</p>
+                <p className="text-sm text-white/80 mb-2">{currentProfile.bio || `${currentProfile.name} is a ${currentProfile.experienceLevel || ''} ${currentProfile.userType || 'professional'} in ${currentProfile.industry || 'your industry'}.`}</p>
                 
                 <div className="flex flex-wrap gap-2 mt-3">
                   {currentProfile.industry && (
@@ -216,9 +223,9 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
                       {currentProfile.experienceLevel}
                     </span>
                   )}
-                  {currentProfile.interests?.slice(0, 2).map((interest, i) => (
+                  {currentProfile.skills?.slice(0, 2).map((skill, i) => (
                     <span key={i} className="bg-white/20 text-white text-xs px-2 py-1 rounded-full">
-                      {interest}
+                      {skill}
                     </span>
                   ))}
                 </div>

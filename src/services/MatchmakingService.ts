@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Get match recommendations for a user from Supabase functions
+ * This uses industry, skills, and experience level buckets
  */
 export async function getMatchRecommendations(userId: string, limit = 20): Promise<UserProfile[]> {
   try {
@@ -35,7 +36,8 @@ export async function getMatchRecommendations(userId: string, limit = 20): Promi
       userType: match.user_type || '',
       experienceLevel: match.experience_level || '',
       activityScore: match.activity_score || 75,
-      profileCompleteness: 80
+      profileCompleteness: match.profile_completeness || 80,
+      matchScore: match.match_score || calculateMatchScore(match)
     }));
   } catch (error) {
     console.error("Error in getMatchRecommendations:", error);
@@ -44,7 +46,7 @@ export async function getMatchRecommendations(userId: string, limit = 20): Promi
 }
 
 /**
- * Get match recommendations by proximity
+ * Get match recommendations by proximity (Priority 1)
  */
 export async function getProximityMatches(
   userId: string,
@@ -81,13 +83,39 @@ export async function getProximityMatches(
       userType: match.user_type || '',
       experienceLevel: match.experience_level || '',
       activityScore: match.activity_score || 75,
-      profileCompleteness: 80,
-      distanceKm: Math.round(match.distance_km || 0)
+      profileCompleteness: match.profile_completeness || 80,
+      distanceKm: Math.round(match.distance_km || 0),
+      matchScore: match.match_score || calculateMatchScore(match, true)
     }));
   } catch (error) {
     console.error("Error in getProximityMatches:", error);
     return [];
   }
+}
+
+/**
+ * Calculate a match score based on our algorithm
+ * 50% → Skills Match
+ * 30% → Experience Match
+ * 20% → Location Match
+ */
+function calculateMatchScore(match: any, includeLocation = false): number {
+  let score = 0;
+  
+  // Skills quality (50%)
+  const skillsScore = match.skills?.length ? 50 : 0;
+  
+  // Experience level match (30%)
+  const experienceScore = match.experience_level ? 30 : 0;
+  
+  // Location match (20% if applicable)
+  const locationScore = includeLocation && match.distance_km ? 
+    Math.max(0, 20 - (match.distance_km / 5)) : 0;
+  
+  score = skillsScore + experienceScore + locationScore;
+  
+  // Cap at 100
+  return Math.min(score, 100);
 }
 
 /**
@@ -161,9 +189,21 @@ export async function recordSwipeAction(
         if (matchCreateError) {
           console.error("Error creating match record:", matchCreateError);
         } else {
-          // Notify both users about the match
-          // Mock notification functionality here
-          console.log(`New match between ${userId} and ${targetId}`);
+          // Create notifications for both users
+          await supabase.from('user_notifications').insert([
+            {
+              user_id: userId,
+              message: `You have a new connection match!`,
+              type: 'match',
+              related_id: targetId
+            },
+            {
+              user_id: targetId,
+              message: `You have a new connection match!`,
+              type: 'match',
+              related_id: userId
+            }
+          ]);
         }
       }
     }
@@ -183,7 +223,7 @@ export async function getConfirmedMatches(userId: string): Promise<UserProfile[]
     // Get all confirmed matches for this user
     const { data: matches, error } = await supabase
       .from('user_matches')
-      .select('matched_user_id')
+      .select('matched_user_id, match_score')
       .eq('user_id', userId)
       .eq('status', 'confirmed');
 
@@ -212,25 +252,29 @@ export async function getConfirmedMatches(userId: string): Promise<UserProfile[]
       return [];
     }
 
-    // Convert to UserProfile format
-    return profiles.map(profile => ({
-      id: profile.id,
-      name: profile.full_name || 'Anonymous User',
-      age: getAgeFromExperienceLevel(profile.experience_level),
-      gender: "unspecified", // Add default gender
-      location: profile.location || 'Unknown location',
-      interests: profile.interests || [],
-      bio: profile.bio || '',
-      relationshipGoal: "networking",
-      skills: profile.skills || [],
-      language: "English",
-      imageUrl: profile.image_url || '',
-      industry: profile.industry || '',
-      userType: profile.user_type || '',
-      experienceLevel: profile.experience_level || '',
-      activityScore: profile.activity_score || 75,
-      profileCompleteness: profile.profile_completeness || 80
-    }));
+    // Convert to UserProfile format with proper match scores
+    return profiles.map(profile => {
+      const matchEntry = matches.find(m => m.matched_user_id === profile.id);
+      return {
+        id: profile.id,
+        name: profile.full_name || 'Anonymous User',
+        age: getAgeFromExperienceLevel(profile.experience_level),
+        gender: "unspecified", // Add default gender
+        location: profile.location || 'Unknown location',
+        interests: profile.interests || [],
+        bio: profile.bio || '',
+        relationshipGoal: "networking",
+        skills: profile.skills || [],
+        language: "English",
+        imageUrl: profile.image_url || '',
+        industry: profile.industry || '',
+        userType: profile.user_type || '',
+        experienceLevel: profile.experience_level || '',
+        activityScore: profile.activity_score || 75,
+        profileCompleteness: profile.profile_completeness || 80,
+        matchScore: matchEntry?.match_score || 0
+      };
+    });
   } catch (error) {
     console.error("Error in getConfirmedMatches:", error);
     return [];

@@ -36,6 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error("Error fetching from user_profiles:", error);
+        toast.error(`Error fetching profile: ${error.message}`);
       }
 
       if (!data) {
@@ -48,6 +49,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (result.error) {
           console.error("Error fetching profile from profiles table:", result.error);
+          toast.error(`Error fetching profile: ${result.error.message}`);
+          
           if (!result.data) {
             const userData = await supabase.auth.getUser();
             if (userData.data?.user) {
@@ -55,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               
               const newProfile = {
                 id: userId,
-                full_name: userData.data.user.user_metadata?.full_name || "User",
+                full_name: userData.data.user.user_metadata?.full_name || userData.data.user.email?.split('@')[0] || "User",
                 email: userData.data.user.email,
                 user_tag: userTag,
               };
@@ -63,6 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const { error: profileError } = await supabase.from('profiles').insert(newProfile);
               if (profileError) {
                 console.error("Error creating profile in profiles table:", profileError);
+                toast.error(`Error creating profile: ${profileError.message}`);
               }
               
               const userProfileData = {
@@ -82,6 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const { error: userProfileError } = await supabase.from('user_profiles').insert(userProfileData);
               if (userProfileError) {
                 console.error("Error creating profile in user_profiles table:", userProfileError);
+                toast.error(`Error creating user profile: ${userProfileError.message}`);
               }
               
               data = newProfile;
@@ -125,6 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProfileLoaded(true);
     } catch (error) {
       console.error("Error in fetchProfile:", error);
+      toast.error(`Error fetching profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setProfileLoaded(true);
     }
   };
@@ -132,6 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log("AuthProvider: Setting up auth state listener");
     let isActive = true;
+    let timeout: NodeJS.Timeout;
     
     // Set up auth listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -165,47 +172,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Then check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!isActive) return;
-      
-      console.log("Initial session check:", session?.user?.id);
-      
-      if (session?.user) {
-        setSession(session);
-        setUser(session.user);
-        await fetchProfile(session.user.id);
-      } else {
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-        setProfileLoaded(true);
+    // Then check for existing session with a timeout
+    const getSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!isActive) return;
+        
+        console.log("Initial session check:", session?.user?.id);
+        
+        if (session?.user) {
+          setSession(session);
+          setUser(session.user);
+          await fetchProfile(session.user.id);
+        } else {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setProfileLoaded(true);
+        }
+      } catch (error) {
+        console.error("Error getting session:", error);
+        toast.error(`Error checking session: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
-      
-      setIsLoading(false);
-    }).catch(error => {
-      console.error("Error getting session:", error);
-      setIsLoading(false);
-      setProfileLoaded(true);
-    });
-
-    return () => {
-      isActive = false;
-      subscription.unsubscribe();
     };
-  }, []);
 
-  // Backup timer to ensure loading state doesn't get stuck
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (isLoading) {
+    getSession();
+
+    // Ensure loading state doesn't get stuck
+    timeout = setTimeout(() => {
+      if (isActive && isLoading) {
         console.log("Force ending loading state after timeout");
         setIsLoading(false);
       }
     }, 5000);
 
-    return () => clearTimeout(timeout);
-  }, [isLoading]);
+    return () => {
+      isActive = false;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (profileLoaded && isLoading) {
