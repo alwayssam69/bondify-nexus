@@ -30,7 +30,6 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
   const [skills, setSkills] = useState<string[]>([]);
   const [distance, setDistance] = useState(25);
   const [useLocation, setUseLocation] = useState(false);
-  const [helpType, setHelpType] = useState<"need" | "offer">("need");
   const [relationshipGoal, setRelationshipGoal] = useState("networking");
   const [experienceLevel, setExperienceLevel] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -47,7 +46,6 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
       setSkills([]);
       setDistance(25);
       setUseLocation(false);
-      setHelpType("need");
       setRelationshipGoal("networking");
       setExperienceLevel("");
     }
@@ -84,16 +82,11 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
     setIsLoading(true);
     
     try {
-      // In a real app, we would send the filters to an API
-      // Simulate a delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
       // Pass filters as URL parameters
       const params = new URLSearchParams({
         industry,
         skills: skills.join(','),
         distance: distance.toString(),
-        helpType,
         relationshipGoal,
         experienceLevel,
       });
@@ -107,9 +100,7 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
       navigate(`/matches?${params.toString()}`);
       onClose();
       
-      toast.success("Searching for matches", {
-        description: "Finding professionals that match your criteria..."
-      });
+      toast.success("Finding professionals that match your criteria");
     } catch (error) {
       console.error("Error finding matches:", error);
       toast.error("Failed to find matches", {
@@ -124,7 +115,7 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px] p-6 bg-white rounded-xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-gray-900">Find Your Professional Match</DialogTitle>
+          <DialogTitle className="text-xl font-semibold text-gray-900">Find Professionals</DialogTitle>
           <p className="text-gray-600 mt-2">
             Set your preferences to find the perfect professional match
           </p>
@@ -225,7 +216,7 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
           
           {/* Relationship Goal Selection */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Match Purpose</Label>
+            <Label className="text-sm font-medium">Purpose</Label>
             <Select 
               value={relationshipGoal} 
               onValueChange={setRelationshipGoal}
@@ -263,42 +254,6 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
               </SelectContent>
             </Select>
           </div>
-          
-          {/* Help Type Selection */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">I'm looking to:</Label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={helpType === "need" ? "default" : "outline"}
-                onClick={() => setHelpType("need")}
-                className={`flex-1 ${
-                  helpType === "need" 
-                    ? "bg-blue-600 hover:bg-blue-700" 
-                    : "hover:bg-gray-100"
-                }`}
-              >
-                Get Help
-              </Button>
-              <Button
-                type="button"
-                variant={helpType === "offer" ? "default" : "outline"}
-                onClick={() => setHelpType("offer")}
-                className={`flex-1 ${
-                  helpType === "offer" 
-                    ? "bg-blue-600 hover:bg-blue-700" 
-                    : "hover:bg-gray-100"
-                }`}
-              >
-                Offer Help
-              </Button>
-            </div>
-            <p className="text-xs text-gray-500">
-              {helpType === "need" 
-                ? "Find professionals who can help you in selected skills" 
-                : "Find people looking for help with the skills you offer"}
-            </p>
-          </div>
         </div>
         
         <DialogFooter>
@@ -318,7 +273,7 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
             ) : (
               <>
                 <Search className="mr-2 h-4 w-4" />
-                Find Match
+                Find
               </>
             )}
           </Button>

@@ -74,7 +74,6 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
           use_current_location: values.useCurrentLocation,
           updated_at: new Date().toISOString(),
           profile_completeness: completenessScore,
-          activity_score: 75,
         })
         .eq('id', user.id);
       
@@ -82,6 +81,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
         throw error;
       }
       
+      // Refresh the profile data immediately after update
       await refreshProfile();
       
       toast.success("Profile updated successfully!");

@@ -4,10 +4,23 @@ import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/layout/Layout";
 import ProfileForm from "@/components/profile/ProfileForm";
 import { ProfileFormValues } from "@/components/profile/ProfileFormSchema";
+import { Loader2 } from "lucide-react";
 
 const Profile = () => {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const [initialData, setInitialData] = useState<Partial<ProfileFormValues>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    // Immediately refresh profile data when component mounts
+    const loadProfileData = async () => {
+      setIsLoading(true);
+      await refreshProfile();
+      setIsLoading(false);
+    };
+    
+    loadProfileData();
+  }, [refreshProfile]);
   
   useEffect(() => {
     if (profile) {
@@ -27,6 +40,7 @@ const Profile = () => {
         city: profile.city || "",
         useCurrentLocation: profile.use_current_location || false,
       });
+      setIsLoading(false);
     }
   }, [profile]);
 
@@ -41,7 +55,13 @@ const Profile = () => {
         </div>
         
         <div className="card-glass rounded-xl p-8">
-          <ProfileForm initialData={initialData} />
+          {isLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <ProfileForm initialData={initialData} />
+          )}
         </div>
       </div>
     </Layout>

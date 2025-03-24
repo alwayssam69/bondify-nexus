@@ -4,12 +4,7 @@ import { Button } from "@/components/ui/button";
 import { 
   RefreshCw,
   Loader2,
-  Bell,
-  Search,
-  Settings,
-  User,
-  Sun,
-  Moon
+  Search
 } from "lucide-react";
 import FindMatchButton from "@/components/matchmaking/FindMatchButton";
 import ThemeToggle from "@/components/onboarding/ThemeToggle";
@@ -40,7 +35,13 @@ const DashboardHeader = ({
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <FindMatchButton size="sm" variant="default" className="h-9" />
+        <FindMatchButton 
+          size="sm" 
+          variant="default" 
+          className="h-9" 
+          showIcon={true}
+          label="Find Professionals"
+        />
         <Button 
           onClick={onRefresh} 
           variant="outline"

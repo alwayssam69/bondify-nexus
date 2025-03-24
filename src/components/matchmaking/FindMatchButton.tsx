@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, Filter } from "lucide-react";
+import { Search } from "lucide-react";
 import MatchFilterModal from "./MatchFilterModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -11,12 +11,16 @@ interface FindMatchButtonProps {
   size?: "default" | "lg" | "sm";
   variant?: "default" | "outline" | "secondary" | "ghost";
   className?: string;
+  showIcon?: boolean;
+  label?: string;
 }
 
 const FindMatchButton: React.FC<FindMatchButtonProps> = ({
   size = "lg",
   variant = "default",
   className = "",
+  showIcon = true,
+  label = "Find a Match",
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { user } = useAuth();
@@ -50,8 +54,8 @@ const FindMatchButton: React.FC<FindMatchButtonProps> = ({
         } ${className}`}
       >
         <span className="relative z-10 flex items-center gap-2">
-          <Search className="h-5 w-5" />
-          Find a Match
+          {showIcon && <Search className="h-5 w-5" />}
+          {label}
         </span>
         <span className="absolute inset-0 bg-gradient-to-r from-blue-700 to-indigo-700 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       </Button>
