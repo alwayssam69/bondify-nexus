@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, MessageSquare, Video, Users } from "lucide-react";
@@ -17,7 +18,7 @@ const Hero = ({ user, onGetStarted, onSignIn, onDashboard, actionButton }: HeroP
   const { theme } = useTheme();
   
   return (
-    <section className={`relative pt-32 pb-20 md:pt-40 md:pb-32 px-6 overflow-hidden ${
+    <section className={`relative pt-28 pb-20 md:pt-36 md:pb-28 px-6 overflow-hidden ${
       theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'
     }`}>
       <div className="absolute inset-0 -z-10">
@@ -58,13 +59,13 @@ const Hero = ({ user, onGetStarted, onSignIn, onDashboard, actionButton }: HeroP
                 }`}>Professional Networking Platform</span>
               </div>
             </div>
-            <h1 className={`hero-heading mb-6`}>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 tracking-tight">
               Meet the Right People, <span className="text-gradient bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">Instantly</span>
             </h1>
-            <h2 className="hero-subheading">
+            <h2 className="text-2xl md:text-3xl font-bold mb-6">
               Professional Networking, Reimagined.
             </h2>
-            <p className="hero-description max-w-2xl mx-auto lg:mx-0">
+            <p className="text-lg md:text-xl font-medium max-w-2xl mx-auto lg:mx-0 mb-8">
               Connect with professionals who share your interests and career goals.
               Our intelligent matching system helps you find the perfect connections.
             </p>
@@ -83,7 +84,7 @@ const Hero = ({ user, onGetStarted, onSignIn, onDashboard, actionButton }: HeroP
                 <>
                   <Button 
                     size="lg" 
-                    className="rounded-full px-8 shadow-button h-12 transition-all hover:shadow-md group bg-gradient-to-r from-blue-600 to-indigo-600"
+                    className="rounded-full px-8 shadow-button h-12 transition-all hover:shadow-md group bg-gradient-to-r from-blue-600 to-indigo-600 text-lg font-bold"
                     onClick={onGetStarted}
                   >
                     <span>Get Started</span>
@@ -92,7 +93,7 @@ const Hero = ({ user, onGetStarted, onSignIn, onDashboard, actionButton }: HeroP
                   <Button
                     variant="outline"
                     size="lg"
-                    className={`rounded-full px-8 h-12 ${
+                    className={`rounded-full px-8 h-12 text-lg font-bold ${
                       theme === 'dark' ? 'bg-gray-800 text-white border-gray-700' : ''
                     }`}
                     onClick={onSignIn}

@@ -27,8 +27,8 @@ const Layout = ({ children, className }: LayoutProps) => {
         <Header />
         <div className="flex flex-1">
           {/* LeftSidebar component removed as requested */}
-          {/* Add padding top to account for fixed header */}
-          <main className={cn("flex-1 pt-16", className)}>
+          {/* Add padding top to account for fixed header but reduce it */}
+          <main className={cn("flex-1 pt-12", className)}>
             {children}
           </main>
         </div>

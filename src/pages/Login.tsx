@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -30,28 +29,23 @@ import {
 } from "@/components/ui/input-otp";
 import { useAuth } from "@/contexts/AuthContext";
 
-// Email login schema
 const emailFormSchema = z.object({
   email: z.string().email("Please enter a valid email"),
   password: z.string().min(1, "Password is required"),
 });
 
-// Mobile login schema
 const mobileFormSchema = z.object({
   mobile: z.string().min(10, "Please enter a valid mobile number"),
 });
 
-// OTP verification schema
 const otpFormSchema = z.object({
   otp: z.string().min(6, "Please enter the complete OTP"),
 });
 
-// Forgot password schema
 const forgotPasswordSchema = z.object({
   email: z.string().email("Please enter a valid email"),
 });
 
-// Forgot password with mobile schema
 const forgotPasswordMobileSchema = z.object({
   mobile: z.string().min(10, "Please enter a valid mobile number"),
 });
@@ -66,11 +60,9 @@ const Login = () => {
   const [forgotPasswordMethod, setForgotPasswordMethod] = useState<string>("email");
   const { signInWithOTP, resetPassword, resetPasswordWithOTP } = useAuth();
   
-  // Extract email from query params if redirected from onboarding
   const queryParams = new URLSearchParams(location.search);
   const emailFromQuery = queryParams.get('email') || '';
   
-  // Check if user is already logged in
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -82,7 +74,6 @@ const Login = () => {
     checkSession();
   }, [navigate]);
   
-  // Email login form
   const emailForm = useForm<z.infer<typeof emailFormSchema>>({
     resolver: zodResolver(emailFormSchema),
     defaultValues: {
@@ -91,7 +82,6 @@ const Login = () => {
     },
   });
 
-  // Mobile login form
   const mobileForm = useForm<z.infer<typeof mobileFormSchema>>({
     resolver: zodResolver(mobileFormSchema),
     defaultValues: {
@@ -99,7 +89,6 @@ const Login = () => {
     },
   });
 
-  // OTP verification form
   const otpForm = useForm<z.infer<typeof otpFormSchema>>({
     resolver: zodResolver(otpFormSchema),
     defaultValues: {
@@ -107,7 +96,6 @@ const Login = () => {
     },
   });
 
-  // Forgot password form
   const forgotPasswordForm = useForm<z.infer<typeof forgotPasswordSchema>>({
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
@@ -115,7 +103,6 @@ const Login = () => {
     },
   });
 
-  // Forgot password mobile form
   const forgotPasswordMobileForm = useForm<z.infer<typeof forgotPasswordMobileSchema>>({
     resolver: zodResolver(forgotPasswordMobileSchema),
     defaultValues: {
@@ -124,24 +111,21 @@ const Login = () => {
   });
 
   const onEmailLogin = async (values: z.infer<typeof emailFormSchema>) => {
-    if (isLoading) return; // Prevent multiple submissions
+    if (isLoading) return;
     
     setIsLoading(true);
     console.log("Login attempt with email:", values.email);
     
     try {
-      // Increase timeout to 20 seconds
       const loginPromise = supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
       
-      // Create a longer timeout
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Login timeout - server not responding")), 20000);
+        setTimeout(() => reject(new Error("Login timeout - server not responding")), 30000);
       });
       
-      // Race the login against the timeout
       const { data, error } = await Promise.race([
         loginPromise,
         timeoutPromise
@@ -150,7 +134,6 @@ const Login = () => {
       if (error) {
         console.error("Login error:", error.message);
         
-        // More user-friendly error messages
         let errorMessage = "Login failed. Please try again.";
         
         if (error.message.includes("Invalid login credentials")) {
@@ -170,10 +153,8 @@ const Login = () => {
         console.log("Login successful for user:", data.user.id);
         toast.success("Login successful!");
         
-        // Clear any stored data to ensure fresh session
         localStorage.removeItem("supabase.auth.token");
         
-        // Force redirect to dashboard after successful login
         window.location.href = "/dashboard";
       } else {
         console.error("No user returned after successful login");
@@ -207,7 +188,6 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      // Get the mobile number from the form
       const mobile = mobileForm.getValues().mobile;
       
       const { data, error } = await supabase.auth.verifyOtp({
@@ -227,7 +207,6 @@ const Login = () => {
         console.log("OTP verification successful for user:", data.user.id);
         toast.success("Login successful!");
         
-        // Force redirect to dashboard
         window.location.href = "/dashboard";
       } else {
         toast.error("Verification failed. Please try again.");
@@ -246,9 +225,21 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      await resetPassword(values.email);
+      const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) {
+        console.error("Password reset error:", error);
+        toast.error(error.message || "Failed to send reset instructions. Please try again.");
+      } else {
+        toast.success("Password reset instructions sent to your email!");
+      }
+      
       setIsLoading(false);
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Unexpected password reset error:", error);
+      toast.error(error.message || "An unexpected error occurred. Please try again.");
       setIsLoading(false);
     }
   };
@@ -282,7 +273,6 @@ const Login = () => {
           </div>
           
           {showForgotPassword ? (
-            // Forgot Password UI
             <>
               <div className="mb-6">
                 <Button 
@@ -408,7 +398,6 @@ const Login = () => {
               </Tabs>
             </>
           ) : (
-            // Login UI
             <Tabs defaultValue="email" value={currentTab} onValueChange={setCurrentTab} className="w-full">
               <TabsList className="grid grid-cols-2 mb-6">
                 <TabsTrigger value="email">Email Login</TabsTrigger>
