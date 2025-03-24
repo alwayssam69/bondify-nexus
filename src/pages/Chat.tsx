@@ -22,11 +22,13 @@ const ChatPage = () => {
   const [isLoadingContacts, setIsLoadingContacts] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const [contactsLoadingComplete, setContactsLoadingComplete] = useState(false);
 
   useEffect(() => {
     const fetchContactsData = async () => {
       if (!user?.id) {
         setIsLoadingContacts(false);
+        setContactsLoadingComplete(true);
         return;
       }
       
@@ -37,11 +39,12 @@ const ChatPage = () => {
       const timer = setTimeout(() => {
         setLoadingTimeout(true);
         setIsLoadingContacts(false);
+        setContactsLoadingComplete(true);
       }, 5000);
       
       try {
         const contactsData = await fetchChatContacts(user.id);
-        setContacts(contactsData);
+        setContacts(contactsData || []);
         clearTimeout(timer);
       } catch (error) {
         console.error("Error fetching contacts:", error);
@@ -71,6 +74,7 @@ const ChatPage = () => {
         setContacts(fallbackContacts);
       } finally {
         setIsLoadingContacts(false);
+        setContactsLoadingComplete(true);
       }
     };
 
@@ -101,36 +105,7 @@ const ChatPage = () => {
       
       // If no messages were returned or there was an error, use fallback data
       if (!fetchedMessages || fetchedMessages.length === 0) {
-        const fallbackMessages: ChatMessage[] = [
-          {
-            id: "msg1",
-            sender: activeContactId,
-            receiver: user.id,
-            content: "Hi there! I'm interested in connecting about potential collaboration opportunities.",
-            text: "Hi there! I'm interested in connecting about potential collaboration opportunities.",
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
-            read: true
-          },
-          {
-            id: "msg2",
-            sender: user.id,
-            receiver: activeContactId,
-            content: "Hello! I'd be happy to discuss. What kind of collaboration are you thinking about?",
-            text: "Hello! I'd be happy to discuss. What kind of collaboration are you thinking about?",
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-            read: true
-          },
-          {
-            id: "msg3",
-            sender: activeContactId,
-            receiver: user.id,
-            content: "I've been working on a project that aligns with your expertise. Would you be available for a quick call this week?",
-            text: "I've been working on a project that aligns with your expertise. Would you be available for a quick call this week?",
-            timestamp: new Date(Date.now() - 1000 * 60 * 60),
-            read: false
-          }
-        ];
-        setMessages(fallbackMessages);
+        setMessages([]);
       } else {
         // Make sure all messages conform to ChatMessage interface
         const updatedMessages = fetchedMessages.map(msg => {
@@ -146,28 +121,8 @@ const ChatPage = () => {
       }
     } catch (error) {
       console.error("Error fetching messages:", error);
-      // Use fallback data
-      const fallbackMessages: ChatMessage[] = [
-        {
-          id: "msg1",
-          sender: activeContactId,
-          receiver: user.id,
-          content: "Hi there! Thanks for connecting.",
-          text: "Hi there! Thanks for connecting.",
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
-          read: true
-        },
-        {
-          id: "msg2",
-          sender: user.id,
-          receiver: activeContactId,
-          content: "You're welcome! Looking forward to our conversation.",
-          text: "You're welcome! Looking forward to our conversation.",
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 23),
-          read: true
-        }
-      ];
-      setMessages(fallbackMessages);
+      // Use empty array for no messages
+      setMessages([]);
     } finally {
       setIsLoadingMessages(false);
     }
@@ -216,8 +171,8 @@ const ChatPage = () => {
 
   return (
     <Layout>
-      <div className="container h-[600px] flex">
-        <div className="w-1/3">
+      <div className="container h-[600px] flex flex-col md:flex-row mt-4">
+        <div className="w-full md:w-1/3 mb-4 md:mb-0">
           <ChatContacts 
             contacts={contacts}
             activeContact={activeContactId}
@@ -225,7 +180,7 @@ const ChatPage = () => {
             isLoading={isLoadingContacts}
           />
         </div>
-        <div className="w-2/3 flex flex-col">
+        <div className="w-full md:w-2/3 flex flex-col border-l">
           {activeContact ? (
             <>
               <ChatHeader 

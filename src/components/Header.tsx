@@ -18,6 +18,7 @@ import MessagesDropdown from "./header/MessagesDropdown";
 import VideoCallDropdown from "./header/VideoCallDropdown";
 import RecentMatchesDropdown from "./header/RecentMatchesDropdown";
 import ProfileDropdown from "./header/ProfileDropdown";
+import { ThemeToggle } from "./ThemeToggle";
 
 const Header = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -56,17 +57,17 @@ const Header = () => {
     <>
       <header
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-2 px-3 md:px-5", // reduced padding here
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-2 px-3 md:px-5",
           scrolled ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg shadow-sm" : "bg-transparent"
         )}
       >
         <div className="max-w-7xl mx-auto flex flex-col items-center justify-between">
-          <div className="w-full flex items-center justify-between h-10 mb-1"> {/* reduced height and margin */}
-            <div className="flex items-center gap-3"> {/* reduced gap */}
+          <div className="w-full flex items-center justify-between h-10 mb-1">
+            <div className="flex items-center gap-3">
               <HeaderLogo />
               
               {isLoggedIn && (
-                <div className="hidden md:flex items-center gap-2"> {/* reduced gap */}
+                <div className="hidden md:flex items-center gap-4">
                   {/* Search Button */}
                   <button 
                     className="h-8 w-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
@@ -80,28 +81,28 @@ const Header = () => {
                   
                   {/* Recent Matches Dropdown */}
                   <RecentMatchesDropdown />
-                  
-                  {/* Video Call Dropdown */}
-                  <VideoCallDropdown 
-                    onInitiateCall={initiateVideoCall}
-                    onSimulateIncomingCall={undefined}
-                  />
+                </div>
+              )}
+            </div>
 
+            <div className="hidden md:flex items-center space-x-4">
+              {/* Theme Toggle - Moved to first position for better spacing */}
+              <ThemeToggle className="mr-2" />
+              
+              {isLoggedIn && (
+                <>
                   {/* Messages Dropdown */}
                   <MessagesDropdown />
                   
                   {/* Notifications Dropdown */}
                   <NotificationsDropdown />
-                </div>
+                  
+                  {/* Profile Dropdown - Last position */}
+                  <ProfileDropdown />
+                </>
               )}
-            </div>
-
-            <div className="hidden md:flex items-center gap-3"> {/* reduced gap */}
-              {isLoggedIn ? (
-                <ProfileDropdown />
-              ) : (
-                <AuthButtons />
-              )}
+              
+              {!isLoggedIn && <AuthButtons />}
             </div>
 
             {/* Mobile menu button */}

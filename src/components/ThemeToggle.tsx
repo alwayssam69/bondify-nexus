@@ -16,7 +16,7 @@ export function ThemeToggle({ className = "" }: ThemeToggleProps) {
       variant="outline"
       size="icon"
       onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-      className={`rounded-full ${className}`}
+      className={`rounded-full z-20 ${className}`}
       aria-label="Toggle theme"
     >
       {theme === "light" ? (

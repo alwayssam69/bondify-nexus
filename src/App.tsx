@@ -12,13 +12,15 @@ import Chat from './pages/Chat';
 import Onboarding from './pages/Onboarding';
 import Index from './pages/Index';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import Header from './components/Header';
+import Notifications from './pages/Notifications';
 
 function App() {
   return (
     <Router>
       <div className="min-h-screen flex flex-col">
-        <AppHeader />
-        <main className="flex-1">
+        <Header />
+        <main className="flex-1 pt-24">
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -29,6 +31,7 @@ function App() {
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/matches" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
           </Routes>
         </main>
         <Toaster />

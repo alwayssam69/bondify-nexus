@@ -26,6 +26,16 @@ const ProfileDropdown = () => {
       return "U";
     };
     
+    // Get display name (ensure only one name is shown)
+    const getDisplayName = () => {
+      if (profile?.full_name) {
+        return profile.full_name;
+      } else if (user?.email) {
+        return user.email;
+      }
+      return "User";
+    };
+    
     const handleProfileClick = (path: string) => {
       // Force a full navigation with replace: true
       window.location.href = path;
@@ -50,26 +60,26 @@ const ProfileDropdown = () => {
             <span className="text-blue-600">{getInitial()}</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-md">
-          <DropdownMenuLabel className="text-gray-800 font-medium">My Account</DropdownMenuLabel>
-          <DropdownMenuItem className="text-sm text-gray-600">
-            {profile?.full_name || user?.email}
+        <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-md">
+          <DropdownMenuLabel className="text-gray-800 dark:text-gray-200 font-medium">My Account</DropdownMenuLabel>
+          <DropdownMenuItem className="text-sm text-gray-600 dark:text-gray-300">
+            {getDisplayName()}
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-gray-200" />
-          <DropdownMenuItem onClick={() => handleProfileClick("/profile")} className="text-gray-800 hover:bg-gray-100">
+          <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
+          <DropdownMenuItem onClick={() => handleProfileClick("/profile")} className="text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
             Profile
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleProfileClick("/dashboard")} className="text-gray-800 hover:bg-gray-100">
+          <DropdownMenuItem onClick={() => handleProfileClick("/dashboard")} className="text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
             Dashboard
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleProfileClick("/matches")} className="text-gray-800 hover:bg-gray-100">
+          <DropdownMenuItem onClick={() => handleProfileClick("/matches")} className="text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
             Matches
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleProfileClick("/chat")} className="text-gray-800 hover:bg-gray-100">
+          <DropdownMenuItem onClick={() => handleProfileClick("/chat")} className="text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
             Messages
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-gray-200" />
-          <DropdownMenuItem onClick={handleSignOut} className="text-red-600 hover:bg-red-50">
+          <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
+          <DropdownMenuItem onClick={handleSignOut} className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30">
             Logout
           </DropdownMenuItem>
         </DropdownMenuContent>
