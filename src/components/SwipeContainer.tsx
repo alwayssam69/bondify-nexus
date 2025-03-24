@@ -1,4 +1,3 @@
-
 import React, { Component } from 'react';
 import { motion, PanInfo } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -182,7 +181,7 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
         >
           <div 
             className="h-full w-full bg-cover bg-center rounded-lg relative overflow-hidden"
-            style={{ backgroundImage }}
+            style={{ backgroundImage: backgroundImageUrl }}
           >
             {/* Gradient background */}
             <div className={`absolute inset-0 ${noImageGradient}`}></div>

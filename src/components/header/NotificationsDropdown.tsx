@@ -16,7 +16,7 @@ import type { Notification } from "./notifications/types";
 
 const NotificationsDropdown = () => {
   const navigate = useNavigate();
-  const { notifications, isLoading, unreadCount, handleMarkAllRead, error } = useNotifications();
+  const { notifications, isLoading, unreadCount, markAsRead, markAllAsRead, error } = useNotifications();
 
   const handleNotificationClick = (notification: Notification) => {
     // Handle navigation based on notification type
@@ -60,7 +60,7 @@ const NotificationsDropdown = () => {
                 variant="ghost" 
                 size="sm" 
                 className="h-8 px-2 text-xs"
-                onClick={handleMarkAllRead}
+                onClick={markAllAsRead}
               >
                 Mark All Read
               </Button>
@@ -81,6 +81,9 @@ const NotificationsDropdown = () => {
           <NotificationList 
             notifications={notifications} 
             isLoading={isLoading}
+            markAsRead={markAsRead}
+            markAllAsRead={markAllAsRead}
+            onClose={() => {}}
             onNotificationClick={handleNotificationClick}
           />
         )}

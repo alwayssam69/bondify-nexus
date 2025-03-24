@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { useNotifications } from "@/components/header/notifications/useNotifications";
 import NotificationItem from "@/components/header/notifications/NotificationItem";
@@ -9,22 +9,71 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
 import type { Notification } from "@/components/header/notifications/types";
+import { useAuth } from "@/contexts/AuthContext";
 
 const NotificationsPage = () => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
+  const { user } = useAuth();
   
-  // We're using the same hook but passing a larger limit and pagination params
-  const { notifications, isLoading, fetchNotifications } = useNotifications(100, (currentPage - 1) * pageSize);
+  // Use the hook and pass the appropriate parameters
+  const { notifications, isLoading, refreshNotifications } = useNotifications(100);
+  
+  // Add state for all notifications with pagination support
+  const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
+  const [totalNotifications, setTotalNotifications] = useState(0);
+  const [pageLoading, setPageLoading] = useState(true);
+  
+  // Fetch notifications with pagination
+  useEffect(() => {
+    const fetchPagedNotifications = async () => {
+      if (!user?.id) return;
+      
+      setPageLoading(true);
+      try {
+        const { data, error, count } = await supabase
+          .from('user_notifications')
+          .select('*', { count: 'exact' })
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .range((currentPage - 1) * pageSize, currentPage * pageSize - 1);
+          
+        if (error) {
+          console.error('Error fetching notifications:', error);
+          return;
+        }
+        
+        const formattedNotifications: Notification[] = data?.map(item => ({
+          id: item.id,
+          user_id: item.user_id,
+          message: item.message,
+          type: item.type as 'match' | 'message' | 'system' | 'profile_view' | 'view',
+          created_at: item.created_at,
+          is_read: item.is_read,
+          related_entity_id: item.related_id,
+        })) || [];
+        
+        setAllNotifications(formattedNotifications);
+        if (count !== null) setTotalNotifications(count);
+      } catch (err) {
+        console.error('Error in fetchPagedNotifications:', err);
+      } finally {
+        setPageLoading(false);
+      }
+    };
+    
+    fetchPagedNotifications();
+  }, [user?.id, currentPage, pageSize]);
 
   const handleNotificationClick = async (notification: Notification) => {
     // Mark as read
     if (!notification.is_read) {
       await markNotificationAsRead(notification.id);
       // Refresh the notifications after marking as read
-      fetchNotifications();
+      refreshNotifications();
     }
     
     // Handle navigation based on notification type
@@ -43,8 +92,7 @@ const NotificationsPage = () => {
     }
   };
 
-  const totalPages = Math.ceil(notifications.length / pageSize);
-  const currentNotifications = notifications.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const totalPages = Math.ceil(totalNotifications / pageSize);
 
   return (
     <Layout>
@@ -57,7 +105,7 @@ const NotificationsPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {pageLoading ? (
               <div className="space-y-4">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="flex items-center gap-4">
@@ -71,7 +119,7 @@ const NotificationsPage = () => {
               </div>
             ) : (
               <>
-                {currentNotifications.length === 0 ? (
+                {allNotifications.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     You don't have any notifications yet
                   </div>
@@ -86,7 +134,7 @@ const NotificationsPage = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {currentNotifications.map((notification) => (
+                      {allNotifications.map((notification) => (
                         <TableRow 
                           key={notification.id} 
                           className="cursor-pointer hover:bg-muted"

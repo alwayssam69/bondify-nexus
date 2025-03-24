@@ -2,14 +2,15 @@
 import React from "react";
 import { formatDistanceToNow, format } from "date-fns";
 import type { Notification } from "./types";
-import { markNotificationAsRead } from "@/utils/notificationHelpers";
 
 interface NotificationItemProps {
   notification: Notification;
   onNotificationClick?: (notification: Notification) => void;
+  markAsRead?: (id: string) => void;
+  onClose?: () => void;
 }
 
-const NotificationItem = ({ notification, onNotificationClick }: NotificationItemProps) => {
+const NotificationItem = ({ notification, onNotificationClick, markAsRead, onClose }: NotificationItemProps) => {
   const formatNotificationTime = (timestamp: string) => {
     try {
       const date = new Date(timestamp);
@@ -55,19 +56,24 @@ const NotificationItem = ({ notification, onNotificationClick }: NotificationIte
   };
 
   const handleClick = async () => {
-    // Mark the notification as read if it's not already
-    if (!notification.is_read) {
-      await markNotificationAsRead(notification.id);
+    // Mark the notification as read if it's not already and if markAsRead is provided
+    if (!notification.is_read && markAsRead) {
+      await markAsRead(notification.id);
     }
     
     // Call the parent's click handler if provided
     if (onNotificationClick) {
       onNotificationClick(notification);
     }
+    
+    // Close the dropdown if onClose is provided
+    if (onClose) {
+      onClose();
+    }
   };
 
   return (
-    <div className="flex gap-3 w-full" onClick={handleClick}>
+    <div className="flex gap-3 w-full p-3 hover:bg-muted/50 cursor-pointer" onClick={handleClick}>
       <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
         notification.type === 'match' ? 'bg-red-100 text-red-600' : 
         notification.type === 'message' ? 'bg-blue-100 text-blue-600' : 

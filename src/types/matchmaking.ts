@@ -4,6 +4,7 @@ export interface MatchmakingFilters {
   industry: string;
   skills: string[];
   relationshipGoal: string;
+  experienceLevel?: string;
   useLocation: boolean;
   distance?: number;
 }

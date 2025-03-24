@@ -1,16 +1,17 @@
 
 import React from 'react';
-import { NotificationType } from './types';
+import { Notification } from './types';
 import NotificationItem from './NotificationItem';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface NotificationListProps {
-  notifications: NotificationType[];
+  notifications: Notification[];
   isLoading: boolean;
   markAsRead: (id: string) => void;
-  markAllAsRead: () => void;
+  markAllAsRead?: () => void;
   onClose: () => void;
+  onNotificationClick?: (notification: Notification) => void;
 }
 
 const NotificationList: React.FC<NotificationListProps> = ({
@@ -18,7 +19,8 @@ const NotificationList: React.FC<NotificationListProps> = ({
   isLoading,
   markAsRead,
   markAllAsRead,
-  onClose
+  onClose,
+  onNotificationClick
 }) => {
   if (isLoading) {
     return (
@@ -65,7 +67,7 @@ const NotificationList: React.FC<NotificationListProps> = ({
     <div className="flex flex-col h-full max-h-[70vh]">
       <div className="flex items-center justify-between p-4 border-b">
         <h3 className="font-medium">Notifications</h3>
-        {notifications.some(n => !n.isRead) && (
+        {notifications.some(n => !n.is_read) && markAllAsRead && (
           <Button 
             variant="ghost" 
             size="sm" 
@@ -85,6 +87,7 @@ const NotificationList: React.FC<NotificationListProps> = ({
               notification={notification}
               markAsRead={markAsRead}
               onClose={onClose}
+              onNotificationClick={onNotificationClick}
             />
           ))}
         </div>
