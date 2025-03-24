@@ -1,4 +1,3 @@
-
 import { UserProfile } from "@/lib/matchmaking";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -8,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export async function getMatchRecommendations(userId: string, limit = 20): Promise<UserProfile[]> {
   try {
+    console.log("Fetching match recommendations for user:", userId);
+
     // Using the database function to get matches
     const { data, error } = await supabase.rpc('get_matches', {
       user_id: userId,
@@ -16,29 +17,36 @@ export async function getMatchRecommendations(userId: string, limit = 20): Promi
 
     if (error) {
       console.error("Error getting match recommendations:", error);
+      
+      // Fallback to regular query if RPC fails
+      console.log("Falling back to regular query for matches");
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .neq('id', userId)
+        .limit(limit);
+        
+      if (fallbackError) {
+        console.error("Fallback query failed:", fallbackError);
+        return [];
+      }
+      
+      if (!fallbackData || fallbackData.length === 0) {
+        console.log("No matches found in fallback query");
+        return [];
+      }
+      
+      // Transform fallback data to UserProfile format
+      return transformProfilesToUserProfiles(fallbackData);
+    }
+
+    if (!data || data.length === 0) {
+      console.log("No matches found from RPC function");
       return [];
     }
 
     // Transform to our UserProfile format
-    return data.map((match: any) => ({
-      id: match.id,
-      name: match.full_name || 'Anonymous User',
-      age: getAgeFromExperienceLevel(match.experience_level),
-      gender: "unspecified", // Add default gender
-      location: match.location || 'Unknown location',
-      interests: match.interests || [],
-      bio: match.bio || '',
-      relationshipGoal: "networking",
-      skills: match.skills || [],
-      language: "English",
-      imageUrl: match.image_url || '',
-      industry: match.industry || '',
-      userType: match.user_type || '',
-      experienceLevel: match.experience_level || '',
-      activityScore: match.activity_score || 75,
-      profileCompleteness: match.profile_completeness || 80,
-      matchScore: match.match_score || calculateMatchScore(match)
-    }));
+    return transformProfilesToUserProfiles(data);
   } catch (error) {
     console.error("Error in getMatchRecommendations:", error);
     return [];
@@ -54,6 +62,8 @@ export async function getProximityMatches(
   limit = 20
 ): Promise<UserProfile[]> {
   try {
+    console.log("Fetching proximity matches within", radiusKm, "km for user:", userId);
+    
     // Using the database function to get matches by proximity
     const { data, error } = await supabase.rpc('get_matches_by_proximity', {
       user_id: userId,
@@ -63,30 +73,36 @@ export async function getProximityMatches(
 
     if (error) {
       console.error("Error getting proximity matches:", error);
+      
+      // Fallback to regular profile query if RPC fails
+      console.log("Falling back to regular query for matches");
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .neq('id', userId)
+        .limit(limit);
+        
+      if (fallbackError) {
+        console.error("Fallback query failed:", fallbackError);
+        return [];
+      }
+      
+      if (!fallbackData || fallbackData.length === 0) {
+        console.log("No matches found in fallback query");
+        return [];
+      }
+      
+      // Transform fallback data to UserProfile format
+      return transformProfilesToUserProfiles(fallbackData);
+    }
+
+    if (!data || data.length === 0) {
+      console.log("No proximity matches found");
       return [];
     }
 
     // Transform to our UserProfile format
-    return data.map((match: any) => ({
-      id: match.id,
-      name: match.full_name || 'Anonymous User',
-      age: getAgeFromExperienceLevel(match.experience_level),
-      gender: "unspecified", // Add default gender
-      location: match.location || 'Unknown location',
-      interests: match.interests || [],
-      bio: match.bio || '',
-      relationshipGoal: "networking",
-      skills: match.skills || [],
-      language: "English",
-      imageUrl: match.image_url || '',
-      industry: match.industry || '',
-      userType: match.user_type || '',
-      experienceLevel: match.experience_level || '',
-      activityScore: match.activity_score || 75,
-      profileCompleteness: match.profile_completeness || 80,
-      distanceKm: Math.round(match.distance_km || 0),
-      matchScore: match.match_score || calculateMatchScore(match, true)
-    }));
+    return transformProfilesToUserProfiles(data);
   } catch (error) {
     console.error("Error in getProximityMatches:", error);
     return [];
@@ -319,3 +335,29 @@ const getAgeFromExperienceLevel = (experienceLevel: string | null): number => {
       return Math.floor(Math.random() * 15) + 25; // 25-39
   }
 };
+
+/**
+ * Helper function to transform database profile records to UserProfile objects
+ */
+function transformProfilesToUserProfiles(profiles: any[]): UserProfile[] {
+  return profiles.map((profile: any) => ({
+    id: profile.id,
+    name: profile.full_name || 'Anonymous User',
+    age: getAgeFromExperienceLevel(profile.experience_level),
+    gender: "unspecified", // Add default gender
+    location: profile.location || 'Unknown location',
+    interests: profile.interests || [],
+    bio: profile.bio || '',
+    relationshipGoal: "networking",
+    skills: profile.skills || [],
+    language: "English",
+    imageUrl: profile.image_url || '',
+    industry: profile.industry || '',
+    userType: profile.user_type || '',
+    experienceLevel: profile.experience_level || '',
+    activityScore: profile.activity_score || 75,
+    profileCompleteness: profile.profile_completeness || 80,
+    distanceKm: Math.round(profile.distance_km || 0),
+    matchScore: profile.match_score || calculateMatchScore(profile)
+  }));
+}
