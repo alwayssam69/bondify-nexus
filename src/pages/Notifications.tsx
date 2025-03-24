@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Notification } from "@/components/header/notifications/types";
 
 const Notifications = () => {
   const { 
@@ -33,8 +34,9 @@ const Notifications = () => {
     return notification.type === filter;
   });
 
-  const handleNotificationClick = (id: string) => {
-    markAsRead(id);
+  // Updated to accept the full notification object instead of just an ID
+  const handleNotificationClick = (notification: Notification) => {
+    markAsRead(notification.id);
   };
 
   return (
