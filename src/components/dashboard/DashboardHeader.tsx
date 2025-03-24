@@ -3,8 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { 
   RefreshCw,
-  Loader2,
-  Search
+  Loader2
 } from "lucide-react";
 import FindMatchButton from "@/components/matchmaking/FindMatchButton";
 import ThemeToggle from "@/components/onboarding/ThemeToggle";
@@ -23,7 +22,7 @@ const DashboardHeader = ({
   isLoading
 }: DashboardHeaderProps) => {
   return (
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b mt-6">
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b mt-8 mb-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">
           Welcome back, {user?.name || "Professional"}

@@ -18,8 +18,10 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen flex flex-col">
-        <AppHeader />
-        <main className="flex-1">
+        <div className="z-header sticky top-0">
+          <AppHeader />
+        </div>
+        <main className="flex-1 pt-2">
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />

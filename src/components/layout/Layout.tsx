@@ -24,8 +24,10 @@ const Layout = ({ children, className }: LayoutProps) => {
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex flex-col w-full">
-        <Header />
-        <main className={cn("flex-1", className)}>
+        <div className="z-header sticky top-0">
+          <Header />
+        </div>
+        <main className={cn("flex-1 pt-2", className)}>
           {children}
         </main>
         <Footer />
