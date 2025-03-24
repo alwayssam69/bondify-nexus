@@ -86,7 +86,7 @@ const UserSearch = () => {
           ) : (
             <Search className="h-4 w-4" />
           )}
-          <span className="ml-2 sr-only">Search</span>
+          <span className="ml-2 hidden sm:inline">Search</span>
         </Button>
       </form>
       
