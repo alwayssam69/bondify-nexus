@@ -92,8 +92,11 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
         skills: skills.join(','),
         distance: distance.toString(),
         relationshipGoal,
-        experienceLevel,
       });
+      
+      if (experienceLevel && experienceLevel !== "select-level") {
+        params.append('experienceLevel', experienceLevel);
+      }
       
       if (useLocation && geolocation.latitude && geolocation.longitude) {
         params.append('lat', geolocation.latitude.toString());
@@ -101,16 +104,20 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
       }
 
       // Navigate to matches page with filters
-      navigate(`/matches?${params.toString()}`);
-      onClose();
+      onClose(); // Close the modal first
       
-      toast.success("Finding professionals that match your criteria");
+      // Short delay before navigating to ensure modal is closed
+      setTimeout(() => {
+        navigate(`/matches?${params.toString()}`);
+        setIsLoading(false);
+        toast.success("Finding professionals that match your criteria");
+      }, 100);
+      
     } catch (error) {
       console.error("Error finding matches:", error);
       toast.error("Failed to find matches", {
         description: "Please try again later."
       });
-    } finally {
       setIsLoading(false);
     }
   };

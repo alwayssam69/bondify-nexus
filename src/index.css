@@ -5,12 +5,12 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 224 71% 4%;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
+    --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
+    --popover-foreground: 222.2 84% 4.9%;
     --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
@@ -24,7 +24,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
-    --radius: 1rem;
+    --radius: 0.5rem;
   }
 
   .dark {
@@ -39,7 +39,7 @@
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 213 31% 91%;
+    --muted-foreground: 215 20.2% 65.1%;
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
@@ -55,238 +55,24 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground transition-colors duration-300;
+    @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
-  
-  h1, h2, h3, h4, h5, h6 {
-    @apply text-foreground font-bold;
-  }
-  
-  p {
-    @apply text-foreground/90;
-  }
-  
-  .light-mode-text {
-    @apply text-gray-800;
-  }
 }
 
-@layer components {
-  .card-glass {
-    @apply bg-background/70 backdrop-blur-lg border border-border/50 shadow-sm;
-  }
-  
-  .glassmorphic {
-    @apply bg-white/10 backdrop-blur-lg border border-white/20 shadow-md;
-  }
-  
-  .button-premium {
-    @apply bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white;
-  }
-  
-  .button-premium-outline {
-    @apply bg-transparent border border-blue-500 text-blue-500 hover:bg-blue-500/10;
-  }
-  
-  .dashboard-card {
-    @apply border bg-card overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-shadow;
-  }
-  
-  .dashboard-stat {
-    @apply p-6 flex flex-col space-y-2;
-  }
-  
-  .dashboard-stat-value {
-    @apply text-3xl font-bold;
-  }
-  
-  .dashboard-stat-label {
-    @apply text-sm text-muted-foreground;
-  }
-  
-  .logo-text {
-    @apply text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400;
-  }
-  
-  .hero-heading {
-    @apply text-foreground dark:text-white text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight;
-  }
-  
-  .hero-subheading {
-    @apply text-foreground dark:text-white text-2xl md:text-3xl font-semibold mb-6;
-  }
-  
-  .hero-description {
-    @apply text-foreground dark:text-white text-lg md:text-xl mb-8;
-  }
-  
-  .card-heading {
-    @apply text-foreground dark:text-white font-semibold text-lg;
-  }
-  
-  .card-text {
-    @apply text-foreground dark:text-white text-sm;
-  }
-  
-  /* New components for improved contrast */
-  .section-heading {
-    @apply text-4xl md:text-5xl font-bold mb-4 tracking-tight text-gray-900 dark:text-white;
-  }
-  
-  .section-heading-gradient {
-    @apply text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400;
-  }
-  
-  .section-subheading {
-    @apply text-lg md:text-xl font-medium text-gray-800 dark:text-gray-200;
-  }
-  
-  .feature-card {
-    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg transition-all;
-  }
-  
-  .testimonial-card {
-    @apply bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl p-8 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all;
-  }
-  
-  .high-contrast-text {
-    @apply text-gray-900 dark:text-gray-100;
-  }
-  
-  .medium-contrast-text {
-    @apply text-gray-700 dark:text-gray-300;
-  }
-  
-  /* 3D card effects */
-  .card-3d {
-    @apply relative transition-all duration-300 transform-gpu hover:shadow-xl;
-    transform-style: preserve-3d;
-    perspective: 1000px;
-  }
-  
-  .card-3d-inner {
-    @apply relative w-full h-full transition-transform duration-300;
-    transform-style: preserve-3d;
-  }
-  
-  .card-3d:hover .card-3d-inner {
-    transform: rotateY(5deg) rotateX(5deg);
-  }
-  
-  /* Floating elements */
-  .floating {
-    animation: float 6s ease-in-out infinite;
-    transform-style: preserve-3d;
-  }
-  
-  .floating-slow {
-    animation: float 8s ease-in-out infinite;
-    transform-style: preserve-3d;
-  }
-  
-  .floating-fast {
-    animation: float 4s ease-in-out infinite;
-    transform-style: preserve-3d;
-  }
-  
-  /* Glass morphism */
-  .glass-panel {
-    @apply bg-white/10 backdrop-blur-md border border-white/20 rounded-xl shadow-lg;
-  }
-  
-  .glass-button {
-    @apply bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all text-white rounded-full;
-  }
-  
-  .glass-card {
-    @apply bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl shadow-md;
-  }
+/* Custom card and match styling */
+.match-card {
+  @apply transition-all duration-300;
 }
 
-@layer utilities {
-  .animation-delay-200 {
-    animation-delay: 200ms;
-  }
-  
-  .animation-delay-400 {
-    animation-delay: 400ms;
-  }
-  
-  .text-high-contrast {
-    @apply text-gray-900 dark:text-white;
-  }
-  
-  .text-medium-contrast {
-    @apply text-gray-800 dark:text-gray-100;
-  }
-  
-  .bg-hero-light {
-    @apply bg-gradient-to-b from-blue-100 to-white;
-  }
-  
-  .bg-hero-dark {
-    @apply bg-gradient-to-b from-gray-900 to-gray-800;
-  }
-  
-  /* New utilities */
-  .bg-testimonial-light {
-    @apply bg-gradient-to-b from-indigo-100 to-white;
-  }
-  
-  .bg-testimonial-dark {
-    @apply bg-gradient-to-b from-indigo-950 to-gray-900;
-  }
-  
-  .bg-features-light {
-    @apply bg-gradient-to-b from-gray-100 to-white;
-  }
-  
-  .bg-features-dark {
-    @apply bg-gradient-to-b from-gray-900 to-gray-800;
-  }
-  
-  .text-gradient-blue-purple {
-    @apply bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent;
-  }
-  
-  .text-gradient-purple-indigo {
-    @apply bg-gradient-to-r from-purple-500 to-indigo-500 bg-clip-text text-transparent;
-  }
-  
-  /* 3D transforms */
-  .transform-3d {
-    transform-style: preserve-3d;
-    perspective: 1000px;
-  }
-  
-  .rotate-y-10 {
-    transform: rotateY(10deg);
-  }
-  
-  .rotate-x-10 {
-    transform: rotateX(10deg);
-  }
-  
-  /* Glassmorphism utilities */
-  .backdrop-blur-xs {
-    backdrop-filter: blur(2px);
-  }
-  
-  .backdrop-blur-2xl {
-    backdrop-filter: blur(40px);
-  }
-  
-  /* Glow effects */
-  .glow {
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
-  }
-  
-  .glow-purple {
-    box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
-  }
-  
-  .glow-pink {
-    box-shadow: 0 0 15px rgba(236, 72, 153, 0.5);
-  }
+.match-card:hover {
+  @apply transform -translate-y-1;
+}
+
+.bg-gradient-primary {
+  @apply bg-gradient-to-r from-blue-600 to-indigo-600;
+}
+
+.dark .bg-gradient-primary {
+  @apply bg-gradient-to-r from-blue-500 to-indigo-500;
 }
