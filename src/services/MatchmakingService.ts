@@ -21,7 +21,7 @@ export const getConfirmedMatches = async (userId: string): Promise<UserProfile[]
       .select(`
         user_id_1,
         user_id_2,
-        user_profiles:user_id_2(*)
+        user_profiles!user_matches_user_id_2_fkey(*)
       `)
       .or(`user_id_1.eq.${userId},user_id_2.eq.${userId}`)
       .order('created_at', { ascending: false })
@@ -29,32 +29,35 @@ export const getConfirmedMatches = async (userId: string): Promise<UserProfile[]
 
     if (error) throw error;
 
+    if (!data || data.length === 0) {
+      return [];
+    }
+
     // Transform the data to UserProfile format
     const matches = data.map(match => {
       // Determine which user is the match (not the current user)
       const matchUserId = match.user_id_1 === userId ? match.user_id_2 : match.user_id_1;
       
-      // Get the profile data from the join - ensure it's an object not an array
-      // Type assertion to handle the case where user_profiles might be empty or null
+      // Get the profile data from the join
       const profileData = match.user_profiles || {};
       
       return {
         id: matchUserId,
-        name: (profileData as any).full_name || 'Unknown User',
-        imageUrl: (profileData as any).image_url || '',
-        industry: (profileData as any).industry || 'Unknown Industry',
-        userType: (profileData as any).user_type || 'Professional',
+        name: profileData.full_name || 'Unknown User',
+        imageUrl: profileData.image_url || '',
+        industry: profileData.industry || 'Unknown Industry',
+        userType: profileData.user_type || 'Professional',
         matchScore: 85 + Math.floor(Math.random() * 15), // Random score between 85-99 for matched users
         // Add other required fields with default values
         age: 30,
         gender: 'unspecified',
-        location: (profileData as any).location || 'Unknown Location',
-        interests: (profileData as any).interests || [],
-        bio: (profileData as any).bio || '',
+        location: profileData.location || 'Unknown Location',
+        interests: profileData.interests || [],
+        bio: profileData.bio || '',
         relationshipGoal: 'networking',
-        skills: (profileData as any).skills || [],
+        skills: profileData.skills || [],
         language: 'English',
-        experienceLevel: (profileData as any).experience_level || 'intermediate',
+        experienceLevel: profileData.experience_level || 'intermediate',
         activityScore: 75,
         profileCompleteness: 80,
       };
