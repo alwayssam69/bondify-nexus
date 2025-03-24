@@ -40,7 +40,7 @@ export const getConfirmedMatches = async (userId: string): Promise<UserProfile[]
       return {
         id: matchUserId,
         name: profileData.full_name || 'Unknown User',
-        imageUrl: profileData.image_url,
+        imageUrl: profileData.image_url || '',
         industry: profileData.industry || 'Unknown Industry',
         userType: profileData.user_type || 'Professional',
         matchScore: 85 + Math.floor(Math.random() * 15), // Random score between 85-99 for matched users
