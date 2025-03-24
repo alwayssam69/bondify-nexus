@@ -14,7 +14,7 @@ interface Step4RecommendationsProps {
   preferencesData: PreferencesData;
   onNextStep: () => void;
   onPrevStep: () => void;
-  isLoading?: boolean;  // Added this prop to fix the type error
+  isLoading?: boolean;
 }
 
 const Step4Recommendations = ({
@@ -22,9 +22,9 @@ const Step4Recommendations = ({
   preferencesData,
   onNextStep,
   onPrevStep,
-  isLoading: isAccountCreating = false,  // Renamed to avoid conflict with internal isLoading state
+  isLoading: isAccountCreating = false,
 }: Step4RecommendationsProps) => {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [recommendedMatches, setRecommendedMatches] = useState<RecommendedMatch[]>([]);
 
@@ -34,14 +34,15 @@ const Step4Recommendations = ({
   
   const handleRecommendationsLoaded = useCallback((recommendations: RecommendedMatch[]) => {
     setRecommendedMatches(recommendations);
+    setIsLoading(false); 
   }, []);
 
   const handleCompleteTour = async () => {
     setIsProcessing(true);
     
     try {
-      // Simulate processing
-      await new Promise(resolve => setTimeout(resolve, 1200));
+      // Simulate processing but make it quick
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       onNextStep();
     } catch (error) {
@@ -74,11 +75,19 @@ const Step4Recommendations = ({
             </p>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {recommendedMatches.map((match) => (
-              <RecommendationCard key={match.id} match={match} />
-            ))}
-          </div>
+          {recommendedMatches.length === 0 ? (
+            <div className="text-center p-8 border border-dashed rounded-lg">
+              <p className="text-muted-foreground mb-4">
+                No recommendations found at this time. You can find more professionals after completing your registration.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {recommendedMatches.map((match) => (
+                <RecommendationCard key={match.id} match={match} />
+              ))}
+            </div>
+          )}
           
           <div className="flex justify-between pt-6">
             <Button

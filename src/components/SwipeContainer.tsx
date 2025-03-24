@@ -1,3 +1,4 @@
+
 import React, { Component } from 'react';
 import { motion, PanInfo } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -106,9 +107,11 @@ class SwipeContainer extends Component<SwipeContainerProps, SwipeContainerState>
     
     if (isLoading) {
       return (
-        <div className="flex flex-col items-center justify-center h-[500px] bg-muted/30 rounded-lg">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-          <p className="text-muted-foreground">Finding potential connections...</p>
+        <div className="flex flex-col items-center justify-center h-[500px] bg-muted/30 rounded-lg p-6 text-center">
+          <h3 className="text-lg font-medium mb-2">Finding Connections</h3>
+          <p className="text-muted-foreground mb-4">
+            Looking for professionals that match your criteria
+          </p>
         </div>
       );
     }

@@ -13,17 +13,26 @@ const Profile = () => {
   const navigate = useNavigate();
   const { profile, refreshProfile, user } = useAuth();
   const [initialData, setInitialData] = useState<Partial<ProfileFormValues>>({});
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   
   useEffect(() => {
     // Immediately refresh profile data when component mounts
     const loadProfileData = async () => {
+      if (!user) return;
+      
       setIsLoading(true);
       try {
-        await refreshProfile();
-      } catch (error) {
-        console.error("Error refreshing profile:", error);
-        toast.error("Failed to load your profile data");
+        // Set a timeout to ensure we don't load for more than 5 seconds
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("Profile load timeout")), 5000);
+        });
+        
+        try {
+          await Promise.race([refreshProfile(), timeoutPromise]);
+        } catch (error) {
+          console.error("Error refreshing profile:", error);
+          toast.error("Failed to load your profile data");
+        }
       } finally {
         setIsLoading(false);
       }
@@ -31,8 +40,6 @@ const Profile = () => {
     
     if (user) {
       loadProfileData();
-    } else {
-      setIsLoading(false);
     }
   }, [refreshProfile, user]);
   
@@ -54,16 +61,12 @@ const Profile = () => {
         city: profile.city || "",
         useCurrentLocation: profile.use_current_location || false,
       });
-      setIsLoading(false);
     }
   }, [profile]);
 
   const goBack = () => {
     navigate(-1);
   };
-
-  // Display empty profile form only if profile is explicitly null or undefined after loading finishes
-  const profileMissing = !isLoading && !profile;
 
   return (
     <Layout className="py-24 px-6">
@@ -81,7 +84,7 @@ const Profile = () => {
           <div>
             <h1 className="text-3xl font-bold mb-2">Your Profile</h1>
             <p className="text-muted-foreground">
-              {profileMissing ? 
+              {!profile ? 
                 "Complete your profile to get better matches" : 
                 "Update your information to get better matches"}
             </p>
@@ -94,7 +97,7 @@ const Profile = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
               <p className="text-muted-foreground">Loading your profile data...</p>
             </div>
-          ) : profileMissing ? (
+          ) : !profile ? (
             <div className="text-center py-8">
               <p className="mb-4 text-muted-foreground">
                 Please complete your profile to start connecting with others.

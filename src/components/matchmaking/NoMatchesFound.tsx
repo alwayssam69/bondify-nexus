@@ -22,7 +22,7 @@ const NoMatchesFound: React.FC<NoMatchesFoundProps> = ({
       <h3 className="text-xl font-semibold text-gray-900 mb-2">No Matches Found</h3>
       
       <p className="text-gray-600 max-w-md mb-8">
-        We couldn't find any professionals matching your criteria. Try adjusting your filters or expanding your search radius.
+        Currently there are no professionals matching your criteria. Try adjusting your filters or expanding your search radius.
       </p>
       
       <div className="flex flex-col sm:flex-row gap-4">

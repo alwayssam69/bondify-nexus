@@ -28,7 +28,7 @@ export const useMatchmaking = ({
   filters, 
   enabled = true 
 }: UseMatchmakingProps): MatchmakingResult => {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [matches, setMatches] = useState<UserProfile[]>([]);
   const [searchRadius, setSearchRadius] = useState(filters.distance || 25);
@@ -51,27 +51,42 @@ export const useMatchmaking = ({
       setIsLoading(true);
       setError(null);
 
+      // Set a timeout to ensure we don't load for more than 5 seconds
+      const timeoutPromise = new Promise<UserProfile[]>((resolve) => {
+        setTimeout(() => resolve([]), 5000);
+      });
+
       let matchedProfiles: UserProfile[] = [];
       let nearbyFound = false;
 
       // Priority 1: Location-based matching (if enabled and coordinates are available)
       if (filters.useLocation && geolocation.latitude && geolocation.longitude) {
         console.log("Fetching proximity matches within", searchRadius, "km");
-        const proximityMatches = await getProximityMatches(user.id, searchRadius, 20);
-        
-        if (proximityMatches.length > 0) {
-          matchedProfiles = proximityMatches;
-          nearbyFound = true;
-          console.log("Found", proximityMatches.length, "proximity matches");
-        } else {
-          console.log("No proximity matches found, falling back to skill-based");
+        try {
+          const proximityMatchesPromise = getProximityMatches(user.id, searchRadius, 20);
+          const proximityMatches = await Promise.race([proximityMatchesPromise, timeoutPromise]);
+          
+          if (proximityMatches.length > 0) {
+            matchedProfiles = proximityMatches;
+            nearbyFound = true;
+            console.log("Found", proximityMatches.length, "proximity matches");
+          } else {
+            console.log("No proximity matches found, falling back to skill-based");
+          }
+        } catch (e) {
+          console.log("Error in proximity matching, falling back to skill-based");
         }
       }
 
       // Priority 2: If no location matches or location not enabled, fall back to skills/interest matches
       if (!nearbyFound) {
         console.log("Fetching skill-based matches");
-        matchedProfiles = await getMatchRecommendations(user.id, 20);
+        try {
+          const recommendationsPromise = getMatchRecommendations(user.id, 20);
+          matchedProfiles = await Promise.race([recommendationsPromise, timeoutPromise]);
+        } catch (e) {
+          console.error("Error in skill-based matching:", e);
+        }
       }
 
       // Apply additional filters

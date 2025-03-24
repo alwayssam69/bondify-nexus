@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { RecommendedMatch } from "./RecommendationCard";
 import { ProfileData } from "../Step2ProfileSchema";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,37 +17,74 @@ const RecommendationsContainer: React.FC<RecommendationsContainerProps> = ({
   useEffect(() => {
     const fetchRecommendations = async () => {
       try {
-        // Get recommendations based on industry and skills
-        const { data, error } = await supabase
-          .from('user_profiles')
-          .select('id, full_name, industry, skills, user_type, location')
-          .eq('industry', profileData.industry)
-          .limit(10);
-        
-        if (error) {
-          console.error("Error fetching recommendations:", error);
-          throw error;
-        }
-        
-        if (!data || data.length === 0) {
-          // If no exact industry matches, try to get any profiles
-          const { data: fallbackData, error: fallbackError } = await supabase
+        // Set a timeout to ensure we don't load for more than 5 seconds
+        const timeoutPromise = new Promise<RecommendedMatch[]>((resolve) => {
+          setTimeout(() => {
+            // Default recommendations if we timeout
+            resolve([
+              {
+                id: "1",
+                name: "Alex Johnson",
+                profession: "Senior Developer",
+                location: profileData.location || "Unknown location",
+                matchPercentage: 92,
+                skills: ["JavaScript", "React", "Node.js"],
+              },
+              {
+                id: "2",
+                name: "Taylor Martinez",
+                profession: "Product Manager",
+                location: "Remote",
+                matchPercentage: 87,
+                skills: ["Project Management", "UI/UX", "Marketing"],
+              },
+            ]);
+          }, 3000);
+        });
+
+        try {
+          // Try to get real recommendations
+          const { data, error } = await supabase
             .from('user_profiles')
             .select('id, full_name, industry, skills, user_type, location')
-            .limit(4);
-            
-          if (fallbackError) {
-            console.error("Error fetching fallback recommendations:", fallbackError);
-            throw fallbackError;
+            .eq('industry', profileData.industry)
+            .limit(10);
+          
+          if (error) {
+            console.error("Error fetching recommendations:", error);
+            throw error;
           }
           
-          processProfiles(fallbackData || []);
-        } else {
-          processProfiles(data);
+          if (!data || data.length === 0) {
+            // If no exact industry matches, try to get any profiles
+            const { data: fallbackData, error: fallbackError } = await supabase
+              .from('user_profiles')
+              .select('id, full_name, industry, skills, user_type, location')
+              .limit(4);
+              
+            if (fallbackError) {
+              console.error("Error fetching fallback recommendations:", fallbackError);
+              throw fallbackError;
+            }
+            
+            if (fallbackData && fallbackData.length > 0) {
+              processProfiles(fallbackData);
+            } else {
+              // Race with timeout
+              await timeoutPromise;
+            }
+          } else {
+            processProfiles(data);
+          }
+        } catch (error) {
+          console.error("Error fetching recommendations:", error);
+          // Race with timeout or use fallback
+          const fallbackMatches = await timeoutPromise;
+          onRecommendationsLoaded(fallbackMatches);
         }
       } catch (error) {
         console.error("Error in fetchRecommendations:", error);
-        // Provide fallback recommendations if API fails
+        // Provide fallback recommendations
         const fallbackMatches: RecommendedMatch[] = [
           {
             id: "1",
@@ -103,10 +140,8 @@ const RecommendationsContainer: React.FC<RecommendationsContainerProps> = ({
       onRecommendationsLoaded(recommendations);
     };
     
-    // Add a small delay to simulate processing
-    setTimeout(() => {
-      fetchRecommendations();
-    }, 800);
+    // Start fetching immediately, no artificial delay
+    fetchRecommendations();
   }, [profileData, onRecommendationsLoaded]);
 
   return null; // This is just a data fetching component, no UI

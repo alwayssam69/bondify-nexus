@@ -25,7 +25,6 @@ const MessagesDropdown = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
   
   useEffect(() => {
     const loadMessages = async () => {
@@ -33,14 +32,21 @@ const MessagesDropdown = () => {
       
       setIsLoading(true);
       try {
-        const messagesData = await fetchUserMessages(user.id);
-        setMessages(messagesData);
-      } catch (error) {
-        console.error("Error loading messages:", error);
-        setMessages([]);
+        // Set a timeout to ensure we don't load for more than 5 seconds
+        const timeoutPromise = new Promise<Message[]>((_, reject) => {
+          setTimeout(() => reject(new Error("Timeout")), 5000);
+        });
+        
+        try {
+          const messagesPromise = fetchUserMessages(user.id);
+          const messagesData = await Promise.race([messagesPromise, timeoutPromise]);
+          setMessages(messagesData);
+        } catch (error) {
+          console.error("Error or timeout loading messages:", error);
+          setMessages([]);
+        }
       } finally {
         setIsLoading(false);
-        setHasInitiallyLoaded(true);
       }
     };
 
@@ -76,13 +82,13 @@ const MessagesDropdown = () => {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        {(hasInitiallyLoaded || !isLoading) && messages.length === 0 ? (
+        {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 px-4 text-center text-gray-500">
             <Inbox className="h-12 w-12 mb-2 text-gray-400" />
             <p>No messages yet</p>
             <p className="text-xs mt-1">Start a conversation with your matches</p>
           </div>
-        ) : messages.length > 0 ? (
+        ) : (
           messages.map((message) => (
             <DropdownMenuItem key={message.id} className="p-3 cursor-pointer" asChild>
               <Link to="/chat" className="w-full">
@@ -101,10 +107,6 @@ const MessagesDropdown = () => {
               </Link>
             </DropdownMenuItem>
           ))
-        ) : isLoading && !hasInitiallyLoaded && (
-          <div className="p-4 flex justify-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-          </div>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
