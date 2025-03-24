@@ -8,6 +8,7 @@ interface AuthContextType {
   user: User | null;
   profile: any | null;
   isLoading: boolean;
+  loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -138,13 +139,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log("AuthProvider: Setting up auth state listener");
     let isActive = true;
     
-    // Set up auth listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         console.log("Auth state changed:", event, newSession?.user?.id);
         if (!isActive) return;
         
-        // Handle various auth events
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           console.log("User signed in or token refreshed");
           setSession(newSession);
@@ -156,7 +155,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setProfile(profileData);
             } catch (error) {
               console.error("Error fetching profile after sign in:", error);
-              // Still set user as logged in even if profile fetch fails
             }
           }
         } else if (event === 'SIGNED_OUT') {
@@ -181,7 +179,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Then check for existing session
     const getSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -198,7 +195,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setProfile(profileData);
           } catch (error) {
             console.error("Error fetching initial profile:", error);
-            // Don't prevent app from loading if profile fetch fails
           }
         } else {
           setSession(null);
@@ -210,7 +206,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error("Error getting session:", error);
       } finally {
         if (isActive) {
-          // Ensure we exit loading state even if there are errors
           setIsLoading(false);
         }
       }
@@ -218,13 +213,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     getSession();
 
-    // Ensure loading state doesn't get stuck (safety timeout)
     const timeout = setTimeout(() => {
       if (isActive && isLoading) {
         console.log("Force ending loading state after timeout");
         setIsLoading(false);
       }
-    }, 3000); // Reduced from 5000 to 3000 ms for faster response
+    }, 3000);
 
     return () => {
       isActive = false;
@@ -257,7 +251,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Starting signOut process in AuthContext");
       setIsLoading(true);
       
-      // 1. Clear all storage to ensure complete session destruction
       localStorage.clear();
       sessionStorage.clear();
       document.cookie.split(';').forEach(cookie => {
@@ -266,7 +259,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
       });
       
-      // 2. Sign out with scope: 'global' to ensure all devices are signed out
       const { error } = await supabase.auth.signOut({ scope: 'global' });
       
       if (error) {
@@ -275,12 +267,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       } else {
         console.log("Supabase signOut successful, clearing state");
-        // 3. Clear all auth state
         setUser(null);
         setSession(null);
         setProfile(null);
         
-        // 4. Force navigation to login page
         window.location.href = "/login";
         return;
       }
@@ -367,6 +357,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user, 
       profile, 
       isLoading,
+      loading: isLoading,
       signOut,
       refreshProfile,
       resetPassword,
@@ -377,6 +368,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
+
+export const AuthContextProvider = AuthProvider;
 
 export const useAuth = () => {
   const context = useContext(AuthContext);

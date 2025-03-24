@@ -35,25 +35,25 @@ export const getConfirmedMatches = async (userId: string): Promise<UserProfile[]
       const matchUserId = match.user_id_1 === userId ? match.user_id_2 : match.user_id_1;
       
       // Get the profile data from the join
-      const profileData = match.user_profiles;
+      const profileData = match.user_profiles || {};
       
       return {
         id: matchUserId,
-        name: profileData?.full_name || 'Unknown User',
-        imageUrl: profileData?.image_url,
-        industry: profileData?.industry || 'Unknown Industry',
-        userType: profileData?.user_type || 'Professional',
+        name: profileData.full_name || 'Unknown User',
+        imageUrl: profileData.image_url,
+        industry: profileData.industry || 'Unknown Industry',
+        userType: profileData.user_type || 'Professional',
         matchScore: 85 + Math.floor(Math.random() * 15), // Random score between 85-99 for matched users
         // Add other required fields with default values
         age: 30,
         gender: 'unspecified',
-        location: profileData?.location || 'Unknown Location',
-        interests: profileData?.interests || [],
-        bio: profileData?.bio || '',
+        location: profileData.location || 'Unknown Location',
+        interests: profileData.interests || [],
+        bio: profileData.bio || '',
         relationshipGoal: 'networking',
-        skills: profileData?.skills || [],
+        skills: profileData.skills || [],
         language: 'English',
-        experienceLevel: profileData?.experience_level || 'intermediate',
+        experienceLevel: profileData.experience_level || 'intermediate',
         activityScore: 75,
         profileCompleteness: 80,
       };
