@@ -17,9 +17,10 @@ import LocationSection from "./LocationSection";
 
 interface ProfileFormProps {
   initialData?: Partial<ProfileFormValues>;
+  onSuccess?: () => void; // Add the onSuccess prop
 }
 
-const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
+const ProfileForm: React.FC<ProfileFormProps> = ({ initialData, onSuccess }) => {
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -110,8 +111,13 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
       
       toast.success("Profile updated successfully!");
       
-      // Redirect to dashboard after successful update
-      navigate("/dashboard");
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        // Redirect to dashboard after successful update if no callback provided
+        navigate("/dashboard");
+      }
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error("An error occurred while updating your profile");

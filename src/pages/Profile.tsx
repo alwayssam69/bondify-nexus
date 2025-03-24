@@ -43,7 +43,6 @@ const Profile = () => {
       setIsLoading(true);
       
       try {
-        // Determine whose profile to fetch
         const profileId = id || user?.id;
         
         if (!profileId) {
@@ -51,10 +50,8 @@ const Profile = () => {
           return;
         }
         
-        // Check if this is the current user's profile
         setIsCurrentUser(profileId === user?.id);
         
-        // First try to use the profile from auth context if it's the current user
         if (profileId === user?.id && authProfile) {
           setUserProfile(authProfile);
           setIsProfileIncomplete(isProfileMissingData(authProfile));
@@ -62,7 +59,6 @@ const Profile = () => {
           return;
         }
         
-        // Otherwise, fetch from Supabase
         const { data, error } = await supabase
           .from('user_profiles')
           .select('*')
@@ -76,10 +72,8 @@ const Profile = () => {
         
         if (data) {
           setUserProfile(data);
-          // Check if profile is incomplete
           setIsProfileIncomplete(isProfileMissingData(data));
         } else {
-          // If no profile found but we have a user, create a minimal profile object
           if (profileId === user?.id) {
             const minimalProfile = {
               id: user.id,
@@ -90,7 +84,6 @@ const Profile = () => {
             setUserProfile(minimalProfile);
             setIsProfileIncomplete(true);
           } else {
-            // If it's not the current user and no profile found, show error
             toast.error("Profile not found");
             navigate('/');
           }
@@ -106,7 +99,6 @@ const Profile = () => {
     fetchProfile();
   }, [id, user, authProfile, navigate]);
   
-  // Helper to check if important profile fields are missing
   const isProfileMissingData = (profile: any) => {
     const requiredFields = ['full_name', 'bio', 'industry', 'user_type'];
     return !profile || requiredFields.some(field => !profile[field]);
@@ -138,7 +130,6 @@ const Profile = () => {
     );
   }
 
-  // For public profiles, show a simplified view
   if (isPublicProfile) {
     return (
       <Layout>
@@ -291,7 +282,7 @@ const Profile = () => {
                     onSuccess={() => {
                       refreshProfile();
                       setActiveTab("profile");
-                    }} 
+                    }}
                   />
                 </TabsContent>
                 
@@ -349,7 +340,6 @@ const Profile = () => {
                       </AlertDescription>
                     </Alert>
                     
-                    {/* Notification preferences content would go here */}
                     <p className="text-muted-foreground">Configure how and when you receive notifications.</p>
                   </div>
                 </TabsContent>
