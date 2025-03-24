@@ -1,6 +1,67 @@
 
 import { SwipeAction } from '@/types/matchmaking';
 import { supabase } from '@/integrations/supabase/client';
+import { 
+  getMatchRecommendations as getRecommendations,
+  getProximityMatches as getProximity,
+  updateUserCoordinates
+} from './MatchmakingAPI';
+import { UserProfile } from '@/lib/matchmaking';
+
+// Re-export functions from MatchmakingAPI for easier imports elsewhere
+export const getMatchRecommendations = getRecommendations;
+export const getProximityMatches = getProximity;
+
+// Get confirmed matches for a user (users who mutually liked each other)
+export const getConfirmedMatches = async (userId: string): Promise<UserProfile[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('user_matches')
+      .select(`
+        user_id_1,
+        user_id_2,
+        user_profiles!user_matches_user_id_2_fkey(*)
+      `)
+      .or(`user_id_1.eq.${userId},user_id_2.eq.${userId}`)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+
+    // Transform the data to UserProfile format
+    const matches = data.map(match => {
+      // Determine which user is the match (not the current user)
+      const matchUserId = match.user_id_1 === userId ? match.user_id_2 : match.user_id_1;
+      const profileData = match.user_profiles;
+      
+      return {
+        id: matchUserId,
+        name: profileData?.full_name || 'Unknown User',
+        imageUrl: profileData?.image_url,
+        industry: profileData?.industry || 'Unknown Industry',
+        userType: profileData?.user_type || 'Professional',
+        matchScore: 85 + Math.floor(Math.random() * 15), // Random score between 85-99 for matched users
+        // Add other required fields with default values
+        age: 30,
+        gender: 'unspecified',
+        location: profileData?.location || 'Unknown Location',
+        interests: profileData?.interests || [],
+        bio: profileData?.bio || '',
+        relationshipGoal: 'networking',
+        skills: profileData?.skills || [],
+        language: 'English',
+        experienceLevel: profileData?.experience_level || 'intermediate',
+        activityScore: 75,
+        profileCompleteness: 80,
+      };
+    });
+    
+    return matches;
+  } catch (error) {
+    console.error('Error fetching confirmed matches:', error);
+    return [];
+  }
+};
 
 // Record a swipe action in the database
 export const recordSwipeAction = async (
