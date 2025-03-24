@@ -98,7 +98,17 @@ const UserSearch = () => {
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
                     {user.image_url ? (
-                      <img src={user.image_url} alt={user.full_name} className="h-full w-full object-cover" />
+                      <img 
+                        src={user.image_url} 
+                        alt={user.full_name} 
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          // Replace broken image with icon
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-primary"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+                        }}
+                      />
                     ) : (
                       <UserRound className="h-6 w-6 text-primary" />
                     )}

@@ -16,19 +16,11 @@ const Index = () => {
   const { user } = useAuth();
 
   const handleGetStarted = () => {
-    toast.loading("Preparing registration form...");
-    setTimeout(() => {
-      navigate("/register");
-      toast.dismiss();
-    }, 500);
+    navigate("/register");
   };
 
   const handleSignIn = () => {
-    toast.loading("Preparing login form...");
-    setTimeout(() => {
-      navigate("/login");
-      toast.dismiss();
-    }, 500);
+    navigate("/login");
   };
 
   return (
