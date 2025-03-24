@@ -133,37 +133,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log("AuthProvider: Setting up auth state listener");
     let isActive = true;
     
+    // Set up auth listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("Auth state changed:", event, session?.user?.id);
+      async (event, newSession) => {
+        console.log("Auth state changed:", event, newSession?.user?.id);
         if (!isActive) return;
         
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        } else {
+        // Handle various auth events
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          console.log("User signed in or token refreshed");
+          setSession(newSession);
+          setUser(newSession?.user ?? null);
+          
+          if (newSession?.user) {
+            await fetchProfile(newSession.user.id);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          console.log("User signed out");
+          setUser(null);
+          setSession(null);
           setProfile(null);
-          setProfileLoaded(true);
+        } else if (event === 'USER_UPDATED') {
+          console.log("User updated");
+          setSession(newSession);
+          setUser(newSession?.user ?? null);
+          
+          if (newSession?.user) {
+            await fetchProfile(newSession.user.id);
+          }
         }
       }
     );
 
+    // Then check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!isActive) return;
       
       console.log("Initial session check:", session?.user?.id);
-      setSession(session);
-      setUser(session?.user ?? null);
       
       if (session?.user) {
+        setSession(session);
+        setUser(session.user);
         await fetchProfile(session.user.id);
       } else {
+        setSession(null);
+        setUser(null);
+        setProfile(null);
         setProfileLoaded(true);
       }
       
       setIsLoading(false);
+    }).catch(error => {
+      console.error("Error getting session:", error);
+      setIsLoading(false);
+      setProfileLoaded(true);
     });
 
     return () => {
@@ -172,6 +195,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  // Backup timer to ensure loading state doesn't get stuck
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (isLoading) {
@@ -203,6 +227,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 1. Clear all storage to ensure complete session destruction
       localStorage.clear();
       sessionStorage.clear();
+      document.cookie.split(';').forEach(cookie => {
+        document.cookie = cookie
+          .replace(/^ +/, '')
+          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+      });
       
       // 2. Sign out with scope: 'global' to ensure all devices are signed out
       const { error } = await supabase.auth.signOut({ scope: 'global' });

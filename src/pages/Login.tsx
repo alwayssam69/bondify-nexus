@@ -130,15 +130,15 @@ const Login = () => {
     console.log("Login attempt with email:", values.email);
     
     try {
-      // Add a timeout to prevent indefinite loading
+      // Increase timeout to 20 seconds
       const loginPromise = supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
       
-      // Create a timeout promise
+      // Create a longer timeout
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Login timeout - server not responding")), 10000);
+        setTimeout(() => reject(new Error("Login timeout - server not responding")), 20000);
       });
       
       // Race the login against the timeout
@@ -149,9 +149,19 @@ const Login = () => {
       
       if (error) {
         console.error("Login error:", error.message);
-        toast.error(error.message === "Invalid login credentials" 
-          ? "Incorrect email or password. Please try again." 
-          : error.message);
+        
+        // More user-friendly error messages
+        let errorMessage = "Login failed. Please try again.";
+        
+        if (error.message.includes("Invalid login credentials")) {
+          errorMessage = "Incorrect email or password. Please try again.";
+        } else if (error.message.includes("Email not confirmed")) {
+          errorMessage = "Please verify your email before logging in.";
+        } else if (error.message.includes("rate limit")) {
+          errorMessage = "Too many login attempts. Please try again later.";
+        }
+        
+        toast.error(errorMessage);
         setIsLoading(false);
         return;
       }
@@ -159,6 +169,9 @@ const Login = () => {
       if (data?.user) {
         console.log("Login successful for user:", data.user.id);
         toast.success("Login successful!");
+        
+        // Clear any stored data to ensure fresh session
+        localStorage.removeItem("supabase.auth.token");
         
         // Force redirect to dashboard after successful login
         window.location.href = "/dashboard";

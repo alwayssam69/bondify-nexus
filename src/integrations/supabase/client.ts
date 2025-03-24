@@ -48,5 +48,17 @@ type ExtendedDatabase = Database & {
   }
 }
 
-// Create client with extended type support
-export const supabase = createClient<ExtendedDatabase>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// Create client with extended type support and explicit auth configuration
+export const supabase = createClient<ExtendedDatabase>(
+  SUPABASE_URL, 
+  SUPABASE_PUBLISHABLE_KEY,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      storage: localStorage,
+      detectSessionInUrl: true,
+      flowType: 'implicit',
+    }
+  }
+);
