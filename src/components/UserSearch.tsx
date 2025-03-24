@@ -32,11 +32,17 @@ const UserSearch = () => {
     setIsSearching(true);
     
     try {
+      let searchQuery = searchTerm.trim();
+      // Remove @ symbol if present at the beginning
+      if (searchQuery.startsWith('@')) {
+        searchQuery = searchQuery.substring(1);
+      }
+      
       // First try to search by user_tag (exact match)
       let { data: tagResults, error: tagError } = await supabase
         .from('user_profiles')
         .select('id, full_name, user_tag, image_url')
-        .eq('user_tag', searchTerm.trim())
+        .eq('user_tag', searchQuery)
         .limit(10);
         
       if (tagError) throw tagError;
@@ -46,11 +52,23 @@ const UserSearch = () => {
         const { data: nameResults, error: nameError } = await supabase
           .from('user_profiles')
           .select('id, full_name, user_tag, image_url')
-          .ilike('user_tag', `%${searchTerm.trim()}%`)
+          .ilike('user_tag', `%${searchQuery}%`)
           .limit(10);
           
         if (nameError) throw nameError;
         tagResults = nameResults;
+      }
+      
+      // If still no results, try searching by full name
+      if (!tagResults?.length) {
+        const { data: fullNameResults, error: fullNameError } = await supabase
+          .from('user_profiles')
+          .select('id, full_name, user_tag, image_url')
+          .ilike('full_name', `%${searchQuery}%`)
+          .limit(10);
+          
+        if (fullNameError) throw fullNameError;
+        tagResults = fullNameResults;
       }
       
       setResults(tagResults || []);
@@ -73,13 +91,18 @@ const UserSearch = () => {
   return (
     <div className="w-full max-w-md mx-auto">
       <form onSubmit={handleSearch} className="flex gap-2 mb-4">
-        <Input
-          type="text"
-          placeholder="Search by username..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1"
-        />
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-muted-foreground">
+            @
+          </div>
+          <Input
+            type="text"
+            placeholder="Search username..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8"
+          />
+        </div>
         <Button type="submit" disabled={isSearching}>
           {isSearching ? (
             <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
@@ -115,7 +138,9 @@ const UserSearch = () => {
                   </div>
                   <div className="flex-1">
                     <p className="font-medium">{user.full_name}</p>
-                    <p className="text-sm text-muted-foreground">@{user.user_tag}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {user.user_tag ? `@${user.user_tag}` : 'No username set'}
+                    </p>
                   </div>
                   <Button 
                     size="sm" 

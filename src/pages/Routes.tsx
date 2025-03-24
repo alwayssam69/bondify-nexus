@@ -1,5 +1,5 @@
 
-import React, { lazy, Suspense } from 'react';
+import React from 'react';
 import { Routes as RouterRoutes, Route, Navigate } from 'react-router-dom';
 import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,31 +11,31 @@ import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import NotFound from '@/pages/NotFound';
 import ProtectedRoute from './ProtectedRoute';
-import Profile from '@/pages/Profile'; // Import Profile directly for more reliability
+import Profile from '@/pages/Profile'; // Import Profile directly 
+import UserSearchPage from '@/pages/UserSearchPage'; // Direct import for search page
 
 // Lazy loaded components for non-critical routes
-const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
-const Dashboard = lazy(() => import('@/pages/Dashboard'));
-const Matches = lazy(() => import('@/pages/Matches'));
-const Chat = lazy(() => import('@/pages/Chat'));
-const NotificationCenter = lazy(() => import('@/pages/NotificationCenter'));
-const DiscoverSwipe = lazy(() => import('@/pages/DiscoverSwipe'));
-const Community = lazy(() => import('@/pages/Community'));
-const QAForum = lazy(() => import('@/pages/QAForum'));
-const NewsInsights = lazy(() => import('@/pages/NewsInsights'));
-const UserSearchPage = lazy(() => import('@/pages/UserSearchPage'));
-const Onboarding = lazy(() => import('@/pages/Onboarding'));
-const About = lazy(() => import('@/pages/About'));
-const Help = lazy(() => import('@/pages/Help'));
-const Safety = lazy(() => import('@/pages/Safety'));
-const Terms = lazy(() => import('@/pages/Terms'));
-const Privacy = lazy(() => import('@/pages/Privacy'));
-const Cookie = lazy(() => import('@/pages/Cookie'));
-const Accessibility = lazy(() => import('@/pages/Accessibility'));
-const Careers = lazy(() => import('@/pages/Careers'));
-const Press = lazy(() => import('@/pages/Press'));
-const Contact = lazy(() => import('@/pages/Contact'));
-const Blog = lazy(() => import('@/pages/Blog'));
+const ResetPassword = React.lazy(() => import('@/pages/ResetPassword'));
+const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
+const Matches = React.lazy(() => import('@/pages/Matches'));
+const Chat = React.lazy(() => import('@/pages/Chat'));
+const NotificationCenter = React.lazy(() => import('@/pages/NotificationCenter'));
+const DiscoverSwipe = React.lazy(() => import('@/pages/DiscoverSwipe'));
+const Community = React.lazy(() => import('@/pages/Community'));
+const QAForum = React.lazy(() => import('@/pages/QAForum'));
+const NewsInsights = React.lazy(() => import('@/pages/NewsInsights'));
+const Onboarding = React.lazy(() => import('@/pages/Onboarding'));
+const About = React.lazy(() => import('@/pages/About'));
+const Help = React.lazy(() => import('@/pages/Help'));
+const Safety = React.lazy(() => import('@/pages/Safety'));
+const Terms = React.lazy(() => import('@/pages/Terms'));
+const Privacy = React.lazy(() => import('@/pages/Privacy'));
+const Cookie = React.lazy(() => import('@/pages/Cookie'));
+const Accessibility = React.lazy(() => import('@/pages/Accessibility'));
+const Careers = React.lazy(() => import('@/pages/Careers'));
+const Press = React.lazy(() => import('@/pages/Press'));
+const Contact = React.lazy(() => import('@/pages/Contact'));
+const Blog = React.lazy(() => import('@/pages/Blog'));
 
 // Loading component for Suspense fallback
 const LoadingFallback = () => (
@@ -48,7 +48,7 @@ const Routes: React.FC = () => {
   const { user } = useAuth();
 
   return (
-    <Suspense fallback={<LoadingFallback />}>
+    <React.Suspense fallback={<LoadingFallback />}>
       <RouterRoutes>
         {/* Public routes */}
         <Route path="/" element={<Index />} />
@@ -90,7 +90,7 @@ const Routes: React.FC = () => {
         {/* Catch-all for 404 */}
         <Route path="*" element={<NotFound />} />
       </RouterRoutes>
-    </Suspense>
+    </React.Suspense>
   );
 };
 

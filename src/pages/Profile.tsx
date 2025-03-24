@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import ProfileTabs from "@/components/profile/ProfileTabs";
 import ProfileSidebar from "@/components/profile/ProfileSidebar";
@@ -14,8 +14,10 @@ import { loadSampleUsers } from "@/lib/matchmaking";
 const Profile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isEditMode = searchParams.get('edit') === 'true';
   const { user, signOut, profile: authProfile, refreshProfile } = useAuth();
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState(isEditMode ? "edit" : "profile");
   const [isLoading, setIsLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isCurrentUser, setIsCurrentUser] = useState(false);
@@ -169,6 +171,13 @@ const Profile = () => {
 
     return () => clearTimeout(timer);
   }, [id, user, authProfile, navigate, refreshProfile, loadAttempts, isPublicProfile]);
+  
+  // Apply the edit mode from URL parameters
+  useEffect(() => {
+    if (isEditMode) {
+      setActiveTab("edit");
+    }
+  }, [isEditMode]);
   
   const isProfileMissingData = (profile: any) => {
     if (!profile) return true;

@@ -16,6 +16,11 @@ export const profileFormSchema = z.object({
   state: z.string().min(1, "Please select your state"),
   city: z.string().optional(),
   useCurrentLocation: z.boolean().default(false),
+  userTag: z.string()
+    .min(3, "Username must be at least 3 characters")
+    .max(30, "Username cannot exceed 30 characters")
+    .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers and underscores")
+    .optional(),
 });
 
 export type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -30,7 +35,8 @@ export const calculateCompletenessScore = (values: ProfileFormValues): number =>
   if (values.experienceLevel) completenessScore += 10;
   if (values.skills.length > 0) completenessScore += 10;
   if (values.interests.length > 0) completenessScore += 10;
-  if (values.university) completenessScore += 10;
-  if (values.courseYear) completenessScore += 10;
+  if (values.university) completenessScore += 5;
+  if (values.courseYear) completenessScore += 5;
+  if (values.userTag) completenessScore += 10;
   return completenessScore;
 };

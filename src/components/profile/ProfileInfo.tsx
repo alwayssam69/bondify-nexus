@@ -10,7 +10,8 @@ import {
   MapPin, 
   Mail, 
   Calendar, 
-  AlertTriangle
+  AlertTriangle,
+  AtSign
 } from "lucide-react";
 
 interface ProfileInfoProps {
@@ -80,6 +81,14 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ profileData, isPublic }) => {
                   <p className="text-sm text-muted-foreground">Full Name</p>
                   <p className="font-medium">{profileData.full_name || "Not provided"}</p>
                 </div>
+                {profileData.user_tag && (
+                  <div>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <AtSign className="h-3 w-3" /> Username
+                    </p>
+                    <p className="font-medium">@{profileData.user_tag}</p>
+                  </div>
+                )}
                 {!isPublic && (
                   <div>
                     <p className="text-sm text-muted-foreground">Email</p>
@@ -223,12 +232,6 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ profileData, isPublic }) => {
                 <p className="text-sm text-muted-foreground">Profile Completion</p>
                 <p className="font-medium">{profileData.profile_completeness || 0}%</p>
               </div>
-              {!isPublic && profileData.user_tag && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Username</p>
-                  <p className="font-medium">@{profileData.user_tag}</p>
-                </div>
-              )}
             </div>
 
             {!isPublic && (

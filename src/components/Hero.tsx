@@ -5,13 +5,14 @@ import { ArrowRight, MessageSquare, Video, Users } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { motion } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
+import ProfileButton from "./ProfileButton";
 
 interface HeroProps {
   user: User | null;
   onGetStarted: () => void;
   onSignIn: () => void;
   onDashboard: () => void;
-  actionButton?: React.ReactNode; // Added actionButton prop
+  actionButton?: React.ReactNode;
 }
 
 const Hero = ({ user, onGetStarted, onSignIn, onDashboard, actionButton }: HeroProps) => {
@@ -72,14 +73,17 @@ const Hero = ({ user, onGetStarted, onSignIn, onDashboard, actionButton }: HeroP
             
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
               {user ? (
-                <Button 
-                  size="lg" 
-                  className="rounded-full px-8 shadow-button h-12 transition-all hover:shadow-md group"
-                  onClick={onDashboard}
-                >
-                  <span>Go to Dashboard</span>
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
+                <>
+                  <Button 
+                    size="lg" 
+                    className="rounded-full px-8 shadow-button h-12 transition-all hover:shadow-md group"
+                    onClick={onDashboard}
+                  >
+                    <span>Go to Dashboard</span>
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Button>
+                  <ProfileButton variant="outline" size="lg" />
+                </>
               ) : (
                 <>
                   <Button 
