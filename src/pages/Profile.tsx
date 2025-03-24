@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,7 +7,7 @@ import { ProfileFormValues } from "@/components/profile/ProfileFormSchema";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { NoMatchesFound } from "@/components/matchmaking/NoMatchesFound";
+import NoMatchesFound from "@/components/matchmaking/NoMatchesFound";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -18,7 +17,6 @@ const Profile = () => {
   const [hasError, setHasError] = useState(false);
   
   useEffect(() => {
-    // Immediately refresh profile data when component mounts
     const loadProfileData = async () => {
       if (!user) return;
       
@@ -26,7 +24,6 @@ const Profile = () => {
       setHasError(false);
       
       try {
-        // Set a timeout to ensure we don't load for more than 5 seconds
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error("Profile load timeout")), 5000);
         });
