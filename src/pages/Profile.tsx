@@ -6,9 +6,10 @@ import Layout from "@/components/layout/Layout";
 import ProfileForm from "@/components/profile/ProfileForm";
 import { ProfileFormValues } from "@/components/profile/ProfileFormSchema";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [publicProfile, setPublicProfile] = useState<any>(null);
+  const [isDirty, setIsDirty] = useState(false);
   const isPublicProfile = params.id && params.id !== user?.id;
   
   useEffect(() => {
@@ -74,6 +76,22 @@ const Profile = () => {
     
     return () => clearTimeout(timeout);
   }, [refreshProfile, user, params.id, isPublicProfile]);
+
+  // Add window beforeunload event listener to catch unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "You have unsaved changes. Are you sure you want to leave?";
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isDirty]);
   
   useEffect(() => {
     if (profile) {
@@ -116,8 +134,35 @@ const Profile = () => {
     }
   }, [publicProfile]);
 
+  const isProfileIncomplete = () => {
+    if (!profile) return true;
+    
+    // Check if essential fields are missing
+    const essentialFields = [
+      profile.full_name,
+      profile.industry,
+      profile.skills?.length > 0,
+      profile.interests?.length > 0,
+      profile.user_type
+    ];
+    
+    return essentialFields.some(field => !field);
+  };
+
   const goBack = () => {
+    if (isDirty) {
+      const confirm = window.confirm("You have unsaved changes. Are you sure you want to leave?");
+      if (!confirm) return;
+    }
     navigate(-1);
+  };
+
+  const handleFormChange = () => {
+    setIsDirty(true);
+  };
+
+  const handleFormSubmit = () => {
+    setIsDirty(false);
   };
 
   const renderContent = () => {
@@ -157,33 +202,41 @@ const Profile = () => {
       return (
         <div className="space-y-6">
           <div className="p-6 border-b">
-            <h2 className="text-2xl font-semibold">{initialData.fullName}</h2>
+            <h2 className="text-2xl font-semibold">{initialData.fullName || "Anonymous User"}</h2>
             <p className="text-muted-foreground">
-              {initialData.userType} • {initialData.industry}
+              {initialData.userType || "Professional"} • {initialData.industry || "Industry not specified"}
             </p>
-            <p className="mt-2">{initialData.bio}</p>
+            <p className="mt-2">{initialData.bio || "No bio provided"}</p>
           </div>
           
           <div className="p-6">
             <h3 className="text-lg font-medium mb-2">Skills</h3>
-            <div className="flex flex-wrap gap-2">
-              {initialData.skills?.map((skill, index) => (
-                <span key={index} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-                  {skill}
-                </span>
-              ))}
-            </div>
+            {initialData.skills?.length ? (
+              <div className="flex flex-wrap gap-2">
+                {initialData.skills?.map((skill, index) => (
+                  <span key={index} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground">No skills listed</p>
+            )}
           </div>
           
           <div className="p-6 border-t">
             <h3 className="text-lg font-medium mb-2">Interests</h3>
-            <div className="flex flex-wrap gap-2">
-              {initialData.interests?.map((interest, index) => (
-                <span key={index} className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm">
-                  {interest}
-                </span>
-              ))}
-            </div>
+            {initialData.interests?.length ? (
+              <div className="flex flex-wrap gap-2">
+                {initialData.interests?.map((interest, index) => (
+                  <span key={index} className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm">
+                    {interest}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground">No interests listed</p>
+            )}
           </div>
           
           <div className="flex justify-center py-4">
@@ -199,12 +252,29 @@ const Profile = () => {
           <p className="mb-4 text-muted-foreground">
             Please complete your profile to start connecting with others.
           </p>
-          <ProfileForm initialData={{}} />
+          <ProfileForm initialData={{}} onChange={handleFormChange} onSubmit={handleFormSubmit} />
         </div>
       );
     }
     
-    return <ProfileForm initialData={initialData} />;
+    // Show warning if profile is incomplete
+    if (isProfileIncomplete()) {
+      return (
+        <div className="space-y-6">
+          <Alert variant="warning" className="mb-6 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
+            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <AlertTitle className="text-amber-800 dark:text-amber-300">Your profile is incomplete</AlertTitle>
+            <AlertDescription className="text-amber-700 dark:text-amber-400">
+              Please update your details for better matches and connectivity opportunities.
+            </AlertDescription>
+          </Alert>
+          
+          <ProfileForm initialData={initialData} onChange={handleFormChange} onSubmit={handleFormSubmit} />
+        </div>
+      );
+    }
+    
+    return <ProfileForm initialData={initialData} onChange={handleFormChange} onSubmit={handleFormSubmit} />;
   };
 
   return (

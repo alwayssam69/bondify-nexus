@@ -14,15 +14,20 @@ import ProfessionalDetailsSection from "./ProfessionalDetailsSection";
 import EducationSection from "./EducationSection";
 import InterestsSection from "./InterestsSection";
 import LocationSection from "./LocationSection";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 
 interface ProfileFormProps {
   initialData?: Partial<ProfileFormValues>;
+  onChange?: () => void;
+  onSubmit?: () => void;
 }
 
-const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
+const ProfileForm: React.FC<ProfileFormProps> = ({ initialData, onChange, onSubmit }) => {
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [formTouched, setFormTouched] = useState(false);
   
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -64,10 +69,25 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
         city: initialData.city || "",
         useCurrentLocation: initialData.useCurrentLocation || false,
       });
+      setFormTouched(false);
     }
   }, [initialData, form]);
   
-  const onSubmit = async (values: ProfileFormValues) => {
+  // Check for form changes
+  useEffect(() => {
+    const subscription = form.watch(() => {
+      if (!formTouched) {
+        setFormTouched(true);
+        if (onChange) {
+          onChange();
+        }
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form, onChange, formTouched]);
+  
+  const handleSubmit = async (values: ProfileFormValues) => {
     if (!user) {
       toast.error("You must be logged in to update your profile");
       return;
@@ -105,10 +125,17 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
         throw error;
       }
       
+      // Reset form touched state
+      setFormTouched(false);
+      
       // Refresh the profile data immediately after update
       await refreshProfile();
       
       toast.success("Profile updated successfully!");
+      
+      if (onSubmit) {
+        onSubmit();
+      }
       
       // Redirect to dashboard after successful update
       navigate("/dashboard");
@@ -120,9 +147,26 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
     }
   };
 
+  const handleCancel = () => {
+    if (formTouched) {
+      const confirm = window.confirm("You have unsaved changes. Are you sure you want to cancel?");
+      if (!confirm) return;
+    }
+    navigate(-1);
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+        {formTouched && (
+          <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
+            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertDescription className="text-blue-700 dark:text-blue-400">
+              You have unsaved changes. Don't forget to save your profile before leaving.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <FormSection title="Personal Information">
           <PersonalInfoSection form={form} />
         </FormSection>
@@ -147,7 +191,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate(-1)}
+            onClick={handleCancel}
           >
             Cancel
           </Button>
