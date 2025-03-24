@@ -61,6 +61,10 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
     }
   };
 
+  const handleSkillChange = (selectedSkills: string[]) => {
+    setSkills(selectedSkills);
+  };
+
   const handleFindMatch = async () => {
     if (!industry) {
       toast.warning("Please select an industry");
@@ -152,7 +156,7 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
             <DynamicSkillSelect
               industry={industry}
               value={skills}
-              onChange={setSkills}
+              onChange={handleSkillChange}
               placeholder="Select skills related to your industry"
               maxSelections={5}
             />

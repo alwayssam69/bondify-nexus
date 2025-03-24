@@ -1,139 +1,169 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Check, ChevronsUpDown, Search, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+
+import React, { useState, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { industrySkills } from "@/data/formOptions";
 
 interface DynamicSkillSelectProps {
-  industry: string;
+  industry?: string;
   value: string[];
   onChange: (value: string[]) => void;
   placeholder?: string;
-  label?: string;
   error?: boolean;
   maxSelections?: number;
 }
+
+// Industry-specific skills
+const skillsByIndustry: Record<string, string[]> = {
+  technology: [
+    "javascript", "react", "node-js", "typescript", "python", "java", "cloud-computing", 
+    "aws", "azure", "gcp", "devops", "machine-learning", "artificial-intelligence", 
+    "data-science", "blockchain", "cybersecurity", "ui-ux", "mobile-development", 
+    "system-design", "architecture", "agile", "scrum", "product-management", "version-control"
+  ],
+  finance: [
+    "financial-analysis", "investment", "banking", "risk-management", "portfolio-management", 
+    "fintech", "accounting", "tax", "insurance", "wealth-management", "trading", 
+    "compliance", "regulations", "auditing", "budgeting", "forecasting", "esg"
+  ],
+  healthcare: [
+    "clinical-research", "healthcare-administration", "patient-care", "medical-devices", 
+    "biotech", "pharmaceuticals", "public-health", "telemedicine", "healthcare-informatics", 
+    "health-policy", "regulatory-compliance", "nursing", "medicine", "mental-health"
+  ],
+  education: [
+    "curriculum-development", "instructional-design", "e-learning", "teaching", 
+    "educational-technology", "assessment", "academic-research", "student-services", 
+    "academic-advising", "special-education", "higher-education", "k-12"
+  ],
+  marketing: [
+    "digital-marketing", "brand-management", "market-research", "content-marketing", 
+    "social-media", "seo", "sem", "analytics", "public-relations", "advertising", 
+    "customer-engagement", "email-marketing", "campaign-management", "copywriting"
+  ],
+  design: [
+    "graphic-design", "ui-ux", "product-design", "visual-design", "interaction-design", 
+    "illustration", "motion-graphics", "3d-design", "user-research", "wireframing", 
+    "prototyping", "branding", "typography", "color-theory", "design-systems"
+  ],
+  legal: [
+    "corporate-law", "litigation", "intellectual-property", "contract-law", "compliance", 
+    "regulatory", "risk-management", "legal-research", "legal-writing", "negotiation", 
+    "mediation", "legal-tech", "privacy-law", "data-protection"
+  ],
+  business: [
+    "strategy", "operations", "management", "entrepreneurship", "business-development", 
+    "sales", "negotiation", "leadership", "consulting", "project-management", 
+    "process-improvement", "change-management", "stakeholder-management"
+  ],
+  engineering: [
+    "mechanical-engineering", "electrical-engineering", "civil-engineering", "chemical-engineering", 
+    "industrial-engineering", "aerospace-engineering", "robotics", "automation", "cad", 
+    "manufacturing", "quality-assurance", "product-development", "sustainability"
+  ],
+};
+
+const getSkillsForIndustry = (industry?: string): string[] => {
+  if (!industry || !skillsByIndustry[industry]) {
+    return [];
+  }
+  
+  return skillsByIndustry[industry];
+};
 
 const DynamicSkillSelect: React.FC<DynamicSkillSelectProps> = ({
   industry,
   value = [],
   onChange,
-  placeholder = "Select skills",
-  label,
+  placeholder = "Select skills...",
   error = false,
-  maxSelections,
+  maxSelections = 10
 }) => {
   const [open, setOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [availableSkills, setAvailableSkills] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  // Get skills for the selected industry
-  const availableSkills = industry ? industrySkills[industry] || [] : [];
-
-  const handleSelect = (selectedValue: string) => {
-    if (value.includes(selectedValue)) {
-      // If already selected, remove it
-      onChange(value.filter((item) => item !== selectedValue));
-    } else if (maxSelections && value.length >= maxSelections) {
-      // If max selections reached, don't add
-      return;
+  useEffect(() => {
+    if (industry) {
+      const skills = getSkillsForIndustry(industry);
+      if (skills.length > 0) {
+        setAvailableSkills(skills);
+      } else {
+        // If no industry-specific skills, use a default set
+        setAvailableSkills([
+          "leadership", "communication", "problem-solving", "teamwork", 
+          "critical-thinking", "creativity", "adaptability", "time-management", 
+          "organization", "project-management", "research", "analytical-skills", 
+          "attention-to-detail", "presentation-skills", "negotiation"
+        ]);
+      }
     } else {
-      // Otherwise add it
-      onChange([...value, selectedValue]);
+      setAvailableSkills([]);
+    }
+  }, [industry]);
+
+  // Filter skills based on search term
+  const filteredSkills = searchTerm 
+    ? availableSkills.filter(skill => 
+        skill.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : availableSkills;
+
+  const toggleSkill = (skill: string) => {
+    if (value.includes(skill)) {
+      onChange(value.filter(s => s !== skill));
+    } else {
+      if (value.length < maxSelections) {
+        onChange([...value, skill]);
+      } else {
+        // Display max selections reached
+        console.log(`Maximum of ${maxSelections} skills allowed`);
+      }
     }
   };
 
-  const removeItem = (item: string) => {
-    onChange(value.filter((i) => i !== item));
+  const removeSkill = (skill: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onChange(value.filter(s => s !== skill));
   };
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        triggerRef.current &&
-        !triggerRef.current.contains(event.target as Node) &&
-        open
-      ) {
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [open]);
-
-  // Get display labels for selected values
-  const getSelectedLabels = () => {
-    const allSkills = availableSkills.map(skill => ({
-      value: skill.value,
-      label: skill.label
-    }));
-    
-    return value.map((val) => {
-      const option = allSkills.find((opt) => opt.value === val);
-      return option ? option.label : val;
-    });
-  };
-
-  const selectedLabels = getSelectedLabels();
-
-  // Filter skills based on search query
-  const filteredSkills = availableSkills.filter((skill) =>
-    skill.label.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
-    <div className="w-full">
-      {label && (
-        <label className="block text-sm font-medium mb-2">{label}</label>
-      )}
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            ref={triggerRef}
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={cn(
-              "w-full justify-between h-auto min-h-10 text-left",
-              error ? "border-red-500" : "",
-              value.length > 0 ? "pl-3 pt-2 pb-1" : "px-3 py-2"
-            )}
-            onClick={() => setOpen(!open)}
-          >
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          ref={triggerRef}
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn(
+            "w-full justify-between min-h-10",
+            !value.length && "text-muted-foreground",
+            error && "border-red-500 focus:ring-red-500"
+          )}
+          onClick={() => setOpen(!open)}
+        >
+          <div className="flex flex-wrap gap-1 items-center max-w-full overflow-hidden">
             {value.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
-                {selectedLabels.map((label, index) => (
+              <div className="flex flex-wrap gap-1 max-w-full overflow-hidden">
+                {value.map((skill) => (
                   <Badge 
-                    key={index} 
+                    key={skill} 
                     variant="secondary"
-                    className="mr-1 mb-1 hover:bg-secondary"
+                    className="mr-1 mb-1 text-xs"
                   >
-                    {label}
+                    {skill.replace(/-/g, ' ')}
                     <button
-                      className="ml-1 rounded-full outline-none focus:ring-2"
-                      onClick={(e) => {
+                      className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
                         e.stopPropagation();
-                        removeItem(value[index]);
                       }}
+                      onClick={(e) => removeSkill(skill, e)}
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -141,78 +171,61 @@ const DynamicSkillSelect: React.FC<DynamicSkillSelectProps> = ({
                 ))}
               </div>
             ) : (
-              <span className="text-muted-foreground">{placeholder}</span>
+              <span>{placeholder}</span>
             )}
-            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent 
-          className="w-full p-0 z-[200]" 
-          style={{ width: triggerRef.current ? `${triggerRef.current.offsetWidth}px` : "300px" }}
-        >
-          <Command>
-            <div className="flex items-center border-b px-3">
-              <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-              <CommandInput 
-                placeholder="Search skills..." 
-                className="h-9 flex-1 border-0 outline-none focus:ring-0"
-                value={searchQuery}
-                onValueChange={setSearchQuery}
-              />
-            </div>
-            <CommandList>
-              {!industry && (
-                <div className="py-6 text-center text-sm text-muted-foreground">
-                  Please select an industry first
-                </div>
-              )}
-              {industry && filteredSkills.length === 0 && (
-                <CommandEmpty>No skills found.</CommandEmpty>
-              )}
-              {industry && filteredSkills.length > 0 && (
-                <ScrollArea className="max-h-[300px]">
-                  <CommandGroup>
-                    {maxSelections && value.length >= maxSelections && (
-                      <div className="p-2 text-xs text-amber-600 text-center">
-                        Maximum of {maxSelections} skills can be selected
+          </div>
+          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-full p-0" align="start" style={{ width: triggerRef.current?.offsetWidth }}>
+        <Command>
+          <CommandInput 
+            placeholder="Search skills..." 
+            onValueChange={setSearchTerm}
+            className="h-9"
+          />
+          <CommandList>
+            <CommandEmpty>No skills found</CommandEmpty>
+            {availableSkills.length === 0 && !searchTerm ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                {industry ? "Select an industry first to see available skills" : "No skills available"}
+              </p>
+            ) : (
+              <CommandGroup>
+                <ScrollArea className="h-[200px]">
+                  {filteredSkills.map((skill) => (
+                    <CommandItem
+                      key={skill}
+                      value={skill}
+                      onSelect={() => {
+                        toggleSkill(skill);
+                        setSearchTerm(""); // Reset search after selection
+                      }}
+                    >
+                      <div className="flex items-center">
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            value.includes(skill) ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        <span className="capitalize">{skill.replace(/-/g, ' ')}</span>
                       </div>
-                    )}
-                    {filteredSkills.map((skill) => (
-                      <CommandItem
-                        key={skill.value}
-                        value={skill.value}
-                        onSelect={() => handleSelect(skill.value)}
-                        disabled={maxSelections ? value.length >= maxSelections && !value.includes(skill.value) : false}
-                        className={cn(
-                          maxSelections && value.length >= maxSelections && !value.includes(skill.value) ? "opacity-50 cursor-not-allowed" : ""
-                        )}
-                      >
-                        <div className="flex items-center w-full">
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              value.includes(skill.value)
-                                ? "opacity-100"
-                                : "opacity-0"
-                            )}
-                          />
-                          <span>{skill.label}</span>
-                        </div>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
+                    </CommandItem>
+                  ))}
                 </ScrollArea>
-              )}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-      {maxSelections && (
-        <p className="text-xs text-gray-500 mt-1">
-          Select up to {maxSelections} skills
-        </p>
-      )}
-    </div>
+              </CommandGroup>
+            )}
+            
+            {value.length >= maxSelections && (
+              <div className="py-2 px-3 text-xs text-amber-600 bg-amber-50 border-t">
+                Maximum of {maxSelections} skills allowed
+              </div>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 };
 

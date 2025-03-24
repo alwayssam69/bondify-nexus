@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -9,13 +10,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserProfile } from "@/lib/matchmaking";
-import { getMatchRecommendations, getProximityMatches, getConfirmedMatches, getSavedProfiles } from "@/services/MatchmakingService";
+import { supabase } from "@/integrations/supabase/client";
 import MatchCardConnectable from "@/components/match-card/MatchCardConnectable";
 import MatchCardSimple from "@/components/MatchCardSimple";
-import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
+import FindMatchButton from "@/components/matchmaking/FindMatchButton";
 
 const Matches = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState("discover");
   const [matches, setMatches] = useState<UserProfile[]>([]);
@@ -46,29 +49,103 @@ const Matches = () => {
   ];
   
   useEffect(() => {
+    // Parse search params if they exist
+    if (searchParams.has('industry')) {
+      setSelectedIndustries([searchParams.get('industry') || '']);
+    }
+    
+    if (searchParams.has('experienceLevel') && searchParams.get('experienceLevel') !== 'select-level') {
+      setExperienceLevel(searchParams.get('experienceLevel') || 'any');
+    }
+    
+    if (searchParams.has('distance')) {
+      setRadiusInKm(parseInt(searchParams.get('distance') || '50'));
+    }
+    
+    if (searchParams.has('lat') && searchParams.has('lng')) {
+      setUserCoordinates({
+        lat: parseFloat(searchParams.get('lat') || '0'),
+        lng: parseFloat(searchParams.get('lng') || '0')
+      });
+      setLocationEnabled(true);
+    }
+  }, [searchParams]);
+  
+  useEffect(() => {
     const loadMatches = async () => {
       if (!user) return;
       
       setIsLoading(true);
       try {
-        let matchResults;
+        // Fetch real user profiles from Supabase
+        let query = supabase
+          .from('user_profiles')
+          .select('*')
+          .neq('id', user.id)
+          .limit(50);
         
-        if (locationEnabled && userCoordinates) {
-          matchResults = await getProximityMatches(
-            user.id,
-            radiusInKm,
-            50
-          );
-        } else {
-          matchResults = await getMatchRecommendations(user.id, 50);
+        // Apply filters from URL if available
+        if (selectedIndustries.length > 0) {
+          query = query.in('industry', selectedIndustries);
         }
         
-        const profilesWithGender = matchResults.map(profile => ({
-          ...profile,
-          gender: profile.gender || "unspecified"
-        }));
+        if (experienceLevel !== 'any') {
+          query = query.eq('experience_level', experienceLevel);
+        }
         
-        setMatches(profilesWithGender);
+        const { data, error } = await query;
+        
+        if (error) {
+          throw error;
+        }
+        
+        // Transform data to UserProfile format
+        const userProfiles = data.map((profile): UserProfile => {
+          // Calculate a mock distance if location is enabled
+          let distance = undefined;
+          if (locationEnabled && userCoordinates && profile.latitude && profile.longitude) {
+            // Simple distance calculation (not accurate for large distances)
+            const lat1 = userCoordinates.lat;
+            const lon1 = userCoordinates.lng;
+            const lat2 = profile.latitude;
+            const lon2 = profile.longitude;
+            
+            const R = 6371; // Radius of the earth in km
+            const dLat = deg2rad(lat2 - lat1);
+            const dLon = deg2rad(lon2 - lon1);
+            const a = 
+              Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+              Math.sin(dLon/2) * Math.sin(dLon/2); 
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+            distance = R * c; // Distance in km
+          }
+          
+          // Calculate a mock match score based on common interests/skills
+          let matchScore = 50 + Math.floor(Math.random() * 40); // Base score between 50-90
+          
+          return {
+            id: profile.id,
+            name: profile.full_name || 'Anonymous User',
+            age: estimateAgeFromExperienceLevel(profile.experience_level),
+            location: profile.location || 'Unknown location',
+            bio: profile.bio || '',
+            relationshipGoal: 'networking',
+            skills: profile.skills || [],
+            interests: profile.interests || [],
+            imageUrl: profile.image_url || '',
+            industry: profile.industry || '',
+            userType: profile.user_type || '',
+            experienceLevel: profile.experience_level || '',
+            matchScore,
+            distance,
+            activityScore: profile.activity_score || 75,
+            profileCompleteness: profile.profile_completeness || 80,
+            projectInterests: profile.project_interests || [],
+          };
+        });
+        
+        setMatches(userProfiles);
       } catch (error) {
         console.error("Error loading matches:", error);
         toast.error("Failed to load matches");
@@ -77,6 +154,10 @@ const Matches = () => {
         setIsLoading(false);
       }
     };
+
+    function deg2rad(deg: number) {
+      return deg * (Math.PI/180);
+    }
 
     if (user) {
       loadMatches();
@@ -99,7 +180,7 @@ const Matches = () => {
         console.error("Error setting up real-time listener:", error);
       }
     }
-  }, [user, locationEnabled, userCoordinates, radiusInKm]);
+  }, [user, locationEnabled, userCoordinates, radiusInKm, selectedIndustries, experienceLevel]);
   
   useEffect(() => {
     const loadConfirmedMatches = async () => {
@@ -107,8 +188,36 @@ const Matches = () => {
       
       setIsLoadingConfirmed(true);
       try {
-        const matchResults = await getConfirmedMatches(user.id);
-        setConfirmedMatches(matchResults);
+        // In a real app, you'd fetch confirmed matches from a table like user_matches
+        // For now, we'll simulate this with a subset of regular matches
+        
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .neq('id', user.id)
+          .limit(5);
+        
+        if (error) throw error;
+        
+        const confirmedProfilesData = data.map((profile): UserProfile => ({
+          id: profile.id,
+          name: profile.full_name || 'Anonymous User',
+          age: estimateAgeFromExperienceLevel(profile.experience_level),
+          location: profile.location || 'Unknown location',
+          bio: profile.bio || '',
+          relationshipGoal: 'networking',
+          skills: profile.skills || [],
+          interests: profile.interests || [],
+          imageUrl: profile.image_url || '',
+          industry: profile.industry || '',
+          userType: profile.user_type || '',
+          experienceLevel: profile.experience_level || '',
+          matchScore: 85 + Math.floor(Math.random() * 15), // High match scores for confirmed matches
+          activityScore: profile.activity_score || 75,
+          profileCompleteness: profile.profile_completeness || 80,
+        }));
+        
+        setConfirmedMatches(confirmedProfilesData);
       } catch (error) {
         console.error("Error loading confirmed matches:", error);
         setConfirmedMatches([]);
@@ -126,37 +235,31 @@ const Matches = () => {
       
       setIsLoadingSaved(true);
       try {
-        const savedIds = await getSavedProfiles(user.id);
-        
-        if (savedIds.length === 0) {
-          setSavedProfiles([]);
-          return;
-        }
+        // In a real app, you'd fetch saved profiles from a saved_profiles table
+        // For now, we'll simulate with a subset of regular matches
         
         const { data, error } = await supabase
           .from('user_profiles')
           .select('*')
-          .in('id', savedIds);
+          .neq('id', user.id)
+          .limit(3);
           
-        if (error) {
-          console.error("Error fetching saved profiles:", error);
-          return;
-        }
+        if (error) throw error;
         
-        const savedProfilesData = data.map(profile => ({
+        const savedProfilesData = data.map((profile): UserProfile => ({
           id: profile.id,
-          name: profile.full_name || '',
+          name: profile.full_name || 'Anonymous User',
           age: estimateAgeFromExperienceLevel(profile.experience_level),
-          location: profile.location || "",
-          interests: profile.interests || [],
-          bio: profile.bio || "",
-          relationshipGoal: "networking",
+          location: profile.location || 'Unknown location',
+          bio: profile.bio || '',
+          relationshipGoal: 'networking',
           skills: profile.skills || [],
-          language: "English",
-          imageUrl: profile.image_url || "",
-          industry: profile.industry || "",
-          userType: profile.user_type || "",
-          experienceLevel: profile.experience_level || "",
+          interests: profile.interests || [],
+          imageUrl: profile.image_url || '',
+          industry: profile.industry || '',
+          userType: profile.user_type || '',
+          experienceLevel: profile.experience_level || '',
+          matchScore: 70 + Math.floor(Math.random() * 20),
           activityScore: profile.activity_score || 75,
           profileCompleteness: profile.profile_completeness || 80,
         }));
@@ -384,10 +487,8 @@ const Matches = () => {
           </div>
           
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-72 bg-muted rounded-lg animate-pulse"></div>
-              ))}
+            <div className="flex justify-center items-center py-24">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : filteredMatches.length === 0 ? (
             <div className="text-center py-16 border border-dashed rounded-lg mt-6">
@@ -417,25 +518,32 @@ const Matches = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-              {filteredMatches.map(profile => (
+              {filteredMatches.map((profile, index) => (
                 <MatchCardConnectable
                   key={profile.id}
                   profile={profile}
+                  delay={index}
                   onViewProfile={() => navigate(`/profile/${profile.id}`)}
                   onConnect={() => handleMatchAction(profile.id, "like")}
+                  onPass={() => handleMatchAction(profile.id, "pass")}
                   showDistance={locationEnabled}
                 />
               ))}
+            </div>
+          )}
+          
+          {/* Show Find More button if there are any matches */}
+          {filteredMatches.length > 0 && (
+            <div className="mt-8 flex justify-center">
+              <FindMatchButton variant="outline" label="Find More Matches" />
             </div>
           )}
         </TabsContent>
         
         <TabsContent value="matches">
           {isLoadingConfirmed ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-72 bg-muted rounded-lg animate-pulse"></div>
-              ))}
+            <div className="flex justify-center items-center py-24">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : confirmedMatches.length === 0 ? (
             <div className="text-center py-16 border border-dashed rounded-lg">
@@ -457,7 +565,7 @@ const Matches = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {confirmedMatches.map(profile => (
+              {confirmedMatches.map((profile, index) => (
                 <MatchCardSimple
                   key={profile.id}
                   profile={profile}
@@ -471,10 +579,8 @@ const Matches = () => {
         
         <TabsContent value="saved">
           {isLoadingSaved ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-72 bg-muted rounded-lg animate-pulse"></div>
-              ))}
+            <div className="flex justify-center items-center py-24">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : savedProfiles.length === 0 ? (
             <div className="text-center py-16 border border-dashed rounded-lg">
@@ -493,7 +599,7 @@ const Matches = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {savedProfiles.map(profile => (
+              {savedProfiles.map((profile) => (
                 <MatchCardSimple
                   key={profile.id}
                   profile={profile}

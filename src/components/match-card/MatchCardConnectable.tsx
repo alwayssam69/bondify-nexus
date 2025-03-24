@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserProfile } from "@/lib/matchmaking";
-import { MessageSquare, UserPlus, MapPin } from "lucide-react";
+import { MessageSquare, UserPlus, MapPin, Heart, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -12,16 +12,18 @@ interface MatchCardConnectableProps {
   delay?: number;
   onViewProfile: () => void;
   onConnect: () => void;
+  onPass?: () => void;
   onStartChat?: () => void;
   showChatButton?: boolean;
   showDistance?: boolean;
 }
 
-const MatchCardConnectable = ({ 
+const MatchCardConnectable: React.FC<MatchCardConnectableProps> = ({ 
   profile, 
   delay = 0, 
   onViewProfile, 
   onConnect,
+  onPass,
   onStartChat,
   showChatButton = false,
   showDistance = false
@@ -31,21 +33,27 @@ const MatchCardConnectable = ({
     visible: { opacity: 1, y: 0 }
   };
 
-  // Functions to handle placeholder images for profiles
-  const getProfileBackground = () => {
-    if (profile.imageUrl && profile.imageUrl.startsWith('bg-')) {
-      return profile.imageUrl;
+  // Function to get image background based on profile data
+  const getImageBackground = () => {
+    if (profile.imageUrl && profile.imageUrl.startsWith('http')) {
+      return `url(${profile.imageUrl})`;
     }
-    return "bg-gradient-to-br from-blue-400 to-indigo-600";
-  };
-
-  const getInitials = () => {
-    return profile.name.split(' ').map(n => n[0]).join('').toUpperCase();
-  };
-
-  const formatDistance = (distance?: number) => {
-    if (!distance) return "Unknown distance";
-    return distance < 1 ? "< 1 km away" : `${Math.round(distance)} km away`;
+    
+    // Default gradient based on industry
+    const industryColors: Record<string, string> = {
+      'technology': 'from-blue-400 to-indigo-600',
+      'finance': 'from-green-400 to-teal-600',
+      'healthcare': 'from-teal-400 to-cyan-600',
+      'education': 'from-purple-400 to-indigo-600',
+      'marketing': 'from-orange-400 to-red-600',
+      'design': 'from-pink-400 to-rose-600',
+      'business': 'from-amber-400 to-orange-600',
+      'legal': 'from-slate-400 to-gray-600',
+      'engineering': 'from-cyan-400 to-blue-600',
+    };
+    
+    const colorClass = industryColors[profile.industry?.toLowerCase() || ''] || 'from-blue-400 to-indigo-600';
+    return `bg-gradient-to-br ${colorClass}`;
   };
 
   return (
@@ -53,106 +61,104 @@ const MatchCardConnectable = ({
       initial="hidden"
       animate="visible"
       variants={cardVariants}
-      transition={{ duration: 0.3, delay: delay / 1000 }}
+      transition={{ duration: 0.4, delay: delay * 0.1 }}
       className="h-full"
     >
-      <Card className="cursor-pointer h-full flex flex-col hover:shadow-lg transition-all duration-200 overflow-hidden group">
-        <div className="relative h-24">
-          <div className={cn(
-            "absolute inset-0 w-full",
-            getProfileBackground()
-          )}>
-            {profile.imageUrl && !profile.imageUrl.startsWith('bg-') ? (
-              <img 
-                src={profile.imageUrl} 
-                alt={profile.name} 
-                className="w-full h-full object-cover"
-              />
-            ) : null}
-          </div>
-
-          {/* Match Score Badge */}
-          {profile.matchScore && (
-            <div className="absolute top-2 right-2 bg-white dark:bg-gray-800 text-primary font-semibold text-xs rounded-full px-2 py-0.5 shadow-md">
-              {profile.matchScore}% Match
-            </div>
-          )}
-          
-          <div className="absolute -bottom-10 left-4 w-20 h-20 rounded-xl overflow-hidden border-4 border-background shadow-lg">
-            {profile.imageUrl && !profile.imageUrl.startsWith('bg-') ? (
-              <img 
-                src={profile.imageUrl} 
-                alt={profile.name} 
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className={cn(
-                "w-full h-full flex items-center justify-center text-xl font-bold text-white",
-                getProfileBackground()
-              )}>
-                {getInitials()}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <CardContent className="pt-12 pb-4 flex flex-col h-full justify-between space-y-4">
-          <div className="space-y-2">
-            <div onClick={onViewProfile}>
-              <h3 className="font-semibold text-lg leading-tight line-clamp-1">
-                {profile.name}
-              </h3>
-              <p className="text-sm text-muted-foreground line-clamp-1">
-                {profile.userType || "Professional"}{profile.industry ? ` • ${profile.industry}` : ""}
-              </p>
-            </div>
-            
-            {showDistance && profile.distance && (
-              <div className="flex items-center text-xs text-muted-foreground">
-                <MapPin className="h-3 w-3 mr-1 text-blue-500" />
-                {formatDistance(profile.distance)}
-              </div>
-            )}
-            
-            <div className="mt-2">
-              <h4 className="text-xs font-medium text-muted-foreground mb-1">Skills</h4>
-              <div className="flex flex-wrap gap-1">
-                {profile.skills && profile.skills.slice(0, 3).map((skill, index) => (
-                  <span key={index} className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">
-                    {skill}
-                  </span>
-                ))}
-                {profile.skills && profile.skills.length > 3 && (
-                  <span className="text-xs bg-secondary/50 text-secondary-foreground px-2 py-0.5 rounded-full">
-                    +{profile.skills.length - 3} more
-                  </span>
+      <Card className="relative overflow-hidden rounded-xl h-full transition-all duration-200 hover:shadow-lg">
+        <div className="absolute inset-0 z-10 bg-gradient-to-b from-transparent via-transparent to-black opacity-60 rounded-xl"></div>
+        
+        <div 
+          className={`absolute inset-0 ${profile.imageUrl ? '' : getImageBackground()}`}
+          style={profile.imageUrl && profile.imageUrl.startsWith('http') ? { backgroundImage: `url(${profile.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+        />
+        
+        <CardContent className="relative h-full flex flex-col justify-between p-0 z-20">
+          {/* Profile preview section */}
+          <div 
+            className="h-64 cursor-pointer flex items-end p-5" 
+            onClick={onViewProfile}
+          >
+            <div className="text-white">
+              <h3 className="text-xl font-bold mb-1">{profile.name}, {profile.age}</h3>
+              
+              <div className="flex items-center text-sm text-gray-100 mb-1">
+                <MapPin className="h-3.5 w-3.5 mr-1" />
+                {profile.location}
+                {showDistance && profile.distance && (
+                  <span className="ml-1">({Math.round(profile.distance)}km away)</span>
                 )}
               </div>
+              
+              <p className="text-sm text-gray-100 line-clamp-2">
+                {profile.industry && profile.experienceLevel ? (
+                  `${profile.industry} • ${profile.experienceLevel} level`
+                ) : (
+                  profile.bio && profile.bio.length > 100 ? 
+                    profile.bio.substring(0, 97) + '...' : 
+                    profile.bio
+                )}
+              </p>
             </div>
           </div>
-
-          <div className="flex gap-2 mt-auto">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex-1"
-              onClick={onConnect}
-            >
-              <UserPlus className="h-3.5 w-3.5 mr-1" />
-              Connect
-            </Button>
+          
+          {/* Skills tags */}
+          <div className="p-4 bg-white">
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {profile.skills?.slice(0, 4).map((skill, i) => (
+                <span 
+                  key={i}
+                  className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full"
+                >
+                  {skill}
+                </span>
+              ))}
+              {profile.skills && profile.skills.length > 4 && (
+                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                  +{profile.skills.length - 4}
+                </span>
+              )}
+            </div>
             
-            {showChatButton && onStartChat && (
+            {/* Action buttons */}
+            <div className="flex justify-between gap-2">
+              {onPass && (
+                <Button 
+                  onClick={onPass} 
+                  size="icon" 
+                  variant="outline"
+                  className="rounded-full hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              )}
+              
               <Button 
-                variant="default" 
-                size="sm" 
-                className="flex-1"
-                onClick={onStartChat}
+                onClick={onViewProfile} 
+                variant="outline" 
+                className="flex-1 text-sm hover:bg-gray-50"
               >
-                <MessageSquare className="h-3.5 w-3.5 mr-1" />
-                Chat
+                View Profile
               </Button>
-            )}
+              
+              <Button 
+                onClick={onConnect} 
+                size="icon" 
+                className="rounded-full bg-blue-500 hover:bg-blue-600 transition-colors"
+              >
+                <Heart className="h-5 w-5" />
+              </Button>
+              
+              {showChatButton && onStartChat && (
+                <Button 
+                  onClick={onStartChat} 
+                  size="icon" 
+                  variant="outline"
+                  className="rounded-full hover:bg-blue-50 hover:text-blue-500 hover:border-blue-200 transition-colors"
+                >
+                  <MessageSquare className="h-5 w-5" />
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
