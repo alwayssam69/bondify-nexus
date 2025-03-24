@@ -11,7 +11,7 @@ import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import NotFound from '@/pages/NotFound';
 import ProtectedRoute from './ProtectedRoute';
-import Profile from '@/pages/Profile'; // Import Profile directly instead of lazy loading
+import Profile from '@/pages/Profile'; // Import Profile directly for more reliability
 
 // Lazy loaded components for non-critical routes
 const ResetPassword = lazy(() => import('@/pages/ResetPassword'));

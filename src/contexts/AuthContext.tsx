@@ -31,83 +31,121 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Fetching profile for user:", userId);
       setFetchAttempts(prev => prev + 1);
       
-      let { data, error } = await supabase
+      // Try user_profiles table first
+      let { data: userProfileData, error: userProfileError } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching from user_profiles:", error);
+      if (userProfileError && userProfileError.code !== 'PGRST116') {
+        console.error("Error fetching from user_profiles:", userProfileError);
       }
 
-      if (!data) {
-        console.log("No profile found in user_profiles, trying profiles table");
-        const result = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .maybeSingle();
-        
-        if (result.error) {
-          console.error("Error fetching profile from profiles table:", result.error);
-        } else if (result.data) {
-          data = result.data;
-        }
+      // If found in user_profiles, return it
+      if (userProfileData) {
+        console.log("Profile found in user_profiles:", userProfileData);
+        setProfile(userProfileData);
+        setProfileLoaded(true);
+        return userProfileData;
+      }
+
+      // If not found in user_profiles, try profiles table
+      console.log("No profile found in user_profiles, trying profiles table");
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error("Error fetching profile from profiles table:", profileError);
       }
       
-      if (!data) {
-        console.log("No profile found in any table, creating a new one");
-        const userData = await supabase.auth.getUser();
+      // If found in profiles, return it
+      if (profileData) {
+        console.log("Profile found in profiles table:", profileData);
+        setProfile(profileData);
+        setProfileLoaded(true);
+        return profileData;
+      }
+      
+      // If no profile found in any table, create a new one
+      console.log("No profile found in any table, creating a new one");
+      const userData = await supabase.auth.getUser();
+      
+      if (userData.data?.user) {
+        const timestamp = new Date().getTime().toString().slice(-5);
+        const userTag = userData.data.user.user_metadata?.user_tag || 
+                       `user_${timestamp}`;
         
-        if (userData.data?.user) {
-          const timestamp = new Date().getTime().toString().slice(-5);
-          const userTag = userData.data.user.user_metadata?.user_tag || 
-                         `user_${timestamp}`;
-          
-          const newProfile = {
-            id: userId,
-            full_name: userData.data.user.user_metadata?.full_name || 
-                      userData.data.user.email?.split('@')[0] || "User",
-            email: userData.data.user.email,
-            user_tag: userTag,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            profile_completeness: 20,
-          };
-          
-          await supabase.from('profiles').upsert(newProfile);
-          
-          const userProfileData = {
-            ...newProfile,
-            activity_score: 0,
-            experience_level: '',
-            interests: [] as string[],
-            industry: '',
-            course_year: '',
-            user_type: '',
-            image_url: '',
-            skills: [],
-            last_active: new Date().toISOString(),
-            match_preferences: {},
-            networking_goals: [] as string[],
-            project_interests: [] as string[],
-          };
-          
-          const { error: userProfileError } = await supabase.from('user_profiles').upsert(userProfileData);
-          
-          if (userProfileError) {
-            console.error("Error creating profile in user_profiles table:", userProfileError);
-          }
-          
-          data = userProfileData;
+        // Create in profiles table
+        const newProfile = {
+          id: userId,
+          full_name: userData.data.user.user_metadata?.full_name || 
+                    userData.data.user.email?.split('@')[0] || "User",
+          email: userData.data.user.email,
+          user_tag: userTag,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          profile_completeness: 20,
+        };
+        
+        const { error: createProfileError } = await supabase
+          .from('profiles')
+          .upsert(newProfile);
+        
+        if (createProfileError) {
+          console.error("Error creating profile in profiles table:", createProfileError);
+        } else {
+          console.log("Created new profile in profiles table");
         }
+        
+        // Also create in user_profiles table for more data
+        const userProfileData = {
+          ...newProfile,
+          activity_score: 0,
+          experience_level: '',
+          interests: [] as string[],
+          industry: '',
+          course_year: '',
+          user_type: '',
+          image_url: '',
+          skills: [],
+          last_active: new Date().toISOString(),
+          match_preferences: {},
+          networking_goals: [] as string[],
+          project_interests: [] as string[],
+        };
+        
+        const { error: userProfileError } = await supabase
+          .from('user_profiles')
+          .upsert(userProfileData);
+        
+        if (userProfileError) {
+          console.error("Error creating profile in user_profiles table:", userProfileError);
+        } else {
+          console.log("Created new profile in user_profiles table");
+        }
+        
+        setProfile(userProfileData);
+        setProfileLoaded(true);
+        return userProfileData;
       }
 
-      console.log("Profile data retrieved:", data);
-      setProfile(data);
+      // If everything fails, return minimal profile
+      console.log("Failed to create profile, using minimal profile");
+      const minimalProfile = { 
+        id: userId, 
+        full_name: "User", 
+        email: "",
+        created_at: new Date().toISOString(),
+        profile_completeness: 0
+      };
+      
+      setProfile(minimalProfile);
       setProfileLoaded(true);
-      return data;
+      return minimalProfile;
     } catch (error) {
       console.error("Error in fetchProfile:", error);
       setProfileLoaded(true);

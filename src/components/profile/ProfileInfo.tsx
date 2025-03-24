@@ -52,6 +52,9 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ profileData, isPublic }) => {
     return arr;
   };
 
+  // Debug profile data
+  console.log("Rendering profile data:", profileData);
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">

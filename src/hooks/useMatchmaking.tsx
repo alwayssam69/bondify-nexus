@@ -9,6 +9,7 @@ import {
   getMatchRecommendations, 
   getProximityMatches 
 } from "@/services/MatchmakingService";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UseMatchmakingProps {
   filters: MatchmakingFilters;
@@ -38,6 +39,63 @@ export const useMatchmaking = ({
     enableHighAccuracy: true,
     showErrorToasts: false
   });
+
+  const fetchAllUsers = async (): Promise<UserProfile[]> => {
+    console.log("Fetching all users as fallback");
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .neq('id', user?.id || '')
+        .limit(20);
+        
+      if (error) {
+        console.error("Error fetching all users:", error);
+        throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        console.log("No users found in database");
+        return [];
+      }
+      
+      return data.map(profile => ({
+        id: profile.id,
+        name: profile.full_name || 'Unknown User',
+        location: profile.location || 'Unknown Location',
+        bio: profile.bio || '',
+        industry: profile.industry || 'Unknown Industry',
+        experienceLevel: profile.experience_level || 'beginner',
+        userType: profile.user_type || 'Professional',
+        skills: profile.skills || [],
+        interests: profile.interests || [],
+        imageUrl: profile.image_url || '',
+        matchScore: Math.floor(60 + Math.random() * 30), // Random score between 60-90
+        // Add other required properties
+        age: estimateAgeFromExperienceLevel(profile.experience_level),
+        relationshipGoal: 'networking',
+        language: 'English',
+        activityScore: 75,
+        profileCompleteness: 80,
+      }));
+    } catch (error) {
+      console.error("Error in fetchAllUsers:", error);
+      return [];
+    }
+  };
+  
+  const estimateAgeFromExperienceLevel = (experienceLevel: string | null): number => {
+    switch (experienceLevel) {
+      case 'beginner':
+        return 20 + Math.floor(Math.random() * 5);
+      case 'intermediate':
+        return 25 + Math.floor(Math.random() * 5);
+      case 'expert':
+        return 30 + Math.floor(Math.random() * 10);
+      default:
+        return 25 + Math.floor(Math.random() * 10);
+    }
+  };
 
   const fetchMatches = async () => {
     if (!user?.id) {
@@ -81,53 +139,82 @@ export const useMatchmaking = ({
           console.log("Found", matchedProfiles.length, "skill-based matches");
         } catch (e) {
           console.error("Error in skill-based matching:", e);
-          
-          // Last resort - use sample data
-          if (matchedProfiles.length === 0) {
-            console.log("Using fallback sample data");
-            import("@/lib/matchmaking").then(({ loadSampleUsers }) => {
-              const sampleUsers = loadSampleUsers();
-              setMatches(sampleUsers);
-              if (sampleUsers.length > 0) {
-                toast.info("Using sample recommendations", {
-                  description: "We couldn't load personalized matches right now"
-                });
-              }
-            });
-          }
         }
       }
 
-      // Apply additional filters
+      // If still no matches, fetch all users as fallback
+      if (matchedProfiles.length === 0) {
+        console.log("No matches found with algorithm, fetching all users as fallback");
+        try {
+          matchedProfiles = await fetchAllUsers();
+          console.log("Found", matchedProfiles.length, "users as fallback");
+          
+          if (matchedProfiles.length > 0) {
+            toast.info("Showing all available users", { 
+              description: "Couldn't find specific matches for your criteria"
+            });
+          }
+        } catch (e) {
+          console.error("Error fetching all users:", e);
+          
+          // Last resort - use sample data
+          console.log("Using fallback sample data");
+          import("@/lib/matchmaking").then(({ loadSampleUsers }) => {
+            const sampleUsers = loadSampleUsers();
+            setMatches(sampleUsers);
+            setIsLoading(false);
+            if (sampleUsers.length > 0) {
+              toast.info("Using sample recommendations", {
+                description: "We couldn't load personalized matches right now"
+              });
+            }
+          });
+          return;
+        }
+      }
+
+      // Apply additional filters only if we have enough matches
       let filteredMatches = matchedProfiles;
       
-      if (filters.industry) {
-        filteredMatches = filteredMatches.filter(profile => 
-          profile.industry?.toLowerCase() === filters.industry?.toLowerCase()
-        );
-      }
+      // If we have more than 5 matches, apply filters, otherwise show all matches
+      if (matchedProfiles.length > 5) {
+        if (filters.industry) {
+          filteredMatches = filteredMatches.filter(profile => 
+            profile.industry?.toLowerCase() === filters.industry?.toLowerCase()
+          );
+        }
 
-      if (filters.skills && filters.skills.length > 0) {
-        filteredMatches = filteredMatches.filter(profile => 
-          profile.skills?.some(skill => 
-            filters.skills?.includes(skill)
-          )
-        );
-      }
+        if (filters.skills && filters.skills.length > 0) {
+          filteredMatches = filteredMatches.filter(profile => 
+            profile.skills?.some(skill => 
+              filters.skills?.includes(skill)
+            )
+          );
+        }
 
-      if (filters.experienceLevel) {
-        filteredMatches = filteredMatches.filter(profile => 
-          profile.experienceLevel?.toLowerCase() === filters.experienceLevel?.toLowerCase()
-        );
-      }
+        if (filters.experienceLevel) {
+          filteredMatches = filteredMatches.filter(profile => 
+            profile.experienceLevel?.toLowerCase() === filters.experienceLevel?.toLowerCase()
+          );
+        }
 
-      if (filters.relationshipGoal) {
-        filteredMatches = filteredMatches.filter(profile => {
-          return profile.relationshipGoal === filters.relationshipGoal ||
-            (filters.relationshipGoal === "mentorship" && profile.relationshipGoal === "networking") ||
-            (filters.relationshipGoal === "job" && profile.relationshipGoal === "networking") ||
-            (filters.relationshipGoal === "collaboration" && profile.relationshipGoal === "networking");
-        });
+        if (filters.relationshipGoal) {
+          filteredMatches = filteredMatches.filter(profile => {
+            return profile.relationshipGoal === filters.relationshipGoal ||
+              (filters.relationshipGoal === "mentorship" && profile.relationshipGoal === "networking") ||
+              (filters.relationshipGoal === "job" && profile.relationshipGoal === "networking") ||
+              (filters.relationshipGoal === "collaboration" && profile.relationshipGoal === "networking");
+          });
+        }
+        
+        // If filtering removed too many matches, go back to all matches
+        if (filteredMatches.length < 3 && matchedProfiles.length > 5) {
+          console.log("Too few matches after filtering, showing all matches");
+          filteredMatches = matchedProfiles;
+          toast.info("Showing all matches", {
+            description: "Not enough matches with your filters"
+          });
+        }
       }
 
       // Sort by match score (highest first)
@@ -135,14 +222,7 @@ export const useMatchmaking = ({
       
       setMatches(filteredMatches);
       
-      // If we applied filters and got no results, but had matches before filtering
-      if (filteredMatches.length === 0 && matchedProfiles.length > 0) {
-        toast.info("No matches found with your filters", {
-          description: "Try adjusting your search criteria for better results"
-        });
-      }
-      
-      if (filteredMatches.length === 0 && matchedProfiles.length === 0) {
+      if (filteredMatches.length === 0) {
         setError("No matches found. Try expanding your search criteria or check back later.");
       }
       

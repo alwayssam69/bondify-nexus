@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -42,6 +43,7 @@ const Profile = () => {
         console.log("Fetching profile for ID:", profileId);
         setIsCurrentUser(profileId === user?.id);
         
+        // First check if we already have the profile in auth context
         if (profileId === user?.id && authProfile) {
           console.log("Using profile from auth context:", authProfile);
           setUserProfile(authProfile);
@@ -51,64 +53,81 @@ const Profile = () => {
         }
         
         console.log("Fetching profile from database");
-        const { data, error } = await supabase
+        // Try to get profile from user_profiles table first
+        const { data: userProfileData, error: userProfileError } = await supabase
           .from('user_profiles')
           .select('*')
           .eq('id', profileId)
           .single();
         
-        if (error) {
-          console.error("Error fetching profile from user_profiles:", error);
-          
-          const altResult = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', profileId)
-            .single();
-            
-          if (altResult.error) {
-            console.error("Error fetching profile from profiles table:", altResult.error);
-            throw new Error("Could not fetch profile from any table");
-          }
-          
-          if (altResult.data) {
-            console.log("Profile found in profiles table:", altResult.data);
-            setUserProfile(altResult.data);
-            setIsProfileIncomplete(isProfileMissingData(altResult.data));
-            setIsLoading(false);
-            return;
-          }
-          
-          throw error;
+        if (userProfileData) {
+          console.log("Profile found in user_profiles:", userProfileData);
+          setUserProfile(userProfileData);
+          setIsProfileIncomplete(isProfileMissingData(userProfileData));
+          setIsLoading(false);
+          return;
         }
         
-        if (data) {
-          console.log("Profile found in user_profiles:", data);
-          setUserProfile(data);
-          setIsProfileIncomplete(isProfileMissingData(data));
-        } else {
-          console.log("No profile found in database");
+        if (userProfileError && userProfileError.code !== 'PGRST116') {
+          console.error("Error fetching from user_profiles:", userProfileError);
+        }
           
-          if (profileId === user?.id) {
-            console.log("Creating minimal profile for current user");
-            const minimalProfile = {
+        // If not found in user_profiles, try profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', profileId)
+          .single();
+            
+        if (profileData) {
+          console.log("Profile found in profiles table:", profileData);
+          setUserProfile(profileData);
+          setIsProfileIncomplete(isProfileMissingData(profileData));
+          setIsLoading(false);
+          return;
+        }
+        
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error("Error fetching profile from profiles table:", profileError);
+        }
+        
+        // If no profile found in any table and it's the current user, create minimal profile
+        if (profileId === user?.id) {
+          console.log("Creating minimal profile for current user");
+          const minimalProfile = {
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || '',
+            created_at: new Date().toISOString()
+          };
+          setUserProfile(minimalProfile);
+          setIsProfileIncomplete(true);
+          
+          // Try to create a profile in the database
+          const { error: createError } = await supabase
+            .from('profiles')
+            .upsert({ 
               id: user.id,
               email: user.email,
               full_name: user.user_metadata?.full_name || '',
               created_at: new Date().toISOString()
-            };
-            setUserProfile(minimalProfile);
-            setIsProfileIncomplete(true);
-            refreshProfile();
+            });
+            
+          if (createError) {
+            console.error("Error creating profile in database:", createError);
           } else {
-            toast.error("Profile not found");
-            navigate('/');
+            refreshProfile();
           }
+        } else {
+          // For non-current users, if profile not found
+          toast.error("Profile not found");
+          navigate('/');
         }
       } catch (error) {
         console.error("Error in profile fetch:", error);
         setHasError(true);
         
+        // Use sample profile as fallback for public profiles
         if (isPublicProfile && loadAttempts > 1) {
           const sampleUsers = loadSampleUsers();
           const sampleProfile = sampleUsers.find(u => u.id === id) || sampleUsers[0];
@@ -204,7 +223,7 @@ const Profile = () => {
         <div className="container py-6">
           <div className="text-center min-h-[60vh] flex flex-col justify-center items-center">
             <img 
-              src="/public/lovable-uploads/e13f7eb2-283f-483a-a27d-b8a33c7d9f9d.png" 
+              src="/lovable-uploads/e13f7eb2-283f-483a-a27d-b8a33c7d9f9d.png" 
               alt="Profile Data Unavailable" 
               className="w-full max-w-md mb-4 rounded-lg shadow-md"
             />
