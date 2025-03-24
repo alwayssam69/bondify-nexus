@@ -21,6 +21,7 @@ const ChatPage = () => {
   const [message, setMessage] = useState("");
   const [isLoadingContacts, setIsLoadingContacts] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   useEffect(() => {
     const fetchContactsData = async () => {
@@ -30,9 +31,18 @@ const ChatPage = () => {
       }
       
       setIsLoadingContacts(true);
+      setLoadingTimeout(false);
+
+      // Set a timeout to prevent infinite loading
+      const timer = setTimeout(() => {
+        setLoadingTimeout(true);
+        setIsLoadingContacts(false);
+      }, 5000);
+      
       try {
         const contactsData = await fetchChatContacts(user.id);
         setContacts(contactsData);
+        clearTimeout(timer);
       } catch (error) {
         console.error("Error fetching contacts:", error);
         // Silently fail and load fallback data
@@ -78,7 +88,16 @@ const ChatPage = () => {
     
     try {
       setIsLoadingMessages(true);
+      setLoadingTimeout(false);
+
+      // Set a timeout to prevent infinite loading
+      const timer = setTimeout(() => {
+        setLoadingTimeout(true);
+        setIsLoadingMessages(false);
+      }, 5000);
+      
       const fetchedMessages = await fetchChatMessages(user.id, activeContactId);
+      clearTimeout(timer);
       
       // If no messages were returned or there was an error, use fallback data
       if (!fetchedMessages || fetchedMessages.length === 0) {
@@ -213,7 +232,12 @@ const ChatPage = () => {
                 contact={activeContact} 
                 onInitiateVideoCall={() => toast.info("Video calling feature coming soon!")}
               />
-              <MessageList messages={messages} isLoading={isLoadingMessages} />
+              <MessageList 
+                messages={messages} 
+                isLoading={isLoadingMessages} 
+                loadingTimeout={loadingTimeout}
+                emptyMessage="No messages yet. Start a conversation!"
+              />
               <div className="p-4 border-t border-border">
                 <form 
                   onSubmit={(e) => {

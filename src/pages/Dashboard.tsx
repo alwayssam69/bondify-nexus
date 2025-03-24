@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,7 +32,6 @@ import EngagementStats from "@/components/dashboard/EngagementStats";
 import MatchQualityChart from "@/components/dashboard/MatchQualityChart";
 import NearbyProfessionalsMap from "@/components/dashboard/NearbyProfessionalsMap";
 import ProfileCompletionCard from "@/components/dashboard/ProfileCompletionCard";
-import TrendingSkillsCard from "@/components/dashboard/TrendingSkillsCard";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -40,8 +40,10 @@ import {
   ChartTooltipContent 
 } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { toast: uiToast } = useToast();
   const [recommendedMatches, setRecommendedMatches] = useState<UserProfile[]>([]);
@@ -54,6 +56,7 @@ const Dashboard = () => {
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [profileCompletion, setProfileCompletion] = useState(65);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState<boolean>(false);
   
   const geolocation = useGeolocation({ 
     watch: false, 
@@ -87,12 +90,21 @@ const Dashboard = () => {
     if (locationEnabled && geolocation.latitude && geolocation.longitude && !geolocation.error) {
       updateUserLocationCoordinates(geolocation.latitude, geolocation.longitude);
     }
+
+    // Set a timeout to prevent infinite loading
+    const timer = setTimeout(() => {
+      setLoadingTimeout(true);
+      setIsLoading(false);
+    }, 5000);
+
+    return () => clearTimeout(timer);
   }, [user, geolocation.latitude, geolocation.longitude, locationEnabled]);
 
   const loadMatchData = async () => {
     if (!user?.id) return;
     
     setIsLoading(true);
+    setLoadingTimeout(false);
     try {
       const results = await Promise.allSettled([
         getMatchRecommendations(user.id, 10),
@@ -266,6 +278,10 @@ const Dashboard = () => {
 
   const newMatchesToday = recommendedMatches.length ? Math.min(recommendedMatches.length, 5) : 0;
 
+  const handleUpdateProfile = () => {
+    navigate('/profile');
+  };
+
   return (
     <Layout>
       <div className="container py-6">
@@ -285,15 +301,11 @@ const Dashboard = () => {
                 "Complete your bio section",
                 "Add your previous work experience"
               ]}
+              onUpdateProfile={handleUpdateProfile}
             />
             
             <EngagementStats 
               stats={engagementData}
-              className="mt-6"
-            />
-            
-            <TrendingSkillsCard 
-              industry={profile?.industry || "Technology"}
               className="mt-6"
             />
           </div>
@@ -436,7 +448,7 @@ const Dashboard = () => {
                       </TabsList>
 
                       <TabsContent value="recommended" className="space-y-6">
-                        {isLoading ? (
+                        {isLoading && !loadingTimeout ? (
                           <div className="flex justify-center py-12">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                           </div>
@@ -456,13 +468,13 @@ const Dashboard = () => {
                           </div>
                         ) : (
                           <div className="text-center py-12">
-                            <h3 className="text-xl font-semibold mb-2">No matches found</h3>
+                            <h3 className="text-xl font-semibold mb-2">No users found</h3>
                             <p className="text-muted-foreground mb-4">
                               {professionFilter || skillFilter ? 
                                 "Try adjusting your filters to see more results" : 
                                 "Complete your profile to help us find better matches for you"}
                             </p>
-                            <Button>Update Profile</Button>
+                            <Button onClick={handleUpdateProfile}>Update Profile</Button>
                           </div>
                         )}
                       </TabsContent>
@@ -503,7 +515,7 @@ const Dashboard = () => {
                             </p>
                             <Button onClick={() => setLocationEnabled(true)}>Enable Location</Button>
                           </div>
-                        ) : isLoading ? (
+                        ) : isLoading && !loadingTimeout ? (
                           <div className="flex justify-center py-12">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                           </div>
@@ -603,4 +615,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-

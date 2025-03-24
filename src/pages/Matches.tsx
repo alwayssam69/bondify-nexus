@@ -13,7 +13,7 @@ import { UserProfile } from "@/lib/matchmaking";
 import { supabase } from "@/integrations/supabase/client";
 import MatchCardConnectable from "@/components/match-card/MatchCardConnectable";
 import MatchCardSimple from "@/components/MatchCardSimple";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search, Filter, RefreshCw } from "lucide-react";
 import FindMatchButton from "@/components/matchmaking/FindMatchButton";
 
 const Matches = () => {
@@ -35,6 +35,7 @@ const Matches = () => {
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [userCoordinates, setUserCoordinates] = useState<{lat: number, lng: number} | null>(null);
   const [radiusInKm, setRadiusInKm] = useState<number>(50);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   
   const industries = [
     "technology", "finance", "healthcare", "education", 
@@ -76,6 +77,14 @@ const Matches = () => {
       if (!user) return;
       
       setIsLoading(true);
+      setLoadingTimeout(false);
+      
+      // Set a timeout to prevent infinite loading
+      const timer = setTimeout(() => {
+        setLoadingTimeout(true);
+        setIsLoading(false);
+      }, 5000);
+      
       try {
         // Fetch real user profiles from Supabase
         let query = supabase
@@ -94,6 +103,7 @@ const Matches = () => {
         }
         
         const { data, error } = await query;
+        clearTimeout(timer);
         
         if (error) {
           throw error;
@@ -187,6 +197,14 @@ const Matches = () => {
       if (!user || activeTab !== "matches") return;
       
       setIsLoadingConfirmed(true);
+      setLoadingTimeout(false);
+      
+      // Set a timeout to prevent infinite loading
+      const timer = setTimeout(() => {
+        setLoadingTimeout(true);
+        setIsLoadingConfirmed(false);
+      }, 5000);
+      
       try {
         // In a real app, you'd fetch confirmed matches from a table like user_matches
         // For now, we'll simulate this with a subset of regular matches
@@ -196,6 +214,8 @@ const Matches = () => {
           .select('*')
           .neq('id', user.id)
           .limit(5);
+        
+        clearTimeout(timer);
         
         if (error) throw error;
         
@@ -234,6 +254,14 @@ const Matches = () => {
       if (!user || activeTab !== "saved") return;
       
       setIsLoadingSaved(true);
+      setLoadingTimeout(false);
+      
+      // Set a timeout to prevent infinite loading
+      const timer = setTimeout(() => {
+        setLoadingTimeout(true);
+        setIsLoadingSaved(false);
+      }, 5000);
+      
       try {
         // In a real app, you'd fetch saved profiles from a saved_profiles table
         // For now, we'll simulate with a subset of regular matches
@@ -244,6 +272,8 @@ const Matches = () => {
           .neq('id', user.id)
           .limit(3);
           
+        clearTimeout(timer);
+        
         if (error) throw error;
         
         const savedProfilesData = data.map((profile): UserProfile => ({
@@ -352,6 +382,16 @@ const Matches = () => {
     }
   };
   
+  const handleSearch = () => {
+    setIsLoading(true);
+    toast.info("Searching for connections...");
+    
+    // In a real app, this would trigger a new search with the selected filters
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+  };
+  
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
@@ -393,18 +433,28 @@ const Matches = () => {
               </div>
               
               <Button 
-                variant={filterExpanded ? "default" : "outline"} 
+                variant="outline" 
                 onClick={() => setFilterExpanded(!filterExpanded)}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                </svg>
+                <Filter className="mr-2 h-4 w-4" />
                 Filters
                 {selectedIndustries.length > 0 || experienceLevel !== "any" || locationFilter ? (
                   <Badge variant="secondary" className="ml-2">
                     {selectedIndustries.length + (experienceLevel !== "any" ? 1 : 0) + (locationFilter ? 1 : 0)}
                   </Badge>
                 ) : null}
+              </Button>
+              
+              <Button 
+                onClick={handleSearch}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="mr-2 h-4 w-4" />
+                )}
+                Find Connections
               </Button>
               
               <div className="flex items-center gap-2">
@@ -486,7 +536,7 @@ const Matches = () => {
             )}
           </div>
           
-          {isLoading ? (
+          {isLoading && !loadingTimeout ? (
             <div className="flex justify-center items-center py-24">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
@@ -500,7 +550,7 @@ const Matches = () => {
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                 </svg>
               </div>
-              <h3 className="text-lg font-medium mb-2">No Matches Found Yet</h3>
+              <h3 className="text-lg font-medium mb-2">No connections available</h3>
               <p className="text-muted-foreground max-w-md mx-auto mb-6">
                 We couldn't find any matches based on your current filters. Try adjusting your search criteria or check back later.
               </p>
@@ -541,7 +591,7 @@ const Matches = () => {
         </TabsContent>
         
         <TabsContent value="matches">
-          {isLoadingConfirmed ? (
+          {isLoadingConfirmed && !loadingTimeout ? (
             <div className="flex justify-center items-center py-24">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
@@ -555,7 +605,7 @@ const Matches = () => {
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                 </svg>
               </div>
-              <h3 className="text-lg font-medium mb-2">No Connections Yet</h3>
+              <h3 className="text-lg font-medium mb-2">No connections yet</h3>
               <p className="text-muted-foreground max-w-md mx-auto mb-6">
                 You haven't connected with anyone yet. Discover and match with professionals to build your network.
               </p>
@@ -578,7 +628,7 @@ const Matches = () => {
         </TabsContent>
         
         <TabsContent value="saved">
-          {isLoadingSaved ? (
+          {isLoadingSaved && !loadingTimeout ? (
             <div className="flex justify-center items-center py-24">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
@@ -589,7 +639,7 @@ const Matches = () => {
                   <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
                 </svg>
               </div>
-              <h3 className="text-lg font-medium mb-2">No Saved Profiles</h3>
+              <h3 className="text-lg font-medium mb-2">No saved profiles</h3>
               <p className="text-muted-foreground max-w-md mx-auto mb-6">
                 You haven't saved any profiles yet. Save profiles you're interested in to review them later.
               </p>

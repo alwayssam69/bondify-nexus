@@ -10,6 +10,7 @@ import Profile from './pages/Profile';
 import Matches from './pages/Matches';
 import Chat from './pages/Chat';
 import Onboarding from './pages/Onboarding';
+import Index from './pages/Index';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function App() {
@@ -21,7 +22,7 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/" element={<Onboarding />} />
+            <Route path="/" element={<Index />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/profile/:id" element={<Profile />} /> {/* Using Profile component for public profile */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
