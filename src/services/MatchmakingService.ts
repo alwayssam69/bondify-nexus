@@ -2,6 +2,107 @@
 import { supabase } from "@/integrations/supabase/client";
 import { UserProfile } from "@/lib/matchmaking";
 
+// Add missing functions
+export async function getMatchRecommendations(userId: string, limit = 10): Promise<UserProfile[]> {
+  try {
+    // In a real app, this would use an algorithm to find matches based on interests, goals, etc.
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .neq('id', userId)
+      .limit(limit);
+    
+    if (error) {
+      console.error("Error fetching match recommendations:", error);
+      throw error;
+    }
+    
+    return (data || []).map(profile => ({
+      id: profile.id,
+      name: profile.full_name || 'Anonymous User',
+      age: profile.age || Math.floor(Math.random() * 15) + 25,
+      location: profile.location || 'Unknown location',
+      bio: profile.bio || '',
+      relationshipGoal: 'networking',
+      skills: profile.skills || [],
+      interests: profile.interests || [],
+      imageUrl: profile.image_url || '',
+      industry: profile.industry || '',
+      userType: profile.user_type || '',
+      experienceLevel: profile.experience_level || '',
+      matchScore: Math.floor(Math.random() * 30) + 70, // Random score between 70-99
+      distance: Math.floor(Math.random() * 50),
+      activityScore: profile.activity_score || 75,
+      profileCompleteness: profile.profile_completeness || 80,
+    }));
+  } catch (error) {
+    console.error("Error in getMatchRecommendations:", error);
+    return generateFallbackMatches();
+  }
+}
+
+export async function getProximityMatches(userId: string, lat: number, lng: number, radiusKm = 50): Promise<UserProfile[]> {
+  try {
+    // This is a simplified version - in a real app this would use geospatial queries
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .neq('id', userId)
+      .limit(10);
+    
+    if (error) {
+      console.error("Error fetching proximity matches:", error);
+      throw error;
+    }
+    
+    return (data || []).map(profile => ({
+      id: profile.id,
+      name: profile.full_name || 'Anonymous User',
+      age: profile.age || Math.floor(Math.random() * 15) + 25,
+      location: profile.location || 'Unknown location',
+      bio: profile.bio || '',
+      relationshipGoal: 'networking',
+      skills: profile.skills || [],
+      interests: profile.interests || [],
+      imageUrl: profile.image_url || '',
+      industry: profile.industry || '',
+      userType: profile.user_type || '',
+      experienceLevel: profile.experience_level || '',
+      matchScore: Math.floor(Math.random() * 30) + 70,
+      distance: Math.floor(Math.random() * radiusKm),
+      activityScore: profile.activity_score || 75,
+      profileCompleteness: profile.profile_completeness || 80,
+    }));
+  } catch (error) {
+    console.error("Error in getProximityMatches:", error);
+    return generateFallbackMatches();
+  }
+}
+
+export async function recordSwipeAction(userId: string, targetId: string, action: 'like' | 'dislike' | 'superlike'): Promise<void> {
+  try {
+    // Record the swipe action in the database
+    const { error } = await supabase
+      .from('swipe_actions')
+      .insert([
+        { 
+          user_id: userId, 
+          target_id: targetId, 
+          action 
+        }
+      ]);
+    
+    if (error) {
+      console.error("Error recording swipe action:", error);
+      throw error;
+    }
+    
+    console.log(`Recorded ${action} from ${userId} to ${targetId}`);
+  } catch (error) {
+    console.error("Error in recordSwipeAction:", error);
+  }
+}
+
 export async function getConfirmedMatches(userId: string): Promise<UserProfile[]> {
   try {
     // In a real app, you'd fetch from a matches or connections table
