@@ -18,7 +18,6 @@ export interface UserProfile {
   distance?: number;
   activityScore: number;
   profileCompleteness: number;
-  // Add missing properties
   university?: string;
   courseYear?: string;
   networkingGoals?: string[];
@@ -27,27 +26,49 @@ export interface UserProfile {
   longitude?: number;
 }
 
-export const loadSampleUsers = (): UserProfile[] => {
-  return [
-    {
-      id: '1',
-      name: 'Alex Johnson',
-      age: 28,
-      gender: 'Male',
-      location: 'San Francisco',
-      interests: ['AI', 'Machine Learning', 'Web Development'],
-      bio: 'Senior Software Engineer passionate about AI and web technologies',
-      relationshipGoal: 'Professional Networking',
-      skills: ['React', 'Node.js', 'Python'],
-      language: 'English',
-      imageUrl: '/placeholder.svg',
-      industry: 'Technology',
-      userType: 'Professional',
-      experienceLevel: 'Senior',
-      matchScore: 95,
-      activityScore: 85,
-      profileCompleteness: 90
-    },
-    // Add more sample users as needed
-  ];
-};
+// Removed sample users - we'll use real data instead
+
+export const calculateMatchScore = (
+  userProfile: Partial<UserProfile>,
+  otherProfile: Partial<UserProfile>
+): number => {
+  let score = 50; // Base score
+  
+  // Calculate based on shared interests
+  const userInterests = userProfile.interests || [];
+  const otherInterests = otherProfile.interests || [];
+  const sharedInterests = userInterests.filter(interest => 
+    otherInterests.includes(interest)
+  );
+  
+  if (userInterests.length > 0) {
+    score += Math.min(30, (sharedInterests.length / userInterests.length) * 30);
+  }
+  
+  // Calculate based on shared skills
+  const userSkills = userProfile.skills || [];
+  const otherSkills = otherProfile.skills || [];
+  const sharedSkills = userSkills.filter(skill => 
+    otherSkills.includes(skill)
+  );
+  
+  if (userSkills.length > 0) {
+    score += Math.min(20, (sharedSkills.length / userSkills.length) * 20);
+  }
+  
+  // Bonus for same industry
+  if (userProfile.industry && otherProfile.industry && 
+      userProfile.industry.toLowerCase() === otherProfile.industry.toLowerCase()) {
+    score += 10;
+  }
+  
+  // Adjust for distance if available
+  if (typeof otherProfile.distance === 'number') {
+    // Closer distance gives higher score
+    const distanceScore = Math.max(0, 10 - Math.min(10, otherProfile.distance / 10));
+    score += distanceScore;
+  }
+  
+  // Cap at 100
+  return Math.min(100, Math.round(score));
+}

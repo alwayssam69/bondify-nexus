@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { UserProfile } from "@/lib/matchmaking";
 import { MatchmakingFilters } from "@/types/matchmaking";
 import { useGeolocation } from "@/hooks/useGeolocation";
@@ -7,7 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { 
   getMatchRecommendations, 
-  getProximityMatches 
+  getProximityMatches,
+  updateUserCoordinates 
 } from "@/services/MatchmakingService";
 
 interface UseMatchmakingProps {
@@ -39,7 +40,7 @@ export const useMatchmaking = ({
     showErrorToasts: false
   });
 
-  const fetchMatches = async () => {
+  const fetchMatches = useCallback(async () => {
     if (!user?.id) {
       setMatches([]);
       setError("Please log in to find matches");
@@ -54,6 +55,15 @@ export const useMatchmaking = ({
 
       let matchedProfiles: UserProfile[] = [];
       let nearbyFound = false;
+
+      // Store user coordinates if available
+      if (geolocation.latitude && geolocation.longitude) {
+        await updateUserCoordinates(
+          user.id, 
+          geolocation.latitude, 
+          geolocation.longitude
+        );
+      }
 
       // Priority 1: Location-based matching (if enabled and coordinates are available)
       if (filters.useLocation && geolocation.latitude && geolocation.longitude) {
@@ -81,20 +91,6 @@ export const useMatchmaking = ({
           console.log("Found", matchedProfiles.length, "skill-based matches");
         } catch (e) {
           console.error("Error in skill-based matching:", e);
-          
-          // Last resort - use sample data
-          if (matchedProfiles.length === 0) {
-            console.log("Using fallback sample data");
-            import("@/lib/matchmaking").then(({ loadSampleUsers }) => {
-              const sampleUsers = loadSampleUsers();
-              setMatches(sampleUsers);
-              if (sampleUsers.length > 0) {
-                toast.info("Using sample recommendations", {
-                  description: "We couldn't load personalized matches right now"
-                });
-              }
-            });
-          }
         }
       }
 
@@ -137,9 +133,7 @@ export const useMatchmaking = ({
       
       // If we applied filters and got no results, but had matches before filtering
       if (filteredMatches.length === 0 && matchedProfiles.length > 0) {
-        toast.info("No matches found with your filters", {
-          description: "Try adjusting your search criteria for better results"
-        });
+        setError("No matches found with your current filters. Try adjusting your search criteria.");
       }
       
       if (filteredMatches.length === 0 && matchedProfiles.length === 0) {
@@ -149,21 +143,21 @@ export const useMatchmaking = ({
     } catch (error) {
       console.error("Error finding matches:", error);
       setError("Failed to find matches. Please try again later.");
-      toast.error("Error finding matches");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id, filters, searchRadius, geolocation.latitude, geolocation.longitude]);
 
-  const expandSearchRadius = () => {
+  const expandSearchRadius = useCallback(() => {
     const newRadius = Math.min(searchRadius + 25, 100);
     setSearchRadius(newRadius);
     toast.info(`Expanded search radius to ${newRadius}km`);
-  };
+  }, [searchRadius]);
 
-  const refreshMatches = () => {
+  // Memoize the refresh function to avoid unnecessary re-renders
+  const refreshMatches = useCallback(() => {
     fetchMatches();
-  };
+  }, [fetchMatches]);
 
   useEffect(() => {
     if (enabled) {
@@ -182,14 +176,7 @@ export const useMatchmaking = ({
     }, 8000);
     
     return () => clearTimeout(timeout);
-  }, [filters, searchRadius, enabled, user?.id]);
-
-  // Effect to refetch when geolocation changes
-  useEffect(() => {
-    if (enabled && filters.useLocation && geolocation.latitude && geolocation.longitude) {
-      fetchMatches();
-    }
-  }, [geolocation.latitude, geolocation.longitude]);
+  }, [filters, searchRadius, enabled, user?.id, fetchMatches, isLoading, matches.length]);
 
   return {
     isLoading,

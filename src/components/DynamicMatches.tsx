@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { getConfirmedMatches } from "@/services/MatchmakingService";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { UserProfile } from "@/lib/matchmaking";
+import { Loader2 } from "lucide-react";
 
 interface MatchOverview {
   id: string;
@@ -35,30 +37,27 @@ const DynamicMatches = () => {
       
       setIsLoading(true);
       try {
-        // Set a timeout to ensure we don't load for more than 5 seconds
-        const timeoutPromise = new Promise<any[]>((resolve) => {
-          setTimeout(() => resolve([]), 5000);
-        });
+        const matchesData = await getConfirmedMatches(user.id);
         
-        try {
-          const matchesPromise = getConfirmedMatches(user.id);
-          const matchesData = await Promise.race([matchesPromise, timeoutPromise]);
-          
-          // Transform the data for display
-          const processedMatches = matchesData.slice(0, 5).map(match => ({
-            id: match.id,
-            name: match.name,
-            headline: `${match.userType || "Professional"} at ${match.industry || "Unknown"}`,
-            matchScore: match.matchScore || 0,
-            imageUrl: match.imageUrl,
-            color: getMatchScoreColor(match.matchScore || 0)
-          }));
-          
-          setMatches(processedMatches);
-        } catch (error) {
-          console.error("Error loading matches:", error);
+        if (matchesData.length === 0) {
           setMatches([]);
+          return;
         }
+        
+        // Transform the data for display
+        const processedMatches = matchesData.slice(0, 5).map(match => ({
+          id: match.id,
+          name: match.name,
+          headline: `${match.userType || "Professional"} at ${match.industry || "Unknown"}`,
+          matchScore: match.matchScore || 0,
+          imageUrl: match.imageUrl,
+          color: getMatchScoreColor(match.matchScore || 0)
+        }));
+        
+        setMatches(processedMatches);
+      } catch (error) {
+        console.error("Error loading matches:", error);
+        setMatches([]);
       } finally {
         setIsLoading(false);
       }
@@ -66,6 +65,22 @@ const DynamicMatches = () => {
 
     loadData();
   }, [user?.id]);
+
+  if (!user) {
+    return (
+      <div className="container px-4 py-8 mx-auto">
+        <div className="p-12 text-center border border-dashed rounded-lg">
+          <h3 className="text-lg font-medium mb-2">Please sign in</h3>
+          <p className="text-muted-foreground mb-6">
+            You need to be logged in to see your matches
+          </p>
+          <Button onClick={() => navigate("/login")}>
+            Sign In
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container px-4 py-8 mx-auto">
@@ -77,11 +92,8 @@ const DynamicMatches = () => {
       </div>
 
       {isLoading ? (
-        <div className="p-12 text-center border border-dashed rounded-lg">
-          <h3 className="text-lg font-medium mb-2">Loading matches...</h3>
-          <p className="text-muted-foreground">
-            Finding your best connections
-          </p>
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : matches.length === 0 ? (
         <div className="p-12 text-center border border-dashed rounded-lg">
