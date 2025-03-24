@@ -15,6 +15,7 @@ interface DynamicSkillSelectProps {
   placeholder?: string;
   error?: boolean;
   maxSelections?: number;
+  label?: string; // Add label prop to interface
 }
 
 // Industry-specific skills
@@ -81,8 +82,9 @@ const DynamicSkillSelect: React.FC<DynamicSkillSelectProps> = ({
   onChange,
   placeholder = "Select skills...",
   error = false,
-  maxSelections = 10
-}) => {
+  maxSelections = 10,
+  label // Add label to destructured props
+}: DynamicSkillSelectProps) => {
   const [open, setOpen] = useState(false);
   const [availableSkills, setAvailableSkills] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");

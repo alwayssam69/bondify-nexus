@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -73,7 +72,6 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const geolocation = useGeolocation({ watch: false });
   
-  // Check if user is already logged in
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -105,7 +103,6 @@ const Register = () => {
     },
   });
 
-  // Watch the industry field to update skills
   const selectedIndustry = form.watch("industry");
   const useCurrentLocation = form.watch("useCurrentLocation");
 
@@ -134,7 +131,6 @@ const Register = () => {
       }
       
       if (data.user) {
-        // Create user profile with additional information
         const locationData = values.useCurrentLocation && geolocation.latitude && geolocation.longitude 
           ? { latitude: geolocation.latitude, longitude: geolocation.longitude }
           : {};
@@ -151,22 +147,19 @@ const Register = () => {
           skills: values.skills,
           experience_level: values.experienceLevel,
           user_tag: values.userTag,
-          profile_completeness: 60, // Give higher score for more complete profile
-          activity_score: 50, // Initial activity score
+          profile_completeness: 60,
+          activity_score: 50,
           ...locationData,
         };
         
-        // Create user profile in database
         const { error: profileError } = await supabase
           .from('user_profiles')
           .insert(profileData);
         
         if (profileError) {
           console.error("Error creating profile:", profileError);
-          // Continue despite error to ensure user creation completes
         }
         
-        // Insert into profiles table for legacy support
         const { error: legacyProfileError } = await supabase
           .from('profiles')
           .insert({
@@ -183,7 +176,6 @@ const Register = () => {
         
         toast.success("Registration successful! Please check your email to verify your account.");
         
-        // Login automatically after successful registration
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: values.email,
           password: values.password,
@@ -337,7 +329,6 @@ const Register = () => {
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
-                            // Reset skills when industry changes
                             form.setValue("skills", []);
                           }} 
                           value={field.value}
@@ -365,13 +356,19 @@ const Register = () => {
                   control={form.control}
                   name="skills"
                   render={({ field }) => (
-                    <DynamicSkillSelect
-                      industry={selectedIndustry}
-                      label="Skills"
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="Select skills relevant to your industry"
-                    />
+                    <FormItem>
+                      <FormLabel>Skills</FormLabel>
+                      <FormControl>
+                        <DynamicSkillSelect
+                          industry={selectedIndustry}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Select skills relevant to your industry"
+                          error={!!form.formState.errors.skills}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
                 />
                 
@@ -421,10 +418,8 @@ const Register = () => {
                               onUseLocationChange={(checked) => {
                                 field.onChange(checked);
                                 if (checked) {
-                                  // If using current location, store the location in the location field
                                   form.setValue("location", "Current Location");
                                 } else if (form.getValues("location") === "Current Location") {
-                                  // Clear the location field if it was set to "Current Location"
                                   form.setValue("location", "");
                                 }
                               }}
