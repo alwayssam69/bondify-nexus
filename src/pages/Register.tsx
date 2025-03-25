@@ -70,7 +70,7 @@ const professions = [
 const Register = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const geolocation = useGeolocation({ watch: false });
+  const geolocation = useGeolocation({ showErrorToasts: false });
   
   useEffect(() => {
     const checkSession = async () => {

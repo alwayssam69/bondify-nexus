@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -36,7 +35,6 @@ const DiscoverSwipe = () => {
     refreshMatches: refreshSkillMatches
   } = useMatchmaking({ 
     filters: {
-      helpType: 'need',
       industry: '',
       skills: [],
       relationshipGoal: 'networking',
@@ -61,7 +59,32 @@ const DiscoverSwipe = () => {
   // Combined state
   const isLoading = useLocationMatching ? geoLoading : skillLoading;
   const error = useLocationMatching ? geoError : skillError;
-  const matches = useLocationMatching ? geoMatches : skillMatches;
+  
+  // Convert matches to the correct UserProfile type
+  // This is to fix the type mismatch between different UserProfile interfaces
+  const matches: UserProfile[] = (useLocationMatching ? geoMatches : skillMatches).map(profile => ({
+    id: profile.id,
+    name: profile.name || profile.full_name || 'Unknown',
+    location: profile.location,
+    bio: profile.bio,
+    interests: profile.interests,
+    skills: profile.skills,
+    industry: profile.industry,
+    imageUrl: profile.imageUrl || profile.image_url,
+    image_url: profile.image_url || profile.imageUrl,
+    experienceLevel: profile.experienceLevel,
+    userType: profile.userType,
+    matchScore: profile.matchScore || profile.match_score,
+    distance: profile.distance,
+    userTag: profile.userTag,
+    // Add any other required properties with defaults
+    age: profile.age || 30,
+    gender: profile.gender || 'unspecified',
+    relationshipGoal: profile.relationshipGoal || 'networking',
+    language: profile.language || 'English',
+    activityScore: profile.activityScore || 75,
+    profileCompleteness: profile.profileCompleteness || 80
+  }));
 
   // Handle potential navigation issues
   useEffect(() => {

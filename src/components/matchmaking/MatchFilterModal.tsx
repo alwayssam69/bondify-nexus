@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -40,7 +39,6 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
   });
 
   useEffect(() => {
-    // Clear form when modal is opened
     if (isOpen) {
       setIndustry("");
       setSkills([]);
@@ -86,7 +84,6 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
     setIsLoading(true);
     
     try {
-      // Pass filters as URL parameters
       const params = new URLSearchParams({
         industry,
         skills: skills.join(','),
@@ -103,10 +100,7 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
         params.append('lng', geolocation.longitude.toString());
       }
 
-      // Navigate to matches page with filters
-      onClose(); // Close the modal first
-      
-      // Short delay before navigating to ensure modal is closed
+      onClose();
       setTimeout(() => {
         navigate(`/matches?${params.toString()}`);
         setIsLoading(false);
@@ -133,7 +127,6 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
         </DialogHeader>
         
         <div className="space-y-6 py-4">
-          {/* Industry Selection */}
           <div className="space-y-2">
             <Label htmlFor="industry" className="text-sm font-medium">Industry</Label>
             <Select 
@@ -157,7 +150,6 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
             </Select>
           </div>
           
-          {/* Skills Selection */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Skills</Label>
             <DynamicSkillSelect
@@ -170,7 +162,6 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
             <p className="text-xs text-gray-500 mt-1">Select up to 5 skills for better matches</p>
           </div>
           
-          {/* Location Section */}
           <div className="space-y-4 pt-2">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
@@ -185,7 +176,7 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
             
             {useLocation && (
               <div className="space-y-3">
-                {geolocation.isLoading ? (
+                {geolocation.loading ? (
                   <div className="flex items-center text-sm text-blue-600">
                     <div className="mr-2 h-3 w-3 animate-pulse rounded-full bg-blue-600"></div>
                     Acquiring your location...
@@ -225,7 +216,6 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
             )}
           </div>
           
-          {/* Relationship Goal Selection */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Purpose</Label>
             <Select 
@@ -244,7 +234,6 @@ const MatchFilterModal: React.FC<MatchFilterModalProps> = ({ isOpen, onClose }) 
             </Select>
           </div>
           
-          {/* Experience Level Selection */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Experience Level</Label>
             <Select 

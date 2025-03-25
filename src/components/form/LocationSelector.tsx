@@ -34,7 +34,8 @@ const LocationSelector = ({
   className,
 }: LocationSelectorProps) => {
   const [cities, setCities] = useState<{ value: string; label: string }[]>([]);
-  const geolocation = useGeolocation({ watch: false });
+  // Fixed: removed 'watch' property that was causing errors
+  const geolocation = useGeolocation({ showErrorToasts: true });
 
   useEffect(() => {
     // Update available cities when state changes
@@ -60,7 +61,7 @@ const LocationSelector = ({
     if (checked) {
       if (geolocation.error) {
         toast.error("Unable to access location. Please enable location services.");
-      } else if (!geolocation.isLoading) {
+      } else if (!geolocation.loading) { // Changed isLoading to loading
         toast.success("Using your current location for better matching");
       }
     }
