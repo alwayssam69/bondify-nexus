@@ -19,17 +19,19 @@ const UserSearch = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState<UserSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [noResults, setNoResults] = useState(false);
   const navigate = useNavigate();
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!searchTerm.trim()) {
-      toast.error("Please enter a username to search");
+      toast.error("Please enter a username or name to search");
       return;
     }
     
     setIsSearching(true);
+    setNoResults(false);
     
     try {
       let searchQuery = searchTerm.trim();
@@ -47,7 +49,7 @@ const UserSearch = () => {
         
       if (tagError) throw tagError;
       
-      // Then try partial matches on username if needed
+      // Then try partial matches on username
       if (!tagResults?.length) {
         const { data: nameResults, error: nameError } = await supabase
           .from('user_profiles')
@@ -72,89 +74,94 @@ const UserSearch = () => {
       }
       
       setResults(tagResults || []);
+      setNoResults(!(tagResults && tagResults.length > 0));
       
-      if (!tagResults?.length) {
-        toast.info("No users found with that username");
-      }
     } catch (error) {
-      console.error("Error searching for users:", error);
-      toast.error("Failed to search for users");
+      console.error('Search error:', error);
+      toast.error("Something went wrong with the search");
+      setResults([]);
+      setNoResults(true);
     } finally {
       setIsSearching(false);
     }
   };
-  
+
   const handleViewProfile = (userId: string) => {
     navigate(`/profile/${userId}`);
   };
-  
+
   return (
-    <div className="w-full max-w-md mx-auto">
-      <form onSubmit={handleSearch} className="flex gap-2 mb-4">
-        <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-muted-foreground">
-            @
-          </div>
-          <Input
-            type="text"
-            placeholder="Search username..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8"
-          />
-        </div>
+    <div>
+      <form onSubmit={handleSearch} className="flex gap-2 mb-6">
+        <Input
+          placeholder="Search by username or name (@username)"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-1"
+        />
         <Button type="submit" disabled={isSearching}>
           {isSearching ? (
-            <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+            <>Searching...</>
           ) : (
-            <Search className="h-4 w-4" />
+            <>
+              <Search className="w-4 h-4 mr-2" />
+              Search
+            </>
           )}
-          <span className="ml-2 hidden sm:inline">Search</span>
         </Button>
       </form>
-      
-      {results.length > 0 && (
-        <div className="space-y-2">
+
+      {isSearching ? (
+        <div className="text-center py-8">
+          <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Searching for users...</p>
+        </div>
+      ) : noResults ? (
+        <div className="text-center py-8 border border-dashed rounded-lg">
+          <UserRound className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+          <h3 className="font-medium mb-1">No Users Found</h3>
+          <p className="text-muted-foreground text-sm">
+            Try a different search term or check the username spelling
+          </p>
+        </div>
+      ) : results.length > 0 ? (
+        <div className="space-y-3">
           {results.map((user) => (
             <Card key={user.id} className="overflow-hidden">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                    {user.image_url ? (
-                      <img 
-                        src={user.image_url} 
-                        alt={user.full_name} 
-                        className="h-full w-full object-cover"
-                        onError={(e) => {
-                          // Replace broken image with icon
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          target.parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-primary"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
-                        }}
-                      />
-                    ) : (
-                      <UserRound className="h-6 w-6 text-primary" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">{user.full_name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {user.user_tag ? `@${user.user_tag}` : 'No username set'}
-                    </p>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                      {user.image_url ? (
+                        <img 
+                          src={user.image_url} 
+                          alt={user.full_name} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <UserRound className="w-5 h-5 text-primary" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-medium">{user.full_name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        @{user.user_tag || 'anonymous'}
+                      </div>
+                    </div>
                   </div>
                   <Button 
-                    size="sm" 
-                    variant="outline"
+                    variant="outline" 
+                    size="sm"
                     onClick={() => handleViewProfile(user.id)}
                   >
-                    View
+                    View Profile
                   </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

@@ -12,6 +12,7 @@ import { useLocation } from '@/hooks/useLocation';
 import { useMatchmaking } from '@/hooks/useMatchmaking';
 import { useGeoMatchmaking } from '@/hooks/useGeoMatchmaking';
 import { UserProfile } from '@/lib/matchmaking';
+import NoMatchesFound from '@/components/NoMatchesFound';
 
 const DiscoverSwipe = () => {
   const navigate = useNavigate();
@@ -61,6 +62,24 @@ const DiscoverSwipe = () => {
   const isLoading = useLocationMatching ? geoLoading : skillLoading;
   const error = useLocationMatching ? geoError : skillError;
   const matches = useLocationMatching ? geoMatches : skillMatches;
+
+  // Handle potential navigation issues
+  useEffect(() => {
+    // If Discover page becomes blank, this useEffect will help re-initialize
+    const initializePage = () => {
+      console.log("Initializing Discover page with matches:", matches?.length);
+      if (matches?.length === 0 && !isLoading) {
+        refreshMatches();
+      }
+    };
+    
+    initializePage();
+    
+    // Cleanup timeouts on unmount
+    return () => {
+      // any cleanup code here
+    };
+  }, []);
   
   const handleSwitchLocation = async (checked: boolean) => {
     if (checked) {
@@ -87,6 +106,14 @@ const DiscoverSwipe = () => {
     const newRadius = expandSearchRadius();
     setRadius(newRadius);
     refreshGeoMatches();
+  };
+  
+  const refreshMatches = () => {
+    if (useLocationMatching) {
+      refreshGeoMatches();
+    } else {
+      refreshSkillMatches();
+    }
   };
   
   const handleSwipeLeft = (profile: UserProfile) => {
@@ -177,14 +204,21 @@ const DiscoverSwipe = () => {
         )}
       </div>
       
-      <SwipeMatchContainer 
-        profiles={matches}
-        onSwipeLeft={handleSwipeLeft}
-        onSwipeRight={handleSwipeRight}
-        onSave={handleSaveProfile}
-        isLoading={isLoading}
-        onFindMore={useLocationMatching ? handleExpandRadius : handleRefresh}
-      />
+      {matches?.length === 0 && !isLoading ? (
+        <NoMatchesFound 
+          onUpdateFilters={() => {}} 
+          onExpandSearch={useLocationMatching ? handleExpandRadius : handleRefresh} 
+        />
+      ) : (
+        <SwipeMatchContainer 
+          profiles={matches || []}
+          onSwipeLeft={handleSwipeLeft}
+          onSwipeRight={handleSwipeRight}
+          onSave={handleSaveProfile}
+          isLoading={isLoading}
+          onFindMore={useLocationMatching ? handleExpandRadius : handleRefresh}
+        />
+      )}
       
       <div className="mt-6 text-center">
         <p className="text-sm text-muted-foreground">

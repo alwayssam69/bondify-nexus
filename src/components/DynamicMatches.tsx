@@ -29,14 +29,21 @@ const DynamicMatches = () => {
   const { user } = useAuth();
   const [matches, setMatches] = useState<MatchOverview[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [noMatches, setNoMatches] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
+      setNoMatches(false);
+      
       try {
         // Set a timeout to ensure we don't load for more than 5 seconds
         const timeoutPromise = new Promise<any[]>((resolve) => {
-          setTimeout(() => resolve([]), 5000);
+          setTimeout(() => {
+            setIsLoading(false);
+            setNoMatches(true);
+            resolve([]);
+          }, 5000);
         });
         
         try {
@@ -58,6 +65,8 @@ const DynamicMatches = () => {
                 }));
                 
                 setMatches(processedMatches);
+                setNoMatches(false);
+                setIsLoading(false);
                 return;
               }
             } catch (error) {
@@ -85,6 +94,7 @@ const DynamicMatches = () => {
             }));
             
             setMatches(fallbackMatches);
+            setNoMatches(false);
           } else {
             // If still no matches, create dummy data
             setMatches([
@@ -110,6 +120,7 @@ const DynamicMatches = () => {
                 color: getMatchScoreColor(79)
               }
             ]);
+            setNoMatches(false);
           }
         } catch (error) {
           console.error("Error in matches flow:", error);
@@ -137,6 +148,7 @@ const DynamicMatches = () => {
               color: getMatchScoreColor(79)
             }
           ]);
+          setNoMatches(false);
         }
       } finally {
         setIsLoading(false);
@@ -162,7 +174,7 @@ const DynamicMatches = () => {
             Finding your best connections
           </p>
         </div>
-      ) : matches.length === 0 ? (
+      ) : noMatches ? (
         <div className="p-12 text-center border border-dashed rounded-lg">
           <h3 className="text-lg font-medium mb-2">No Matches Yet</h3>
           <p className="text-muted-foreground mb-6">

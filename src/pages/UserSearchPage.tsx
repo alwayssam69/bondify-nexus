@@ -10,7 +10,7 @@ const UserSearchPage = () => {
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-bold mb-6">Find People</h1>
           <p className="text-muted-foreground mb-8">
-            Search for other users by their username to view their profile and connect.
+            Search for other users by their username or name to view their profile and connect.
           </p>
           
           <UserSearch />

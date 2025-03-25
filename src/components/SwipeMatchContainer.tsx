@@ -121,7 +121,7 @@ const SwipeMatchContainer: React.FC<SwipeMatchContainerProps> = ({
     );
   }
   
-  if (profiles.length === 0) {
+  if (!profiles || profiles.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-[500px] bg-muted/30 rounded-lg p-6 text-center">
         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
@@ -137,7 +137,7 @@ const SwipeMatchContainer: React.FC<SwipeMatchContainerProps> = ({
           We couldn't find any connections for you right now. Try adjusting your preferences or check back later.
         </p>
         <Button variant="outline" onClick={onFindMore}>
-          Refresh
+          Find Matches
         </Button>
       </div>
     );

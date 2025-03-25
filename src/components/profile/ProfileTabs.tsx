@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProfileInfo from "@/components/profile/ProfileInfo";
 import ProfileForm from "@/components/profile/ProfileForm";

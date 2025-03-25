@@ -77,6 +77,7 @@ export const useMatchmaking = ({
         language: 'English',
         activityScore: 75,
         profileCompleteness: 80,
+        userTag: profile.user_tag || '',
       }));
     } catch (error) {
       console.error("Error in fetchAllUsers:", error);
@@ -157,18 +158,13 @@ export const useMatchmaking = ({
         } catch (e) {
           console.error("Error fetching all users:", e);
           
-          // Last resort - use sample data
-          console.log("Using fallback sample data");
-          import("@/lib/matchmaking").then(({ loadSampleUsers }) => {
-            const sampleUsers = loadSampleUsers();
-            setMatches(sampleUsers);
-            setIsLoading(false);
-            if (sampleUsers.length > 0) {
-              toast.info("Using sample recommendations", {
-                description: "We couldn't load personalized matches right now"
-              });
+          // Set a timeout to end loading state after 5 seconds
+          setTimeout(() => {
+            if (isLoading) {
+              setIsLoading(false);
+              setError("Could not find any users at this time. Please try again later.");
             }
-          });
+          }, 5000);
           return;
         }
       }
@@ -239,6 +235,7 @@ export const useMatchmaking = ({
     const newRadius = Math.min(searchRadius + 25, 100);
     setSearchRadius(newRadius);
     toast.info(`Expanded search radius to ${newRadius}km`);
+    return newRadius;
   };
 
   const refreshMatches = () => {
