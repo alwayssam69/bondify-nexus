@@ -2,117 +2,78 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
-interface GeolocationState {
-  latitude: number | null;
-  longitude: number | null;
-  accuracy: number | null;
-  error: string | null;
-  isLoading: boolean;
-}
-
-interface UseGeolocationOptions {
+interface UseGeolocationProps {
   enableHighAccuracy?: boolean;
-  maximumAge?: number;
-  timeout?: number;
-  watch?: boolean;
   showErrorToasts?: boolean;
 }
 
-export const useGeolocation = (options: UseGeolocationOptions = {}) => {
-  const [state, setState] = useState<GeolocationState>({
-    latitude: null,
-    longitude: null,
-    accuracy: null,
-    error: null,
-    isLoading: true,
-  });
+export const useGeolocation = ({
+  enableHighAccuracy = true,
+  showErrorToasts = true
+}: UseGeolocationProps = {}) => {
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const requestLocation = async (): Promise<boolean> => {
+    if (!navigator.geolocation) {
+      const errorMsg = "Geolocation is not supported by your browser";
+      setError(errorMsg);
+      if (showErrorToasts) toast.error(errorMsg);
+      return false;
+    }
+
+    setLoading(true);
+    
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          reject,
+          { enableHighAccuracy, timeout: 10000, maximumAge: 60000 }
+        );
+      });
+
+      setLatitude(position.coords.latitude);
+      setLongitude(position.coords.longitude);
+      setError(null);
+      setLoading(false);
+      return true;
+    } catch (err) {
+      let errorMsg = "Failed to get location";
+      
+      if (err instanceof GeolocationPositionError) {
+        switch (err.code) {
+          case err.PERMISSION_DENIED:
+            errorMsg = "Location permission denied. Please enable location services.";
+            break;
+          case err.POSITION_UNAVAILABLE:
+            errorMsg = "Location information is unavailable";
+            break;
+          case err.TIMEOUT:
+            errorMsg = "Location request timed out";
+            break;
+        }
+      }
+      
+      setError(errorMsg);
+      if (showErrorToasts) toast.error(errorMsg);
+      setLoading(false);
+      return false;
+    }
+  };
 
   useEffect(() => {
-    if (!navigator.geolocation) {
-      const errorMessage = 'Geolocation is not supported by your browser';
-      setState(prev => ({
-        ...prev,
-        error: errorMessage,
-        isLoading: false,
-      }));
-      
-      if (options.showErrorToasts) {
-        toast.error(errorMessage, {
-          className: "bg-gray-900 text-white border border-gray-800",
-          descriptionClassName: "text-gray-300",
-        });
-      }
-      return;
-    }
+    // Initial location request
+    requestLocation();
+  }, []);
 
-    const geoOptions = {
-      enableHighAccuracy: options.enableHighAccuracy ?? true,
-      maximumAge: options.maximumAge ?? 30000,
-      timeout: options.timeout ?? 27000,
-    };
-
-    const handleSuccess = (position: GeolocationPosition) => {
-      setState({
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        accuracy: position.coords.accuracy,
-        error: null,
-        isLoading: false,
-      });
-    };
-
-    const handleError = (error: GeolocationPositionError) => {
-      let errorMessage = '';
-      switch (error.code) {
-        case 1:
-          errorMessage = 'Permission denied. Please allow location access to find matches near you.';
-          break;
-        case 2:
-          errorMessage = 'Position unavailable. Could not determine your location.';
-          break;
-        case 3:
-          errorMessage = 'Location request timed out. Please try again.';
-          break;
-        default:
-          errorMessage = error.message || 'An unknown error occurred.';
-      }
-      
-      setState(prev => ({
-        ...prev,
-        error: errorMessage,
-        isLoading: false,
-      }));
-      
-      if (options.showErrorToasts) {
-        toast.error(errorMessage, {
-          className: "bg-gray-900 text-white border border-gray-800",
-          descriptionClassName: "text-gray-300",
-        });
-      }
-    };
-
-    let watchId: number | null = null;
-
-    if (options.watch) {
-      watchId = navigator.geolocation.watchPosition(
-        handleSuccess,
-        handleError,
-        geoOptions
-      );
-    } else {
-      navigator.geolocation.getCurrentPosition(
-        handleSuccess,
-        handleError,
-        geoOptions
-      );
-    }
-
-    return () => {
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-    };
-  }, [options.enableHighAccuracy, options.maximumAge, options.timeout, options.watch, options.showErrorToasts]);
-
-  return state;
+  return {
+    latitude,
+    longitude,
+    error,
+    loading,
+    requestLocation
+  };
 };

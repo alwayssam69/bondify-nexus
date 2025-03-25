@@ -1,19 +1,35 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+
+interface UserProfile {
+  id: string;
+  username: string;
+  full_name: string;
+  bio?: string;
+  location?: string;
+  industry?: string;
+  skills?: string[];
+  interests?: string[];
+  avatar_url?: string;
+  latitude?: number;
+  longitude?: number;
+}
 
 interface AuthContextType {
   session: Session | null;
   user: User | null;
-  profile: any | null;
+  profile: UserProfile | null;
   isLoading: boolean;
-  loading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
+  updateProfile: (updates: Partial<UserProfile>) => Promise<UserProfile>;
+  updateUsername: (username: string) => Promise<boolean>;
   refreshProfile: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
-  resetPasswordWithOTP: (mobile: string) => Promise<void>;
-  signInWithOTP: (mobile: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,385 +37,254 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [profileLoaded, setProfileLoaded] = useState(false);
-  const [fetchAttempts, setFetchAttempts] = useState(0);
+  const navigate = useNavigate();
 
-  const fetchProfile = async (userId: string): Promise<any> => {
+  // Fetch user profile from Supabase
+  const fetchProfile = async (userId: string) => {
     try {
-      console.log("Fetching profile for user:", userId);
-      setFetchAttempts(prev => prev + 1);
-      
-      // Try user_profiles table first
-      let { data: userProfileData, error: userProfileError } = await supabase
+      const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', userId)
-        .maybeSingle();
+        .single();
 
-      if (userProfileError && userProfileError.code !== 'PGRST116') {
-        console.error("Error fetching from user_profiles:", userProfileError);
-      }
-
-      // If found in user_profiles, return it
-      if (userProfileData) {
-        console.log("Profile found in user_profiles:", userProfileData);
-        setProfile(userProfileData);
-        setProfileLoaded(true);
-        return userProfileData;
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
       }
 
-      // If not found in user_profiles, try profiles table
-      console.log("No profile found in user_profiles, trying profiles table");
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-      
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error("Error fetching profile from profiles table:", profileError);
-      }
-      
-      // If found in profiles, return it
-      if (profileData) {
-        console.log("Profile found in profiles table:", profileData);
-        setProfile(profileData);
-        setProfileLoaded(true);
-        return profileData;
-      }
-      
-      // If no profile found in any table, create a new one
-      console.log("No profile found in any table, creating a new one");
-      const userData = await supabase.auth.getUser();
-      
-      if (userData.data?.user) {
-        const timestamp = new Date().getTime().toString().slice(-5);
-        const userTag = userData.data.user.user_metadata?.user_tag || 
-                       `user_${timestamp}`;
-        
-        // Create in profiles table
-        const newProfile = {
-          id: userId,
-          full_name: userData.data.user.user_metadata?.full_name || 
-                    userData.data.user.email?.split('@')[0] || "User",
-          email: userData.data.user.email,
-          user_tag: userTag,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          profile_completeness: 20,
-        };
-        
-        const { error: createProfileError } = await supabase
-          .from('profiles')
-          .upsert(newProfile);
-        
-        if (createProfileError) {
-          console.error("Error creating profile in profiles table:", createProfileError);
-        } else {
-          console.log("Created new profile in profiles table");
-        }
-        
-        // Also create in user_profiles table for more data
-        const userProfileData = {
-          ...newProfile,
-          activity_score: 0,
-          experience_level: '',
-          interests: [] as string[],
-          industry: '',
-          course_year: '',
-          user_type: '',
-          image_url: '',
-          skills: [],
-          last_active: new Date().toISOString(),
-          match_preferences: {},
-          networking_goals: [] as string[],
-          project_interests: [] as string[],
-        };
-        
-        const { error: userProfileError } = await supabase
-          .from('user_profiles')
-          .upsert(userProfileData);
-        
-        if (userProfileError) {
-          console.error("Error creating profile in user_profiles table:", userProfileError);
-        } else {
-          console.log("Created new profile in user_profiles table");
-        }
-        
-        setProfile(userProfileData);
-        setProfileLoaded(true);
-        return userProfileData;
-      }
-
-      // If everything fails, return minimal profile
-      console.log("Failed to create profile, using minimal profile");
-      const minimalProfile = { 
-        id: userId, 
-        full_name: "User", 
-        email: "",
-        created_at: new Date().toISOString(),
-        profile_completeness: 0
-      };
-      
-      setProfile(minimalProfile);
-      setProfileLoaded(true);
-      return minimalProfile;
+      return data as UserProfile;
     } catch (error) {
-      console.error("Error in fetchProfile:", error);
-      setProfileLoaded(true);
-      
-      const minimalProfile = { 
-        id: userId, 
-        full_name: "User", 
-        email: "",
-        created_at: new Date().toISOString(),
-        profile_completeness: 0
-      };
-      
-      setProfile(minimalProfile);
-      return minimalProfile;
+      console.error('Exception in fetchProfile:', error);
+      return null;
     }
   };
 
-  useEffect(() => {
-    console.log("AuthProvider: Setting up auth state listener");
-    let isActive = true;
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        console.log("Auth state changed:", event, newSession?.user?.id);
-        if (!isActive) return;
-        
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          console.log("User signed in or token refreshed");
-          setSession(newSession);
-          setUser(newSession?.user ?? null);
-          
-          if (newSession?.user) {
-            try {
-              const profileData = await fetchProfile(newSession.user.id);
-              setProfile(profileData);
-            } catch (error) {
-              console.error("Error fetching profile after sign in:", error);
-            }
-          }
-        } else if (event === 'SIGNED_OUT') {
-          console.log("User signed out");
-          setUser(null);
-          setSession(null);
-          setProfile(null);
-        } else if (event === 'USER_UPDATED') {
-          console.log("User updated");
-          setSession(newSession);
-          setUser(newSession?.user ?? null);
-          
-          if (newSession?.user) {
-            try {
-              const profileData = await fetchProfile(newSession.user.id);
-              setProfile(profileData);
-            } catch (error) {
-              console.error("Error fetching profile after user update:", error);
-            }
-          }
-        }
-      }
-    );
+  // Update the user's profile
+  const updateProfile = async (updates: Partial<UserProfile>): Promise<UserProfile> => {
+    if (!user) throw new Error('User not authenticated');
 
-    const getSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!isActive) return;
-        
-        console.log("Initial session check:", session?.user?.id);
-        
-        if (session?.user) {
-          setSession(session);
-          setUser(session.user);
-          try {
-            const profileData = await fetchProfile(session.user.id);
-            setProfile(profileData);
-          } catch (error) {
-            console.error("Error fetching initial profile:", error);
-          }
-        } else {
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-          setProfileLoaded(true);
-        }
-      } catch (error) {
-        console.error("Error getting session:", error);
-      } finally {
-        if (isActive) {
-          setIsLoading(false);
-        }
-      }
-    };
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .update(updates)
+        .eq('id', user.id)
+        .select()
+        .single();
 
-    getSession();
+      if (error) throw error;
 
-    const timeout = setTimeout(() => {
-      if (isActive && isLoading) {
-        console.log("Force ending loading state after timeout");
-        setIsLoading(false);
-      }
-    }, 5000);
-
-    return () => {
-      isActive = false;
-      clearTimeout(timeout);
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (profileLoaded && isLoading) {
-      setIsLoading(false);
+      const updatedProfile = data as UserProfile;
+      setProfile(updatedProfile);
+      toast.success('Profile updated successfully');
+      return updatedProfile;
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile: ' + error.message);
+      throw error;
     }
-  }, [profileLoaded, isLoading]);
+  };
 
+  // Special function to update username (can only be done once)
+  const updateUsername = async (username: string): Promise<boolean> => {
+    if (!user) throw new Error('User not authenticated');
+
+    try {
+      // First check if the username is already taken
+      const { data: existingUser } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('username', username)
+        .neq('id', user.id)
+        .maybeSingle();
+
+      if (existingUser) {
+        toast.error('Username already taken');
+        return false;
+      }
+
+      // Check if user can change username
+      const { data: canChange, error: checkError } = await supabase
+        .rpc('can_change_username', { user_id: user.id });
+
+      if (checkError) throw checkError;
+      
+      if (!canChange) {
+        toast.error('You can only change your username once');
+        return false;
+      }
+
+      // Update username and set the changed timestamp
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .update({ 
+          username, 
+          username_changed_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setProfile(data as UserProfile);
+      toast.success('Username updated successfully');
+      return true;
+    } catch (error: any) {
+      console.error('Error updating username:', error);
+      toast.error('Failed to update username: ' + error.message);
+      return false;
+    }
+  };
+
+  // Refresh the user's profile data
   const refreshProfile = async () => {
     if (!user) return;
     
     try {
-      console.log("Refreshing profile data for user:", user.id);
-      const data = await fetchProfile(user.id);
-      return data;
+      const profile = await fetchProfile(user.id);
+      if (profile) {
+        setProfile(profile);
+      }
     } catch (error) {
-      console.error("Error in refreshProfile:", error);
-      toast.error("Failed to refresh profile data");
-      throw error;
+      console.error('Error refreshing profile:', error);
     }
   };
 
+  // Sign in with email and password
+  const signIn = async (email: string, password: string) => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      // The session will be updated via the auth state listener
+      toast.success('Signed in successfully');
+      navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Error signing in:', error);
+      toast.error('Failed to sign in: ' + error.message);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Sign up with email, password and full name
+  const signUp = async (email: string, password: string, fullName: string) => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success('Signed up successfully! Please check your email for confirmation.');
+      navigate('/login');
+    } catch (error: any) {
+      console.error('Error signing up:', error);
+      toast.error('Failed to sign up: ' + error.message);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Sign out
   const signOut = async () => {
     try {
-      console.log("Starting signOut process in AuthContext");
       setIsLoading(true);
-      
-      localStorage.clear();
-      sessionStorage.clear();
-      document.cookie.split(';').forEach(cookie => {
-        document.cookie = cookie
-          .replace(/^ +/, '')
-          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
-      });
-      
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
-      
-      if (error) {
-        console.error("Error signing out from Supabase:", error);
-        toast.error(error.message);
-        throw error;
-      } else {
-        console.log("Supabase signOut successful, clearing state");
-        setUser(null);
-        setSession(null);
-        setProfile(null);
-        
-        window.location.href = "/login";
-        return;
-      }
-    } catch (error) {
-      console.error("Exception during sign out:", error);
-      toast.error("An error occurred while signing out");
+      await supabase.auth.signOut();
+      navigate('/login');
+    } catch (error: any) {
+      console.error('Error signing out:', error);
+      toast.error('Failed to sign out: ' + error.message);
+    } finally {
       setIsLoading(false);
-      throw error;
     }
   };
 
-  const resetPassword = async (email: string) => {
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      
-      if (error) {
-        console.error("Error resetting password:", error);
-        toast.error(error.message || "Error sending password reset email");
-        throw error;
-      }
-      
-      toast.success("Password reset instructions sent to your email");
-      return;
-    } catch (error) {
-      console.error("Exception during password reset:", error);
-      toast.error("An error occurred while processing your request");
-      throw error;
-    }
-  };
-
-  const resetPasswordWithOTP = async (mobile: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: mobile,
-        options: {
-          shouldCreateUser: false,
+  // Set up auth state listener and initialize session
+  useEffect(() => {
+    setIsLoading(true);
+    
+    // Set up the auth state change listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, currentSession) => {
+        // Update session and user
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        
+        // If we have a user, fetch their profile
+        if (currentSession?.user) {
+          const userProfile = await fetchProfile(currentSession.user.id);
+          setProfile(userProfile);
+        } else {
+          setProfile(null);
         }
-      });
-      
-      if (error) {
-        console.error("Error sending OTP for password reset:", error);
-        toast.error(error.message || "Error sending OTP");
-        throw error;
+        
+        setIsLoading(false);
       }
-      
-      toast.success("OTP sent to your mobile number");
-      return;
-    } catch (error) {
-      console.error("Exception during OTP send:", error);
-      toast.error("An error occurred while sending OTP");
-      throw error;
-    }
-  };
+    );
 
-  const signInWithOTP = async (mobile: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: mobile,
-        options: {
-          shouldCreateUser: true,
+    // THEN check for existing session
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        
+        if (initialSession?.user) {
+          const userProfile = await fetchProfile(initialSession.user.id);
+          if (userProfile) {
+            setProfile(userProfile);
+          }
         }
-      });
-      
-      if (error) {
-        console.error("Error sending OTP for login:", error);
-        toast.error(error.message || "Error sending OTP");
-        throw error;
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      toast.success("OTP sent to your mobile number");
-      return;
-    } catch (error) {
-      console.error("Exception during OTP send:", error);
-      toast.error("An error occurred while sending OTP");
-      throw error;
-    }
-  };
+    };
+
+    initializeAuth();
+
+    // Clean up the subscription when the component unmounts
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ 
-      session, 
-      user, 
-      profile, 
-      isLoading,
-      loading: isLoading,
-      signOut,
-      refreshProfile,
-      resetPassword,
-      resetPasswordWithOTP,
-      signInWithOTP
-    }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        user,
+        profile,
+        isLoading,
+        signIn,
+        signUp,
+        signOut,
+        updateProfile,
+        updateUsername,
+        refreshProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
-
-export default AuthProvider;
-export { AuthProvider as AuthContextProvider };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -408,3 +293,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export default AuthProvider;

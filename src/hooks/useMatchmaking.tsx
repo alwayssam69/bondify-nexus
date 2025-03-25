@@ -1,34 +1,42 @@
 
 import { useState, useEffect } from "react";
-import { UserProfile } from "@/lib/matchmaking";
-import { MatchmakingFilters } from "@/types/matchmaking";
-import { useGeolocation } from "@/hooks/useGeolocation";
-import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
-import { 
-  getMatchRecommendations, 
-  getProximityMatches 
-} from "@/services/MatchmakingService";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { toast } from "sonner";
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  full_name: string;
+  bio?: string;
+  location?: string;
+  industry?: string;
+  skills?: string[];
+  interests?: string[];
+  avatar_url?: string;
+  latitude?: number;
+  longitude?: number;
+  match_score?: number;
+  distance?: number;
+}
+
+export interface MatchmakingFilters {
+  industry?: string;
+  distance?: number;
+  skills?: string[];
+  interests?: string[];
+}
 
 interface UseMatchmakingProps {
-  filters: MatchmakingFilters;
+  filters?: MatchmakingFilters;
   enabled?: boolean;
 }
 
-interface MatchmakingResult {
-  isLoading: boolean;
-  error: string | null;
-  matches: UserProfile[];
-  hasMatches: boolean;
-  expandSearchRadius: () => void;
-  refreshMatches: () => void;
-}
-
 export const useMatchmaking = ({ 
-  filters, 
+  filters = {}, 
   enabled = true 
-}: UseMatchmakingProps): MatchmakingResult => {
+}: UseMatchmakingProps = {}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [matches, setMatches] = useState<UserProfile[]>([]);
@@ -40,111 +48,205 @@ export const useMatchmaking = ({
     showErrorToasts: false
   });
 
-  const fetchAllUsers = async (): Promise<UserProfile[]> => {
-    console.log("Fetching all users as fallback");
+  // Update user's location in the database
+  const updateUserLocation = async (latitude: number, longitude: number) => {
+    if (!user?.id) return;
+    
     try {
-      const { data, error } = await supabase
+      await supabase
         .from('user_profiles')
-        .select('*')
-        .neq('id', user?.id || '')
-        .limit(20);
-        
-      if (error) {
-        console.error("Error fetching all users:", error);
-        throw error;
-      }
+        .update({ latitude, longitude })
+        .eq('id', user.id);
       
-      if (!data || data.length === 0) {
-        console.log("No users found in database");
-        return [];
-      }
-      
-      return data.map(profile => ({
-        id: profile.id,
-        name: profile.full_name || 'Unknown User',
-        location: profile.location || 'Unknown Location',
-        bio: profile.bio || '',
-        industry: profile.industry || 'Unknown Industry',
-        experienceLevel: profile.experience_level || 'beginner',
-        userType: profile.user_type || 'Professional',
-        skills: profile.skills || [],
-        interests: profile.interests || [],
-        imageUrl: profile.image_url || '',
-        matchScore: Math.floor(60 + Math.random() * 30), // Random score between 60-90
-        // Add other required properties
-        age: estimateAgeFromExperienceLevel(profile.experience_level),
-        relationshipGoal: 'networking',
-        language: 'English',
-        activityScore: 75,
-        profileCompleteness: 80,
-        userTag: profile.user_tag || '',
-      }));
+      console.log('Updated user location in database');
     } catch (error) {
-      console.error("Error in fetchAllUsers:", error);
-      return [];
-    }
-  };
-  
-  const estimateAgeFromExperienceLevel = (experienceLevel: string | null): number => {
-    switch (experienceLevel) {
-      case 'beginner':
-        return 20 + Math.floor(Math.random() * 5);
-      case 'intermediate':
-        return 25 + Math.floor(Math.random() * 5);
-      case 'expert':
-        return 30 + Math.floor(Math.random() * 10);
-      default:
-        return 25 + Math.floor(Math.random() * 10);
+      console.error('Failed to update location:', error);
     }
   };
 
-  const fetchMatches = async () => {
+  // When location changes, update it in the database
+  useEffect(() => {
+    if (geolocation.latitude && geolocation.longitude && user?.id) {
+      updateUserLocation(geolocation.latitude, geolocation.longitude);
+    }
+  }, [geolocation.latitude, geolocation.longitude, user?.id]);
+
+  // Calculate a match score between users
+  const calculateMatchScore = (userProfile: UserProfile): number => {
+    let score = 50; // Base score
+    
+    // Industry match (high priority)
+    if (filters.industry && userProfile.industry === filters.industry) {
+      score += 20;
+    }
+    
+    // Skills match
+    if (filters.skills && userProfile.skills) {
+      const matchingSkills = filters.skills.filter(skill => 
+        userProfile.skills?.includes(skill)
+      ).length;
+      score += matchingSkills * 5;
+    }
+    
+    // Interests match
+    if (filters.interests && userProfile.interests) {
+      const matchingInterests = filters.interests.filter(interest => 
+        userProfile.interests?.includes(interest)
+      ).length;
+      score += matchingInterests * 5;
+    }
+    
+    // Cap the score at 100
+    return Math.min(score, 100);
+  };
+
+  // Calculate distance between coordinates
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
+    
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    const d = R * c; // Distance in km
+    return Math.round(d * 10) / 10; // Round to 1 decimal place
+  };
+
+  // Fetch all users from database
+  const fetchUsers = async (): Promise<UserProfile[]> => {
+    if (!user?.id) return [];
+    
+    try {
+      // Fetch all profiles except current user
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .neq('id', user.id);
+        
+      if (error) throw error;
+      
+      return data as UserProfile[];
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return [];
+    }
+  };
+
+  // Find matches based on filters and location
+  const findMatches = async () => {
     if (!user?.id) {
       setMatches([]);
       setError("Please log in to find matches");
-      setIsLoading(false);
       return;
     }
 
     try {
       setIsLoading(true);
       setError(null);
-      console.log("Starting match search for user:", user.id);
-
-      // Skip algorithm and fetch all users directly
-      console.log("Fetching all users from database");
-      const allUsers = await fetchAllUsers();
+      
+      // Request location if we don't have it
+      if (!geolocation.latitude || !geolocation.longitude) {
+        const success = await geolocation.requestLocation();
+        if (!success) {
+          console.log("Couldn't get location, proceeding without location filtering");
+        }
+      }
+      
+      // Fetch all users
+      const allUsers = await fetchUsers();
       
       if (allUsers.length === 0) {
         setError("No users found in the database");
-        setIsLoading(false);
         return;
       }
       
-      console.log("Found", allUsers.length, "users in database");
+      console.log(`Found ${allUsers.length} users in database`);
       
-      // Apply minimal filtering if we have users
-      let filteredMatches = allUsers;
-      
-      // If filters are specified and we have enough users, apply them lightly
-      if (allUsers.length > 3) {
-        if (filters.industry) {
-          const industryFiltered = filteredMatches.filter(profile => 
-            profile.industry?.toLowerCase() === filters.industry?.toLowerCase()
+      // Process users to add match score and distance
+      const processedUsers = allUsers.map(userProfile => {
+        // Calculate match score
+        const matchScore = calculateMatchScore(userProfile);
+        
+        // Calculate distance if we have coordinates
+        let distance: number | undefined = undefined;
+        if (geolocation.latitude && geolocation.longitude && 
+            userProfile.latitude && userProfile.longitude) {
+          distance = calculateDistance(
+            geolocation.latitude, 
+            geolocation.longitude,
+            userProfile.latitude, 
+            userProfile.longitude
           );
-          
-          // Only apply industry filter if it doesn't eliminate too many results
-          if (industryFiltered.length >= 2) {
-            filteredMatches = industryFiltered;
-          }
+        }
+        
+        return {
+          ...userProfile,
+          match_score: matchScore,
+          distance
+        };
+      });
+      
+      // Apply filters
+      let filteredMatches = processedUsers;
+      
+      // Filter by distance if we have location info
+      if (geolocation.latitude && geolocation.longitude && searchRadius) {
+        filteredMatches = filteredMatches.filter(profile => 
+          !profile.distance || profile.distance <= searchRadius
+        );
+      }
+      
+      // Apply industry filter if specified
+      if (filters.industry) {
+        // Only filter if we have enough users, otherwise show all
+        const industryFiltered = filteredMatches.filter(profile => 
+          profile.industry?.toLowerCase() === filters.industry?.toLowerCase()
+        );
+        
+        if (industryFiltered.length >= 2) {
+          filteredMatches = industryFiltered;
         }
       }
-
+      
+      // Apply skills filter if specified
+      if (filters.skills && filters.skills.length > 0) {
+        // Only filter if we have enough users, otherwise show all
+        const skillsFiltered = filteredMatches.filter(profile => 
+          profile.skills?.some(skill => filters.skills?.includes(skill))
+        );
+        
+        if (skillsFiltered.length >= 2) {
+          filteredMatches = skillsFiltered;
+        }
+      }
+      
+      // Apply interests filter if specified
+      if (filters.interests && filters.interests.length > 0) {
+        // Only filter if we have enough users, otherwise show all
+        const interestsFiltered = filteredMatches.filter(profile => 
+          profile.interests?.some(interest => filters.interests?.includes(interest))
+        );
+        
+        if (interestsFiltered.length >= 2) {
+          filteredMatches = interestsFiltered;
+        }
+      }
+      
       // Sort by match score (highest first)
-      filteredMatches.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+      filteredMatches.sort((a, b) => (b.match_score || 0) - (a.match_score || 0));
       
       setMatches(filteredMatches);
       
+      // If no matches found after filtering, use fallback
+      if (filteredMatches.length === 0) {
+        setError("No matches found with current filters. Try expanding your search criteria.");
+        // Fallback to all users
+        setMatches(processedUsers);
+      }
     } catch (error) {
       console.error("Error finding matches:", error);
       setError("Failed to find matches. Please try again later.");
@@ -154,6 +256,7 @@ export const useMatchmaking = ({
     }
   };
 
+  // Expand search radius
   const expandSearchRadius = () => {
     const newRadius = Math.min(searchRadius + 25, 100);
     setSearchRadius(newRadius);
@@ -161,13 +264,15 @@ export const useMatchmaking = ({
     return newRadius;
   };
 
+  // Refresh matches
   const refreshMatches = () => {
-    fetchMatches();
+    findMatches();
   };
 
+  // Initial fetch and when filters/radius changes
   useEffect(() => {
     if (enabled) {
-      fetchMatches();
+      findMatches();
     }
     
     // Force end loading state after 8 seconds to prevent infinite loading

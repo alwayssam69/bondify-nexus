@@ -1,37 +1,23 @@
 
 import React from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
-import { Toaster } from '@/components/ui/toaster';
-import { ThemeProvider } from '@/components/ui/theme-provider';
-import { Toaster as SonnerToaster } from 'sonner';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from './contexts/AuthContext';
-import Routes from './pages/Routes';
+import Routes from './Routes';
+import { initializeStorage } from './utils/supabase-storage';
 
-// Create a new instance of QueryClient
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000,
-      retry: 1
+// Initialize storage buckets
+initializeStorage()
+  .then(success => {
+    if (success) {
+      console.log('Storage initialized successfully');
+    } else {
+      console.warn('Failed to initialize storage');
     }
-  }
-});
+  })
+  .catch(error => {
+    console.error('Error initializing storage:', error);
+  });
 
-const App = () => {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="dark" storageKey="match-ui-theme">
-        <AuthProvider>
-          <Router>
-            <Routes />
-          </Router>
-          <SonnerToaster position="top-right" closeButton richColors />
-          <Toaster />
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
-  );
-};
+function App() {
+  return <Routes />;
+}
 
 export default App;
