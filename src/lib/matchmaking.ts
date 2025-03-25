@@ -9,7 +9,7 @@ export interface UserProfile {
   bio?: string;
   interests?: string[];
   imageUrl?: string;
-  image_url?: string; // Add this alias for compatibility
+  image_url?: string; // Make sure this property exists
   relationshipGoal?: string;
   skills?: string[];
   language?: string;
