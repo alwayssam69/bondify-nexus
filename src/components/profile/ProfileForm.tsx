@@ -25,6 +25,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData, onSuccess }) => 
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [formDataInitialized, setFormDataInitialized] = useState(false);
   
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -49,7 +50,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData, onSuccess }) => 
   
   // Update form values when initialData changes
   useEffect(() => {
-    if (initialData && Object.keys(initialData).length > 0) {
+    if (initialData && Object.keys(initialData).length > 0 && !formDataInitialized) {
+      console.log("Initializing form with data:", initialData);
       // Reset form with new values
       form.reset({
         fullName: initialData.fullName || "",
@@ -68,8 +70,9 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData, onSuccess }) => 
         useCurrentLocation: initialData.useCurrentLocation || false,
         userTag: initialData.userTag || "",
       });
+      setFormDataInitialized(true);
     }
-  }, [initialData, form]);
+  }, [initialData, form, formDataInitialized]);
   
   const onSubmit = async (values: ProfileFormValues) => {
     if (!user) {
@@ -80,6 +83,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData, onSuccess }) => 
     setIsLoading(true);
     
     try {
+      console.log("Submitting profile data:", values);
+      
       // Check if username is already taken (if changed)
       if (values.userTag && values.userTag !== initialData?.userTag) {
         const { data: existingUser, error: checkError } = await supabase
@@ -127,6 +132,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialData, onSuccess }) => 
       if (error) {
         throw error;
       }
+      
+      console.log("Profile updated successfully");
       
       // Refresh the profile data immediately after update
       await refreshProfile();

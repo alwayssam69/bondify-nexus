@@ -20,6 +20,9 @@ interface ProfileInfoProps {
 }
 
 const ProfileInfo: React.FC<ProfileInfoProps> = ({ profileData, isPublic }) => {
+  // Debug profile data
+  console.log("Rendering profile data:", profileData);
+
   if (!profileData) {
     return (
       <div className="text-center py-12 bg-muted/20 rounded-lg border border-dashed">
@@ -52,9 +55,6 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ profileData, isPublic }) => {
     }
     return arr;
   };
-
-  // Debug profile data
-  console.log("Rendering profile data:", profileData);
 
   return (
     <div className="space-y-6">

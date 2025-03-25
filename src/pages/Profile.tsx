@@ -225,6 +225,10 @@ const Profile = () => {
     window.location.reload();
   };
   
+  const handleSetupProfile = () => {
+    navigate('/profile?edit=true');
+  };
+  
   if (isLoading && !loadingTimeout) {
     return (
       <Layout>
@@ -256,6 +260,27 @@ const Profile = () => {
               className="px-6 py-2 bg-primary text-white rounded-md hover:bg-primary/90 shadow-sm"
             >
               Refresh Page
+            </button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (userProfile && isProfileIncomplete && isCurrentUser) {
+    return (
+      <Layout>
+        <div className="container py-6">
+          <div className="text-center min-h-[60vh] flex flex-col justify-center items-center">
+            <h2 className="text-2xl font-bold mb-4">Profile Not Set Up</h2>
+            <p className="mb-6 text-muted-foreground max-w-md">
+              Your profile is incomplete. Please set up your profile to enjoy all features of the platform.
+            </p>
+            <button 
+              onClick={handleSetupProfile}
+              className="px-6 py-2 bg-primary text-white rounded-md hover:bg-primary/90 shadow-sm"
+            >
+              Set Up Profile
             </button>
           </div>
         </div>

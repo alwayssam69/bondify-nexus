@@ -20,6 +20,19 @@ const ProfileTabs = ({ activeTab, onTabChange, userProfile, refreshProfile }: Pr
   console.log("ProfileTabs rendering with profile:", userProfile);
   console.log("Active tab:", activeTab);
 
+  const handleProfileUpdated = async () => {
+    await refreshProfile();
+    onTabChange("profile");
+  };
+
+  if (!userProfile) {
+    return (
+      <div className="bg-card border rounded-lg shadow-sm p-6 text-center">
+        <p>Profile data could not be loaded. Please try again later.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-card border rounded-lg shadow-sm">
       <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
@@ -52,11 +65,24 @@ const ProfileTabs = ({ activeTab, onTabChange, userProfile, refreshProfile }: Pr
         
         <TabsContent value="edit" className="p-6">
           <ProfileForm 
-            initialData={userProfile} 
-            onSuccess={() => {
-              refreshProfile();
-              onTabChange("profile");
-            }}
+            initialData={{
+              fullName: userProfile.full_name || "",
+              location: userProfile.location || "",
+              bio: userProfile.bio || "",
+              industry: userProfile.industry || "",
+              userType: userProfile.user_type || "",
+              experienceLevel: userProfile.experience_level || "",
+              university: userProfile.university || "",
+              courseYear: userProfile.course_year || "",
+              skills: userProfile.skills || [],
+              interests: userProfile.interests || [],
+              projectInterests: userProfile.project_interests || [],
+              state: userProfile.state || "",
+              city: userProfile.city || "",
+              useCurrentLocation: userProfile.use_current_location || false,
+              userTag: userProfile.user_tag || "",
+            }} 
+            onSuccess={handleProfileUpdated}
           />
         </TabsContent>
         
