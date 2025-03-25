@@ -1,3 +1,4 @@
+
 import React from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -12,6 +13,7 @@ const Navigation = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
     { label: "Messages", path: "/chat", available: isLoggedIn },
     { label: "Community", path: "/community", available: isLoggedIn },
     { label: "Find People", path: "/search", available: isLoggedIn },
+    { label: "Profile", path: "/profile", available: isLoggedIn },
     { label: "News", path: "/news", available: true },
     { label: "About", path: "/about", available: true },
   ];

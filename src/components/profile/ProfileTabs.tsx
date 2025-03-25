@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProfileInfo from "@/components/profile/ProfileInfo";
 import ProfileForm from "@/components/profile/ProfileForm";
@@ -13,9 +13,10 @@ interface ProfileTabsProps {
   onTabChange: (value: string) => void;
   userProfile: any;
   refreshProfile: () => Promise<void>;
+  isPublic?: boolean;
 }
 
-const ProfileTabs = ({ activeTab, onTabChange, userProfile, refreshProfile }: ProfileTabsProps) => {
+const ProfileTabs = ({ activeTab, onTabChange, userProfile, refreshProfile, isPublic = false }: ProfileTabsProps) => {
   // Add debug to check userProfile data
   console.log("ProfileTabs rendering with profile:", userProfile);
   console.log("Active tab:", activeTab);
@@ -29,6 +30,28 @@ const ProfileTabs = ({ activeTab, onTabChange, userProfile, refreshProfile }: Pr
     return (
       <div className="bg-card border rounded-lg shadow-sm p-6 text-center">
         <p>Profile data could not be loaded. Please try again later.</p>
+      </div>
+    );
+  }
+
+  // If it's a public profile, only show the profile tab
+  if (isPublic) {
+    return (
+      <div className="bg-card border rounded-lg shadow-sm">
+        <Tabs value="profile" className="w-full">
+          <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
+            <TabsTrigger
+              value="profile"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+            >
+              Profile
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="profile" className="p-6">
+            <ProfileInfo profileData={userProfile} isPublic={true} />
+          </TabsContent>
+        </Tabs>
       </div>
     );
   }

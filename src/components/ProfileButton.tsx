@@ -17,8 +17,8 @@ const ProfileButton = ({ variant = 'outline', size = 'default' }: ProfileButtonP
   
   const handleClick = () => {
     if (user) {
-      // Always navigate to edit mode
-      navigate('/profile?edit=true');
+      // Navigate to the user's own profile page without an ID
+      navigate('/profile');
     } else {
       toast.error("You need to log in first");
       navigate('/login');
