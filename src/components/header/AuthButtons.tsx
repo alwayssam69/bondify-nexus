@@ -25,7 +25,7 @@ const AuthButtons = () => {
     
     // If user is authenticated, show logout button instead of login/signup
     if (user) {
-      const userTag = profile?.user_tag || user?.user_metadata?.user_tag || null;
+      const userTag = profile?.username || user?.user_metadata?.user_tag || null;
       
       return (
         <div className="flex items-center gap-2">

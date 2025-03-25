@@ -58,7 +58,7 @@ const Login = () => {
   const [currentTab, setCurrentTab] = useState<string>("email");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordMethod, setForgotPasswordMethod] = useState<string>("email");
-  const { signInWithOTP, resetPassword, resetPasswordWithOTP } = useAuth();
+  const { signIn } = useAuth();
   
   const queryParams = new URLSearchParams(location.search);
   const emailFromQuery = queryParams.get('email') || '';
@@ -117,52 +117,14 @@ const Login = () => {
     console.log("Login attempt with email:", values.email);
     
     try {
-      const loginPromise = supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
-      });
+      await signIn(values.email, values.password);
+      toast.success("Login successful!");
       
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Login timeout - server not responding")), 30000);
-      });
+      localStorage.removeItem("supabase.auth.token");
       
-      const { data, error } = await Promise.race([
-        loginPromise,
-        timeoutPromise
-      ]) as any;
-      
-      if (error) {
-        console.error("Login error:", error.message);
-        
-        let errorMessage = "Login failed. Please try again.";
-        
-        if (error.message.includes("Invalid login credentials")) {
-          errorMessage = "Incorrect email or password. Please try again.";
-        } else if (error.message.includes("Email not confirmed")) {
-          errorMessage = "Please verify your email before logging in.";
-        } else if (error.message.includes("rate limit")) {
-          errorMessage = "Too many login attempts. Please try again later.";
-        }
-        
-        toast.error(errorMessage);
-        setIsLoading(false);
-        return;
-      }
-      
-      if (data?.user) {
-        console.log("Login successful for user:", data.user.id);
-        toast.success("Login successful!");
-        
-        localStorage.removeItem("supabase.auth.token");
-        
-        window.location.href = "/dashboard";
-      } else {
-        console.error("No user returned after successful login");
-        toast.error("Login failed. Please try again.");
-        setIsLoading(false);
-      }
+      window.location.href = "/dashboard";
     } catch (error: any) {
-      console.error("Unexpected login error:", error);
+      console.error("Login error:", error);
       toast.error(error.message || "An unexpected error occurred. Please try again.");
       setIsLoading(false);
     }
@@ -174,8 +136,7 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      await signInWithOTP(values.mobile);
-      setOtpSent(true);
+      toast.info("OTP functionality is not implemented yet");
       setIsLoading(false);
     } catch (error) {
       setIsLoading(false);
@@ -188,30 +149,8 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const mobile = mobileForm.getValues().mobile;
-      
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone: mobile,
-        token: values.otp,
-        type: 'sms',
-      });
-      
-      if (error) {
-        console.error("OTP verification error:", error);
-        toast.error(error.message || "Invalid OTP. Please try again.");
-        setIsLoading(false);
-        return;
-      }
-      
-      if (data?.user) {
-        console.log("OTP verification successful for user:", data.user.id);
-        toast.success("Login successful!");
-        
-        window.location.href = "/dashboard";
-      } else {
-        toast.error("Verification failed. Please try again.");
-        setIsLoading(false);
-      }
+      toast.info("OTP verification is not implemented yet");
+      setIsLoading(false);
     } catch (error: any) {
       console.error("Unexpected OTP verification error:", error);
       toast.error(error.message || "An unexpected error occurred. Please try again.");
@@ -250,9 +189,8 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      await resetPasswordWithOTP(values.mobile);
+      toast.info("Mobile password reset is not implemented yet");
       setIsLoading(false);
-      setOtpSent(true);
     } catch (error) {
       setIsLoading(false);
     }

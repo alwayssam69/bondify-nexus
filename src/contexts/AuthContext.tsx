@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface UserProfile {
   id: string;
@@ -39,7 +39,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
+  
+  // Use navigate safely with a try/catch
+  let navigate;
+  try {
+    navigate = useNavigate();
+  } catch (error) {
+    // If useNavigate fails, provide a no-op function
+    navigate = (path: string) => {
+      console.warn('Navigation attempted outside router context to:', path);
+      // Could use window.location as fallback if needed
+      // window.location.href = path;
+    };
+  }
 
   // Fetch user profile from Supabase
   const fetchProfile = async (userId: string) => {

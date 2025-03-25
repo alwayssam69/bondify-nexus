@@ -6,7 +6,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 
 const ProtectedRoute = () => {
-  const { user, isLoading, profile } = useAuth();
+  const { user, isLoading } = useAuth();
   const [hasShownMessage, setHasShownMessage] = useState(false);
   const location = useLocation();
 
