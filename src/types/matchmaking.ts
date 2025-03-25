@@ -1,3 +1,4 @@
+
 export interface MatchmakingFilters {
   helpType?: 'need' | 'offer';
   industry: string;
@@ -20,6 +21,7 @@ export interface MatchmakingResult {
   matchScore?: number;
   bio?: string;
   distance?: number;
+  image_url?: string; // Added this property to fix the errors
 }
 
 export interface MatchCardConnectableProps {
