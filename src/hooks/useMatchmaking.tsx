@@ -39,6 +39,10 @@ export interface MatchmakingFilters {
   distance?: number;
   skills?: string[];
   interests?: string[];
+  relationshipGoal?: string;
+  helpType?: 'need' | 'offer';
+  experienceLevel?: string;
+  useLocation?: boolean;
 }
 
 interface UseMatchmakingProps {
