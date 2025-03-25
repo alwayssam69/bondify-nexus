@@ -6,6 +6,7 @@ export interface MatchmakingFilters {
   experienceLevel: string;
   useLocation: boolean;
   distance?: number;
+  interests?: string[];
 }
 
 export interface MatchmakingResult {
