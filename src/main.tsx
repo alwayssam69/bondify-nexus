@@ -1,6 +1,7 @@
 
 import { createRoot } from 'react-dom/client'
 import React from 'react'
+import { BrowserRouter } from 'react-router-dom'
 import App from './App.tsx'
 import './index.css'
 import { ThemeProvider } from './contexts/ThemeContext'
@@ -15,8 +16,10 @@ const root = createRoot(rootElement);
 
 root.render(
   <React.StrictMode>
-    <ThemeProvider>
-      <App />
-    </ThemeProvider>
+    <BrowserRouter>
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    </BrowserRouter>
   </React.StrictMode>
 );

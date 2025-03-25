@@ -29,6 +29,7 @@ export interface UserProfile {
   courseYear?: string;
   networkingGoals?: string[];
   projectInterests?: string[];
+  full_name?: string;
 }
 
 // Match Preferences Interface
@@ -61,7 +62,8 @@ export const loadSampleUsers = (): UserProfile[] => {
       experienceLevel: "Mid-level",
       userType: "Professional",
       matchScore: 92,
-      userTag: "alexj"
+      userTag: "alexj",
+      image_url: "https://via.placeholder.com/150"
     },
     {
       id: "sample2",
@@ -76,7 +78,8 @@ export const loadSampleUsers = (): UserProfile[] => {
       experienceLevel: "Senior",
       userType: "Professional",
       matchScore: 87,
-      userTag: "sarahm"
+      userTag: "sarahm",
+      image_url: "https://via.placeholder.com/150"
     },
     {
       id: "sample3",
@@ -91,7 +94,8 @@ export const loadSampleUsers = (): UserProfile[] => {
       experienceLevel: "Junior",
       userType: "Professional",
       matchScore: 79,
-      userTag: "mikec"
+      userTag: "mikec",
+      image_url: "https://via.placeholder.com/150"
     }
   ];
 };

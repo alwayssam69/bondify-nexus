@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { BrowserRouter } from 'react-router-dom';
 import Routes from './Routes';
 import { initializeStorage } from './utils/supabase-storage';
 import { Toaster } from 'sonner';
@@ -20,10 +19,10 @@ initializeStorage()
 
 function App() {
   return (
-    <BrowserRouter>
+    <>
       <Routes />
       <Toaster position="top-right" richColors />
-    </BrowserRouter>
+    </>
   );
 }
 

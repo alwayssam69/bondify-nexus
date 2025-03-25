@@ -1,6 +1,6 @@
 
 export interface MatchmakingFilters {
-  helpType?: 'need' | 'offer'; // Add this property
+  helpType?: 'need' | 'offer';
   industry: string;
   skills: string[];
   relationshipGoal: string;
