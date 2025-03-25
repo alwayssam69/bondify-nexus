@@ -9,7 +9,7 @@ export interface UserProfile {
   bio?: string;
   interests?: string[];
   imageUrl?: string;
-  image_url?: string; // Make sure this property exists
+  image_url?: string; // This property is required by components
   relationshipGoal?: string;
   skills?: string[];
   language?: string;
