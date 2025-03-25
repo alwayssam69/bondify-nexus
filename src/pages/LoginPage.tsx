@@ -1,19 +1,21 @@
 
 import React, { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Mail, Lock } from 'lucide-react';
+import { toast } from 'sonner';
 
 const LoginPage = () => {
-  const { signIn, user, isLoading } = useAuth();
+  const { signIn, user, isLoading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,16 +29,18 @@ const LoginPage = () => {
       setIsSubmitting(true);
       setError(null);
       await signIn(email, password);
-    } catch (err) {
-      // Error is already handled in the signIn function
-      setError('Failed to sign in. Please check your credentials.');
+      toast.success('Signed in successfully!');
+      navigate('/dashboard');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'Failed to sign in. Please check your credentials.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   // If user is already logged in, redirect to dashboard
-  if (user && !isLoading) {
+  if (user && !authLoading) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -52,15 +56,19 @@ const LoginPage = () => {
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isSubmitting}
-                  required
-                />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isSubmitting}
+                    className="pl-10"
+                    required
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -69,15 +77,19 @@ const LoginPage = () => {
                     Forgot password?
                   </Link>
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isSubmitting}
-                  required
-                />
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isSubmitting}
+                    className="pl-10"
+                    required
+                  />
+                </div>
               </div>
               {error && <div className="p-2 text-sm text-red-500 bg-red-50 rounded">{error}</div>}
               <Button type="submit" className="w-full" disabled={isSubmitting}>
