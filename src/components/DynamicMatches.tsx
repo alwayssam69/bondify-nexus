@@ -1,11 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { getConfirmedMatches } from "@/services/MatchmakingService";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 interface MatchOverview {
   id: string;
@@ -37,94 +35,33 @@ const DynamicMatches = () => {
       setNoMatches(false);
       
       try {
-        // Set a timeout to ensure we don't load for more than 5 seconds
-        const timeoutPromise = new Promise<any[]>((resolve) => {
-          setTimeout(() => {
-            setIsLoading(false);
-            setNoMatches(true);
-            resolve([]);
-          }, 5000);
-        });
+        // Fetch profiles directly from Supabase
+        const { data: profiles, error } = await supabase
+          .from('user_profiles')
+          .select('id, full_name, user_type, industry, image_url')
+          .neq('id', user?.id || '')
+          .limit(5);
+            
+        if (error) {
+          throw error;
+        }
         
-        try {
-          // If the user is logged in, try to fetch confirmed matches
-          if (user?.id) {
-            try {
-              const matchesPromise = getConfirmedMatches(user.id);
-              const matchesData = await Promise.race([matchesPromise, timeoutPromise]);
-              
-              if (matchesData && matchesData.length > 0) {
-                // Transform the data for display
-                const processedMatches = matchesData.slice(0, 5).map(match => ({
-                  id: match.id,
-                  name: match.name,
-                  headline: `${match.userType || "Professional"} at ${match.industry || "Unknown"}`,
-                  matchScore: match.matchScore || 0,
-                  imageUrl: match.imageUrl,
-                  color: getMatchScoreColor(match.matchScore || 0)
-                }));
-                
-                setMatches(processedMatches);
-                setNoMatches(false);
-                setIsLoading(false);
-                return;
-              }
-            } catch (error) {
-              console.error("Error loading user matches:", error);
-            }
-          }
+        if (profiles && profiles.length > 0) {
+          const userMatches = profiles.map(profile => ({
+            id: profile.id,
+            name: profile.full_name || "Anonymous User",
+            headline: `${profile.user_type || "Professional"} at ${profile.industry || "Various Industries"}`,
+            matchScore: Math.floor(Math.random() * 40) + 60, // Random score between 60-99
+            imageUrl: profile.image_url,
+            color: getMatchScoreColor(Math.floor(Math.random() * 40) + 60)
+          }));
           
-          // If no user or no matches found, fetch some random profiles from supabase
-          const { data: profiles, error } = await supabase
-            .from('user_profiles')
-            .select('id, full_name, user_type, industry')
-            .limit(5);
-            
-          if (error) {
-            throw error;
-          }
-          
-          if (profiles && profiles.length > 0) {
-            const fallbackMatches = profiles.map(profile => ({
-              id: profile.id,
-              name: profile.full_name || "Anonymous User",
-              headline: `${profile.user_type || "Professional"} at ${profile.industry || "Various Industries"}`,
-              matchScore: Math.floor(Math.random() * 40) + 60, // Random score between 60-99
-              color: getMatchScoreColor(Math.floor(Math.random() * 40) + 60)
-            }));
-            
-            setMatches(fallbackMatches);
-            setNoMatches(false);
-          } else {
-            // If still no matches, create dummy data
-            setMatches([
-              {
-                id: "1",
-                name: "Alex Johnson",
-                headline: "Developer at Technology",
-                matchScore: 92,
-                color: getMatchScoreColor(92)
-              },
-              {
-                id: "2",
-                name: "Taylor Martinez",
-                headline: "Product Manager at Marketing",
-                matchScore: 87,
-                color: getMatchScoreColor(87)
-              },
-              {
-                id: "3",
-                name: "Jordan Smith",
-                headline: "Designer at Creative",
-                matchScore: 79,
-                color: getMatchScoreColor(79)
-              }
-            ]);
-            setNoMatches(false);
-          }
-        } catch (error) {
-          console.error("Error in matches flow:", error);
-          // Create dummy data as fallback
+          setMatches(userMatches);
+          setNoMatches(false);
+          setIsLoading(false);
+          return;
+        } else {
+          // If no real users, create dummy data
           setMatches([
             {
               id: "1",
@@ -150,6 +87,33 @@ const DynamicMatches = () => {
           ]);
           setNoMatches(false);
         }
+      } catch (error) {
+        console.error("Error in matches flow:", error);
+        // Create dummy data as fallback
+        setMatches([
+          {
+            id: "1",
+            name: "Alex Johnson",
+            headline: "Developer at Technology",
+            matchScore: 92,
+            color: getMatchScoreColor(92)
+          },
+          {
+            id: "2",
+            name: "Taylor Martinez",
+            headline: "Product Manager at Marketing",
+            matchScore: 87,
+            color: getMatchScoreColor(87)
+          },
+          {
+            id: "3",
+            name: "Jordan Smith",
+            headline: "Designer at Creative",
+            matchScore: 79,
+            color: getMatchScoreColor(79)
+          }
+        ]);
+        setNoMatches(false);
       } finally {
         setIsLoading(false);
       }

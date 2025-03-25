@@ -111,105 +111,32 @@ export const useMatchmaking = ({
       setError(null);
       console.log("Starting match search for user:", user.id);
 
-      let matchedProfiles: UserProfile[] = [];
-      let nearbyFound = false;
-
-      // Priority 1: Location-based matching (if enabled and coordinates are available)
-      if (filters.useLocation && geolocation.latitude && geolocation.longitude) {
-        console.log("Fetching proximity matches within", searchRadius, "km");
-        try {
-          const proximityMatches = await getProximityMatches(user.id, searchRadius, 20);
-          
-          if (proximityMatches.length > 0) {
-            matchedProfiles = proximityMatches;
-            nearbyFound = true;
-            console.log("Found", proximityMatches.length, "proximity matches");
-          } else {
-            console.log("No proximity matches found, falling back to skill-based");
-          }
-        } catch (e) {
-          console.error("Error in proximity matching, falling back to skill-based:", e);
-        }
-      }
-
-      // Priority 2: If no location matches or location not enabled, fall back to skills/interest matches
-      if (!nearbyFound) {
-        console.log("Fetching skill-based matches");
-        try {
-          matchedProfiles = await getMatchRecommendations(user.id, 20);
-          console.log("Found", matchedProfiles.length, "skill-based matches");
-        } catch (e) {
-          console.error("Error in skill-based matching:", e);
-        }
-      }
-
-      // If still no matches, fetch all users as fallback
-      if (matchedProfiles.length === 0) {
-        console.log("No matches found with algorithm, fetching all users as fallback");
-        try {
-          matchedProfiles = await fetchAllUsers();
-          console.log("Found", matchedProfiles.length, "users as fallback");
-          
-          if (matchedProfiles.length > 0) {
-            toast.info("Showing all available users", { 
-              description: "Couldn't find specific matches for your criteria"
-            });
-          }
-        } catch (e) {
-          console.error("Error fetching all users:", e);
-          
-          // Set a timeout to end loading state after 5 seconds
-          setTimeout(() => {
-            if (isLoading) {
-              setIsLoading(false);
-              setError("Could not find any users at this time. Please try again later.");
-            }
-          }, 5000);
-          return;
-        }
-      }
-
-      // Apply additional filters only if we have enough matches
-      let filteredMatches = matchedProfiles;
+      // Skip algorithm and fetch all users directly
+      console.log("Fetching all users from database");
+      const allUsers = await fetchAllUsers();
       
-      // If we have more than 5 matches, apply filters, otherwise show all matches
-      if (matchedProfiles.length > 5) {
+      if (allUsers.length === 0) {
+        setError("No users found in the database");
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log("Found", allUsers.length, "users in database");
+      
+      // Apply minimal filtering if we have users
+      let filteredMatches = allUsers;
+      
+      // If filters are specified and we have enough users, apply them lightly
+      if (allUsers.length > 3) {
         if (filters.industry) {
-          filteredMatches = filteredMatches.filter(profile => 
+          const industryFiltered = filteredMatches.filter(profile => 
             profile.industry?.toLowerCase() === filters.industry?.toLowerCase()
           );
-        }
-
-        if (filters.skills && filters.skills.length > 0) {
-          filteredMatches = filteredMatches.filter(profile => 
-            profile.skills?.some(skill => 
-              filters.skills?.includes(skill)
-            )
-          );
-        }
-
-        if (filters.experienceLevel) {
-          filteredMatches = filteredMatches.filter(profile => 
-            profile.experienceLevel?.toLowerCase() === filters.experienceLevel?.toLowerCase()
-          );
-        }
-
-        if (filters.relationshipGoal) {
-          filteredMatches = filteredMatches.filter(profile => {
-            return profile.relationshipGoal === filters.relationshipGoal ||
-              (filters.relationshipGoal === "mentorship" && profile.relationshipGoal === "networking") ||
-              (filters.relationshipGoal === "job" && profile.relationshipGoal === "networking") ||
-              (filters.relationshipGoal === "collaboration" && profile.relationshipGoal === "networking");
-          });
-        }
-        
-        // If filtering removed too many matches, go back to all matches
-        if (filteredMatches.length < 3 && matchedProfiles.length > 5) {
-          console.log("Too few matches after filtering, showing all matches");
-          filteredMatches = matchedProfiles;
-          toast.info("Showing all matches", {
-            description: "Not enough matches with your filters"
-          });
+          
+          // Only apply industry filter if it doesn't eliminate too many results
+          if (industryFiltered.length >= 2) {
+            filteredMatches = industryFiltered;
+          }
         }
       }
 
@@ -217,10 +144,6 @@ export const useMatchmaking = ({
       filteredMatches.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
       
       setMatches(filteredMatches);
-      
-      if (filteredMatches.length === 0) {
-        setError("No matches found. Try expanding your search criteria or check back later.");
-      }
       
     } catch (error) {
       console.error("Error finding matches:", error);
@@ -260,13 +183,6 @@ export const useMatchmaking = ({
     
     return () => clearTimeout(timeout);
   }, [filters, searchRadius, enabled, user?.id]);
-
-  // Effect to refetch when geolocation changes
-  useEffect(() => {
-    if (enabled && filters.useLocation && geolocation.latitude && geolocation.longitude) {
-      fetchMatches();
-    }
-  }, [geolocation.latitude, geolocation.longitude]);
 
   return {
     isLoading,

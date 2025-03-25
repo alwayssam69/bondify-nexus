@@ -9,11 +9,9 @@ const Navigation = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
     { label: "Home", path: "/", available: true },
     { label: "Dashboard", path: "/dashboard", available: isLoggedIn },
     { label: "Matches", path: "/matches", available: isLoggedIn },
-    { label: "Discover", path: "/discover", available: isLoggedIn },
     { label: "Messages", path: "/chat", available: isLoggedIn },
     { label: "Community", path: "/community", available: isLoggedIn },
     { label: "Find People", path: "/search", available: isLoggedIn },
-    { label: "Profile", path: "/profile", available: isLoggedIn },
     { label: "News", path: "/news", available: true },
     { label: "About", path: "/about", available: true },
   ];
