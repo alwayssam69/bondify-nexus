@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,7 +17,7 @@ export interface UserProfile {
   skills?: string[];
   interests?: string[];
   avatar_url?: string;
-  image_url?: string;
+  image_url?: string; // Explicitly added to fix TypeScript errors
   imageUrl?: string;
   latitude?: number;
   longitude?: number;
